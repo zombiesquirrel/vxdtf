@@ -107,11 +107,11 @@ VXDTFModule::VXDTFModule() : Module()
   defaultConfigV.push_back(0.67);
   defaultConfigV.push_back(1.0);
 
-  std::vector<std::string> sectorSetup;
+  std::vector<std::string> sectorSetup, detectorType;
   sectorSetup.push_back("std");
+	detectorType.push_back("SVD");	// Recycling Const::IR for Const::VXD, which means that we treat Const::IR as if it would be Const::VXD
 
-  vector<int> detectorType, highestAllowedLayer, minLayer, minState;
-  detectorType.push_back(1); // TODO does not work with Const::SVD/PXD yet since there is no Const::VXD which would be needed for the TF
+  vector<int> highestAllowedLayer, minLayer, minState;
   highestAllowedLayer.push_back(6);
   minLayer.push_back(4);
   minState.push_back(2);
@@ -184,7 +184,7 @@ VXDTFModule::VXDTFModule() : Module()
   addParam("sectorConfigU", m_PARAMsectorConfigU, "allows defining the the config of the sectors in U direction value is valid for each sensor of chosen detector setup, minimum 2 values between 0.0 and 1.0", defaultConfigU);
   addParam("sectorConfigV", m_PARAMsectorConfigV, "allows defining the the config of the sectors in V direction value is valid for each sensor of chosen detector setup, minimum 2 values between 0.0 and 1.0", defaultConfigV);
 
-  addParam("detectorType", m_PARAMdetectorType, "defines which detector type has to be exported. VXD: -1, PXD: 0, SVD: 1", detectorType);
+  addParam("detectorType", m_PARAMdetectorType, "defines which detector type has to be exported. Allowed values: 'VXD', 'PXD', 'SVD'", detectorType);
   addParam("sectorSetup", m_PARAMsectorSetup, "lets you chose the sectorSetup (compatibility of sensors, individual cutoffs,...) accepts 'std', 'low', 'high' and 'personal', please note that the chosen setup has to exist as a xml-file in ../tracking/data/friendList_XXX.xml. If you can not create your own xml files using e.g. the filterCalculatorModule, use params for  'tuneCutoffXXX' or 'setupWeigh' instead. multipass supported by setting setups in a row", sectorSetup);
 
   addParam("tuneCutoffs", m_PARAMtuneCutoffs, "for rapid changes of all cutoffs (no personal xml files needed), reduces/enlarges the range of the cutoffs in percent (lower and upper values are changed by this value). Only valid in range -99% < x < +1000%", double(0.0));
@@ -254,7 +254,7 @@ VXDTFModule::VXDTFModule() : Module()
   addParam("tuneCircleFit", m_PARAMtuneCircleFit, " set threshold for each setup individually", tuneCircleFit);
 
 
-  addParam("highOccupancyThreshold", m_PARAMhighOccupancyThreshold, "", int(17));
+  addParam("highOccupancyThreshold", m_PARAMhighOccupancyThreshold, "if there are more hit-combinations at a sensor than chosen threshhold, a special high-occupancy-mode will be used to filter more hits", int(17));
   addParam("tccMinLayer", m_PARAMminLayer, "determines lowest layer considered by track candidate collector", minLayer);
   addParam("tccMinState", m_PARAMminState, "determines lowest state of cells considered by track candidate collector", minState);
   addParam("omega", m_PARAMomega, "tuning parameter for the hopfield network", double(0.5));
@@ -377,10 +377,30 @@ void VXDTFModule::beginRun()
     newPass->sectorSetup = m_PARAMsectorSetup[i];
 
     if (int (m_PARAMdetectorType.size()) < i + 1) {
-      newPass->detectorType = m_PARAMdetectorType[m_PARAMdetectorType.size() - 1];
+//       newPass->detectorType = m_PARAMdetectorType[m_PARAMdetectorType.size() - 1];
       B2WARNING("detectorType not set for each sectorMap, copying first choice")
+			if (m_PARAMdetectorType[m_PARAMdetectorType.size() - 1] == "SVD" ) {
+				newPass->detectorType = Const::SVD;
+			} else if (m_PARAMdetectorType[m_PARAMdetectorType.size() - 1] == "PXD" ) {
+				newPass->detectorType = Const::PXD;
+			} else if (m_PARAMdetectorType[m_PARAMdetectorType.size() - 1] == "VXD" ) {
+				newPass->detectorType = Const::IR; // WARNING reusing Const::IR as Const::VXD as long as there is no real Const::VXD!
+			} else {
+				B2FATAL("chosen detectorType " << m_PARAMdetectorType[i] << " is unknown. VXDTF is unable to operate. Please choose 'VXD', 'SVD' or 'PXD' to proceed!")
+				newPass->detectorType = Const::SVD;
+			}
     } else {
-      newPass->detectorType = m_PARAMdetectorType[i];
+			if (m_PARAMdetectorType[i] == "SVD" ) {
+				newPass->detectorType = Const::SVD;
+			} else if (m_PARAMdetectorType[i] == "PXD" ) {
+				newPass->detectorType = Const::PXD;
+			} else if (m_PARAMdetectorType[i] == "VXD" ) {
+				newPass->detectorType = Const::IR; // WARNING reusing Const::IR as Const::VXD as long as there is no real Const::VXD!
+			} else {
+				B2FATAL("chosen detectorType " << m_PARAMdetectorType[i] << " is unknown. VXDTF is unable to operate. Please choose 'VXD', 'SVD' or 'PXD' to proceed!")
+				newPass->detectorType = Const::SVD;
+			}
+      
     }
     if (int (m_PARAMsetupWeigh.size()) < i + 1) {
       B2WARNING("setupWeigh not set each sectorMap, copying first choice")
@@ -410,24 +430,24 @@ void VXDTFModule::beginRun()
 
 
     // calc numtotalLayers and chosenDetectorType:
-    if (newPass->detectorType == 0) {
+    if (newPass->detectorType == Const::PXD) {
       newPass->chosenDetectorType = "PXD";
       newPass->numTotalLayers = 2;
       newPass->minLayer = 2;
       newPass->minState = 1;
       if (m_usePXDorSVDorVXDhits == 1) { m_usePXDorSVDorVXDhits = -1; }   // cases 0,-1, don't do anything, since state is okay
-    } else if (newPass->detectorType == 1) {
+    } else if (newPass->detectorType == Const::SVD) {
       newPass->chosenDetectorType = "SVD";
       newPass->numTotalLayers = 4;
       if (m_usePXDorSVDorVXDhits == 0) { m_usePXDorSVDorVXDhits = -1; }   // cases 1,-1, don't do anything, since state is okay
-    } else if (newPass->detectorType == -1) {
+    } else if (newPass->detectorType == Const::IR) {
       newPass->chosenDetectorType = "VXD";
       newPass->numTotalLayers = 6;
       if (m_usePXDorSVDorVXDhits not_eq - 1) { m_usePXDorSVDorVXDhits = -1; }  // cases -1, don't do anything, since state is okay
     } else {
-      B2WARNING("Pass " << i << " with setting '" << m_PARAMsectorSetup[i] << "': chosen detectorType via param 'detectorType' is invalid, resetting value to standard (=VXD,-1)")
+      B2ERROR("Pass " << i << " with setting '" << m_PARAMsectorSetup[i] << "': chosen detectorType via param 'detectorType' is invalid, resetting value to standard (=VXD,-1)")
       newPass->chosenDetectorType = "VXD";
-      newPass->detectorType = -1;
+      newPass->detectorType = Const::IR;
       newPass->numTotalLayers = 6;
     }
     newPass->numTotalLayers = newPass->numTotalLayers - (6 - newPass->highestAllowedLayer);
@@ -1010,7 +1030,7 @@ void VXDTFModule::event()
   VxdID centerVxdID = VxdID(0, 0, 0); // dummy VxdID for virtual IP
   int passNumber = 0;
   BOOST_FOREACH(CurrentPassData * currentPass, m_passSetupVector) {
-    VXDTFHit* pTFHit = new VXDTFHit(centerPosition, passNumber, 0, 0, 0, -1, centerSector, centerVxdID, 0.0); // has no position in HitList, because it doesn't exist...
+    VXDTFHit* pTFHit = new VXDTFHit(centerPosition, passNumber, 0, 0, 0, Const::IR, centerSector, centerVxdID, 0.0); // has no position in HitList, because it doesn't exist...
 
     currentPass->sectorMap.find(centerSector)->second->addHit(pTFHit);
     currentPass->hitVector.push_back(pTFHit);
@@ -1076,7 +1096,7 @@ void VXDTFModule::event()
       passNumber = 0; // why not using for at this point since I need a iteration number anyway? foreach is faster than for classic (better access to entries)
       BOOST_FOREACH(CurrentPassData * currentPass, m_passSetupVector) {
         if (aLayerID > currentPass->highestAllowedLayer) { continue; }   // skip particle if True
-        if (currentPass->detectorType not_eq 0 && currentPass->detectorType not_eq - 1) { continue; }  // PXD is included in 0 & -1
+        if (currentPass->detectorType not_eq Const::PXD && currentPass->detectorType not_eq Const::IR) { continue; }  // PXD is included in 0 & -1
 
         pair<string, MapOfSectors::iterator> activatedSector = searchSector4Hit(aVxdID,
                                                                transformedHitLocal,
@@ -1104,7 +1124,7 @@ void VXDTFModule::event()
         ClusterInfo aClusterUV(iPart);
         int numClusters = clustersOfEvent.size();
         clustersOfEvent.push_back(aClusterUV);
-        VXDTFHit* pTFHit = new VXDTFHit(hitGlobal, passNumber, 0, 0, numClusters, 0, aSectorName, aVxdID, 0.0); // no timeInfo for PXDHits
+        VXDTFHit* pTFHit = new VXDTFHit(hitGlobal, passNumber, 0, 0, iPart, Const::PXD, aSectorName, aVxdID, 0.0); // no timeInfo for PXDHits
 
         currentPass->hitVector.push_back(pTFHit);
         secMapIter->second->addHit(pTFHit);
@@ -1153,12 +1173,12 @@ void VXDTFModule::event()
       B2DEBUG(100, " sensor " << aSensor.first << " has got " << numUclusters << " uClusters and " << numVclusters << " vClusters")
       if (numUclusters == 0 || numVclusters == 0) {
         m_TESTERbadSectorRangeCounterForClusters++;
-        B2WARNING("at event: " << m_eventCounter << " sensor " << aSensor.first << " at layer " << aSensor.second.layerID << " has got " << numUclusters << "/" << numVclusters << " u/vclusters!")
+        B2INFO("at event: " << m_eventCounter << " sensor " << aSensor.first << " at layer " << aSensor.second.layerID << " has got " << numUclusters << "/" << numVclusters << " u/vclusters!")
       }
       if (numUclusters != numVclusters) {
         m_TESTERclustersPersSectorNotMatching++;
         if (m_PARAMDebugMode == true) {
-          B2WARNING("at event: " << m_eventCounter << " at sensor " << aSensor.first << " at layer " << aSensor.second.layerID << " number of clusters do not match: Has got " << numUclusters << "/" << numVclusters << " u/vclusters!")
+          B2INFO("at event: " << m_eventCounter << " at sensor " << aSensor.first << " at layer " << aSensor.second.layerID << " number of clusters do not match: Has got " << numUclusters << "/" << numVclusters << " u/vclusters!")
         }
       }
 
@@ -1243,7 +1263,7 @@ void VXDTFModule::event()
       passNumber = 0;
       BOOST_FOREACH(CurrentPassData * currentPass, m_passSetupVector) {
         if (aLayerID > currentPass->highestAllowedLayer) { continue; }   // skip particle if True
-        if (currentPass->detectorType == 0) { continue; }   // SVD is included in 1 & -1, but not in 0
+        if (currentPass->detectorType == Const::PXD) { continue; }   // SVD is included in 1 & -1, but not in 0
 
         pair<string, MapOfSectors::iterator> activatedSector = searchSector4Hit(aVxdID,
                                                                transformedHitLocal,
@@ -1274,7 +1294,7 @@ void VXDTFModule::event()
 
         B2DEBUG(50, "A SVDCluster is found again within secID " << aSectorName << " using sectorSetup " << currentPass->sectorSetup);
 //         VXDTFHit* pTFHit = new VXDTFHit(hitGlobal, passNumber, clusterIndexU, clusterIndexV, 0, 1, aSectorName, aVxdID,  0.5 * (timeStampU + timeStampV));
-        VXDTFHit* pTFHit = new VXDTFHit(hitGlobal, passNumber, numClusters, numClusters + 1, 0, 1, aSectorName, aVxdID,  0.5 * (timeStampU + timeStampV));
+        VXDTFHit* pTFHit = new VXDTFHit(hitGlobal, passNumber, clusterIndexU, clusterIndexV, 0, Const::SVD, aSectorName, aVxdID,  0.5 * (timeStampU + timeStampV));
 
         currentPass->hitVector.push_back(pTFHit);
         secMapIter->second->addHit(pTFHit);
@@ -1520,7 +1540,7 @@ void VXDTFModule::event()
     }
     return;
   } else if (totalOverlaps > 500) {  /// WARNING: hardcoded value!
-    B2WARNING("VXDTF event " << m_eventCounter << ": total number of overlapping TCs is " << totalOverlaps << " and therefore KF is too slow, will use simple QI calculation which produces worse results")
+    B2ERROR("VXDTF event " << m_eventCounter << ": total number of overlapping TCs is " << totalOverlaps << " and therefore KF is too slow, will use simple QI calculation which produces worse results")
     allowKalman = false;
     m_TESTERkalmanSkipped++;
   }
@@ -1612,7 +1632,7 @@ void VXDTFModule::event()
   B2DEBUG(1, "after Hopfield: size of tcVector: " << m_tcVector.size() << ", tcVectorOverlapped: " << m_tcVectorOverlapped.size() << " testTCVector: " << testTCs)
   if (testTCs != 0) {
     m_TESTERHopfieldLetsOverbookedTCsAliveCtr++;
-    B2ERROR("event " << m_eventCounter << ": after Hopfield there are still some overlapping TCs! restarting hopfield...")
+    B2WARNING("event " << m_eventCounter << ": after Hopfield there are still some overlapping TCs! restarting hopfield...")
     /// checking overlapping TCs for best subset, if there are more than 2 different TC's
     if (testTCs > 2) {
       hopfield(testTCVector, m_PARAMomega);                             /// hopfield
@@ -2076,7 +2096,7 @@ void VXDTFModule::hopfield(TCsOfEvent& tcVector, double omega)
   int sizeOld = allHits.size();
   allHits.sort(); allHits.unique();
   int sizeNew = allHits.size();
-  if (sizeOld != sizeNew) { B2ERROR("NN event " << m_eventCounter << ": illegal result! Overlapping TCs accepted!")}
+  if (sizeOld != sizeNew) { B2WARNING("NN event " << m_eventCounter << ": illegal result! Overlapping TCs accepted!")}
 }
 
 
@@ -2698,7 +2718,7 @@ int VXDTFModule::cellularAutomaton(CurrentPassData* currentPass)
     B2DEBUG(10, "CA: " << caRound << ". round - " << activeCells << " living cells remaining.");
 
     if (caRound > 30) { /// WARNING: hardcoded value
-      B2ERROR("event " << m_eventCounter << ": VXDTF-CA: more than 100 ca rounds! " << activeCells << " living cells remaining");
+      B2ERROR("event " << m_eventCounter << ": VXDTF-CA: more than 30 ca rounds! " << activeCells << " living cells remaining");
       string currentSectors, space = " "; // stringstream currentSectors;
       BOOST_FOREACH(SectorNameAndPointerPair key, currentPass->sectorSequence) {
         currentSectors += key.first; // currentSectors + key.first
@@ -2936,7 +2956,7 @@ int VXDTFModule::tcFilter(CurrentPassData* currentPass, int passNumber, vector<C
     BOOST_FOREACH(VXDTFHit * currentHit, currentHits) { // now we are informing each cluster which TC is using it
       string aSecName = currentHit->getSectorName();
       secNameOutput << aSecName << " ";
-      if (currentHit->getDetectorType() == 0) {   // PXD
+      if (currentHit->getDetectorType() == Const::PXD) {   // PXD
         clustersOfEvent[currentHit->getClusterIndexUV()].addTrackCandidate(currentTC);
       } else {
         clustersOfEvent[currentHit->getClusterIndexU()].addTrackCandidate(currentTC); // should mean aVXDTFTrackCandidate*

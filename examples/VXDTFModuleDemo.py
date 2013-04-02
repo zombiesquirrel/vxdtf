@@ -7,7 +7,7 @@ from sys import argv
 from basf2 import *
 from time import time
 
-numEvents = 10000
+numEvents = 100
 initialValue = 1
 secSetup = ['evtgenHIGH', 'evtgenSTD', 'evtgenLOW']  # ,'evtgenHIGH' 'evtgenSTD', 'evtgenLOW'] # when using the same secSetup several times, use this for setting Value
 
@@ -103,7 +103,7 @@ param_vxdtf = {  # #### tripple pass!
                  # 'qiSmear': True, # needed for both, for trackLength to avoid TCs having the same QI and for kalman, when storing broken QIs with QI ~ 0 (but not = 0)
                  # 'kalman', 'circleFit' or 'trackLength'
     'tccMinLayer': [4],
-    'detectorType': [1],
+    'detectorType': ['VXD'],
     'sectorSetup': secSetup,
     'calcQIType': 'kalman',
     }
