@@ -90,6 +90,10 @@ void TFAnalizerModule::initialize()
 {
   StoreArray<GFTrackCand>::required(m_PARAMmcTCname);
   StoreArray<GFTrackCand>::required(m_PARAMcaTCname);
+	StoreArray<PXDCluster>::required();
+  StoreArray<SVDCluster>::required();
+  StoreArray<PXDTrueHit>::required();
+  StoreArray<SVDTrueHit>::required();
 //  B2WARNING("TFAnalizerModule: at the moment, no curling tracks are supported! When you feed this module with curling tracks, results can be wrong and misleading")
   m_countReconstructedTCs = 0;
   m_eventCounter = 0;
