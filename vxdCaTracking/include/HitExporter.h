@@ -53,6 +53,10 @@ namespace Belle2 {
 		/** event wise call expected: sets internal Event number needed for identifying hits */
 		void prepareEvent(int n);
 		
+		int getCurrentEventNumber();
+		
+		int getNumberOfHits(); // for current Event
+		
 // 		/** event wise call expected: Expects pointer to the storearray to be stored and its name. It Stores its entries into track candidates. Returns string containing error message if something went wrong */
 // 		std::string storeGFTrackCands(StoreArray<GFTrackCand>* pArray, std::string arrayName);
 // 		
@@ -74,7 +78,7 @@ namespace Belle2 {
 		 */
 		std::string exportAll(int n, std::string name = "");
   protected:
-		void exprt(std::stringstream );
+// 		void exprt(std::stringstream );
 
     int m_eventNumber; /**< stores current event number */
 		EventMap m_storedOutput; /**< stores everything which has to be stored */

@@ -42,6 +42,8 @@ namespace Belle2 {
 		/** returns pointer to fully formatted string */
 // 		std::string* getHitsFormatted();
 		
+		int getEventNumber() { return m_eventNumber; }
+		
 		/** returns a pointer to internal vector of tcs */
 		void getTcs(std::vector<ExporterTcInfo>* tcs);
 		

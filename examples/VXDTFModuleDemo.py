@@ -103,7 +103,7 @@ param_vxdtf = {  # #### tripple pass!
                  # 'qiSmear': True, # needed for both, for trackLength to avoid TCs having the same QI and for kalman, when storing broken QIs with QI ~ 0 (but not = 0)
                  # 'kalman', 'circleFit' or 'trackLength'
     'tccMinLayer': [4],
-    'detectorType': ['VXD'],
+    'detectorType': ['SVD'],
     'sectorSetup': secSetup,
     'calcQIType': 'kalman',
     }
@@ -114,13 +114,14 @@ param_vxdtf = {  # #### tripple pass!
 vxdtf.param(param_vxdtf)
 
 mctrackfinder = register_module('MCTrackFinder')
-mctrackfinder.logging.log_level = LogLevel.WARNING
+mctrackfinder.logging.log_level = LogLevel.DEBUG
+mctrackfinder.logging.debug_level = 101
 
 # select which detectors you would like to use
 param_mctrackfinder = {  # 'primary'
     'UseCDCHits': 0,
     'UseSVDHits': 1,
-    'UsePXDHits': 0,
+    'UsePXDHits': 1,
     'MinimalNDF': 6,
     'UseClusters': 1,
     'WhichParticles': ['PXD', 'SVD'],
@@ -135,7 +136,7 @@ eventCounter.logging.log_level = LogLevel.INFO
 eventCounter.param('stepSize', 25)
 
 analyzer = register_module('TFAnalizer')
-analyzer.logging.log_level = LogLevel.INFO
+analyzer.logging.log_level = LogLevel.DEBUG
 analyzer.logging.debug_level = 11
 param_analyzer = {'printExtentialAnalysisData': False}  # set true if PRINTINFO is wanted
     # 'minTMomentumFilter': 0.05,

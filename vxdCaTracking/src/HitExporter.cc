@@ -71,6 +71,16 @@ void HitExporter::prepareEvent(int n)
 
 
 
+int HitExporter::getCurrentEventNumber() {
+	return m_thisEvent->getEventNumber();
+}
+
+int HitExporter::getNumberOfHits() {
+	std::vector<ExporterHitInfo>* hits = NULL;
+	m_thisEvent->getHits(hits);
+	return hits->size();
+}
+
 // std::string HitExporter::storeGFTrackCands(StoreArray<GFTrackCand>* pArray, std::string arrayName)
 // {
 // 	B2FATAL("Hitexporter::storeGFTrackCands: member function not implemented yet!")
@@ -86,6 +96,7 @@ std::string HitExporter::storePXDTrueHit(VXD::GeoCache& geometry, PXDTrueHit* aH
 	}
 	VxdID aVxdID = aHit->getSensorID();
   int aLayerID = aVxdID.getLayerNumber();
+	B2DEBUG(10,"within HitExporter::storePXDTrueHit. Hit " << iD << " with particleID " << particleID << " isPrimaryBackgroundOrGhost: " << isPrimaryBackgroundOrGhost << " has been found in sensorID " << aVxdID << " at Layer " << aLayerID)
 // 	const PXD::SensorInfo& geometry = dynamic_cast<const PXD::SensorInfo&>(VXD::GeoCache::get(m_sensorID));
   VXD::SensorInfoBase aSensorInfo = geometry.getSensorInfo(aVxdID);
 	double sigmaU = aSensorInfo.getUPitch(aHit->getV()/sqrt(12)); // this is NOT a typo!
@@ -94,6 +105,7 @@ std::string HitExporter::storePXDTrueHit(VXD::GeoCache& geometry, PXDTrueHit* aH
 	TVector3 hitGlobal = aSensorInfo.pointToGlobal(hitLocal);
 	TVector3 covValues(sigmaU*sigmaU, 0, sigmaV*sigmaV); // there are no good estimations for that values yet. Therefore, the classic pitch/sqrt(12) is used. The hardware guys do not expect any correlation between u and v, therefore CovUV = 0
 	double sensorAngle = 0.; /// WARNING TODO, wie komme ich an den ran? Es geht um den Winkel zwischen dem der x-Achse und dem orthogonal-Winkel der Sensorfläche in globalen Koords (im Uhrzeigersinn gedreht), dh reine winkel-zwischen-2-Vektoren-Rechnung tuts nicht...
+	B2DEBUG(10, " -> this hit has got U/V " << hitLocal.X() <<"/"<< hitLocal.Y() << " and CovUU/CovVV " << covValues.X() <<"/"<< covValues.Z() << " and sensorAngle " << sensorAngle )
 	ExporterHitInfo aHitInfo(hitGlobal, covValues, aLayerID, sensorAngle, iD, 0, isPrimaryBackgroundOrGhost, particleID);
 	m_thisEvent->addHit(aHitInfo);
 	string result = "";
@@ -153,6 +165,10 @@ std::string HitExporter::exportAll(int runNumber, std::string name)
 			outputFileStream.open(fileName.c_str(), std::ios_base::trunc); // trunc=overwrite app=append
 			vector<ExporterHitInfo>* hitsOfEvent = NULL;
 			eventInfo.second->getHits(hitsOfEvent);
+			if (hitsOfEvent == NULL) {
+				B2WARNING("event " << eventInfo.first <<" has no hits! Rejecting event...")
+				continue;
+			}
 			int nHits = hitsOfEvent->size();
 			outputFileStream << nHits << endl;
 			BOOST_FOREACH(ExporterHitInfo hit, (*hitsOfEvent)) {

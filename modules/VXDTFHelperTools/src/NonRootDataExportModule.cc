@@ -113,6 +113,7 @@ void NonRootDataExportModule::initialize()
 	// TODO import layerInfos for settings.data (bZ, layer: R X/X0, X*Dichte(Si))
 	
 // 	B2INFO("NonRootDataExportModule: chosen detectorType: " << m_PARAMDetectorType << ", exporting TrueHits: " << m_PARAMExportTrueHits << ", exporting clusters: " << m_PARAMExportClusters << " and " << ngftcArrays << " GFTrackCand-Arrays with following names: " << str(chosenGFTCarrays) << ", total containers to store: " << m_exportContainer.initializedContainers())
+	B2INFO("NonRootDataExportModule: chosen detectorType: " << m_PARAMDetectorType << " and exporting TrueHits: " << m_PARAMExportTrueHits)
 }
 
 
@@ -141,64 +142,73 @@ void NonRootDataExportModule::event()
 	
 	// looping over all mcparticles connected to each TrueHit, if there is at least one primary particle connected to current trueHit, the first found primary particle determines the state of the trueHit (means, if there is a primary particle attached to the trueHit, the trueHit is recognized as realhit, and recognized as background hit if otherwise, the particleID of the hit will be the first primary particle or the last secondary one attached to current trueHit):
 	if (m_PARAMExportTrueHits != "none") { // storing trueHits
-		int nPXDTrueHits = 0, nSVDTrueHits = 0, hitID = -1;
-		bool isPrimary = false;
+		int nPXDTrueHits = 0, nSVDTrueHits = 0, particleID = -1;
+		int isPrimary = 1;
 // 		vector<MCParticle*> particlesOfTrueHit; // reused for every TrueHit
 		if (m_PARAMDetectorType == "PXD" or "VXD") { // storing pxd truehits
 			StoreArray<PXDTrueHit> pxdTrueHits; // carries all trueHits of event
 			nPXDTrueHits = pxdTrueHits.getEntries();
-// 			RelationArray mcPartToPXDTrueHits(mcParticles, pxdTrueHits);
-			RelationIndex<PXDTrueHit, MCParticle> pxdTrueHitsTomcParticles; // allows us to find out which particle caused which truehit
-			typedef RelationIndex<PXDTrueHit, MCParticle>::Element RelationElement;
+			B2DEBUG(1,"NonRootDataExportModule event " << m_eventCounter << ": executing " << nPXDTrueHits << " PXDTrueHits")
+			RelationIndex<MCParticle, PXDTrueHit> mcParticlesToPxdTrueHits; // allows us to find out which particle caused which truehit
+			typedef RelationIndex<MCParticle, PXDTrueHit>::Element RelationElement;
 			
 			for(int i = 0; i < nPXDTrueHits; ++i) {
 				const PXDTrueHit* aTrueHit = pxdTrueHits[i];
 				
-				BOOST_FOREACH(const RelationElement & rel, pxdTrueHitsTomcParticles.getElementsFrom(aTrueHit)) {
-// 					if(!rel) {
-// 						B2WARNING("no MCParticle found for PXDTrueHit " << i);
-// 						continue;
-// 					}
-					const MCParticle* particle = rel.to;
-					hitID = particle->getIndex(); // 1-based index of Particle. If you want to have a 0-based index, use getArrayIndex() instead
+				BOOST_FOREACH(const RelationElement & rel, mcParticlesToPxdTrueHits.getElementsTo(aTrueHit)) {
+
+					const MCParticle* particle = rel.from;
+					particleID = particle->getIndex(); // 1-based index of Particle. If you want to have a 0-based index, use getArrayIndex() instead
+					
 					if ((particle->hasStatus(MCParticle::c_PrimaryParticle) == true) and (m_PARAMExportTrueHits == "real")) {
-						isPrimary = true;
+						isPrimary = 0;
 						break; // if there are any other true or background particles, they shall be ignored
 					}
 				}
-				m_exportContainer.storePXDTrueHit(aGeometry, pxdTrueHits[i], i, isPrimary, hitID);
-				isPrimary = false;
-				hitID = -1;
+				B2DEBUG(10," PXDTrueHit with ID " << i << " is attached to mcParticles with ID " << particleID << " and hasStatusPrimary (0 = true) " << isPrimary)
+				if ((m_PARAMExportTrueHits == "real" and isPrimary == 0) or (m_PARAMExportTrueHits == "background" and isPrimary == 1) ) {
+					m_exportContainer.storePXDTrueHit(aGeometry, pxdTrueHits[i], i, isPrimary, particleID);
+				}
+				isPrimary = 1;
+				particleID = -1;
 			} // looping over all pxd trueHits
 		} // storing pxdTrueHits
 		
 		if (m_PARAMDetectorType == "SVD" or "VXD") {
 			StoreArray<SVDTrueHit> svdTrueHits; // carries all trueHits of event
 			nSVDTrueHits = svdTrueHits.getEntries();
-			RelationIndex<SVDTrueHit, MCParticle> svdTrueHitsTomcParticles; // allows us to find out which particle caused which truehit
-			typedef RelationIndex<SVDTrueHit, MCParticle>::Element RelationElement;
+			B2DEBUG(1,"NonRootDataExportModule event " << m_eventCounter << ": executing " << nSVDTrueHits << " SVTrueHits" )
+			RelationIndex<MCParticle, SVDTrueHit> mcParticlesToSvdTrueHits; // allows us to find out which particle caused which truehit
+			typedef RelationIndex<MCParticle, SVDTrueHit>::Element RelationElement;
 			
 			for(int i = 0; i < nSVDTrueHits; ++i) {
 				const SVDTrueHit* aTrueHit = svdTrueHits[i];
 				
-				BOOST_FOREACH(const RelationElement & rel, svdTrueHitsTomcParticles.getElementsFrom(aTrueHit)) {
+				BOOST_FOREACH(const RelationElement & rel, mcParticlesToSvdTrueHits.getElementsTo(aTrueHit)) {
 // 					if(!rel) {
 // 						B2WARNING("no MCParticle found for SVDTrueHit " << i);
 // 						continue;
 // 					}
-					const MCParticle* particle = rel.to;
-					hitID = particle->getIndex(); // 1-based index of Particle. If you want to have a 0-based index, use getArrayIndex() instead
+					const MCParticle* particle = rel.from;
+					particleID = particle->getIndex(); // 1-based index of Particle. If you want to have a 0-based index, use getArrayIndex() instead
 					if ((particle->hasStatus(MCParticle::c_PrimaryParticle) == true) and (m_PARAMExportTrueHits == "real")) {
-						isPrimary = true;
+						isPrimary = 0;
 						break; // if there are any other true or background particles, they shall be ignored
 					}
 				}
-				m_exportContainer.storeSVDTrueHit(aGeometry, svdTrueHits[i], i+nPXDTrueHits, isPrimary, hitID);
-				isPrimary = false;
-				hitID = -1;
+				B2DEBUG(10," SVDTrueHit with ID " << i << " is attached to mcParticles with ID " << particleID << " and hasStatusPrimary (0 = true) " << isPrimary)
+				if ((m_PARAMExportTrueHits == "real" and isPrimary == 0) or (m_PARAMExportTrueHits == "background" and isPrimary == 1) ) {
+					m_exportContainer.storeSVDTrueHit(aGeometry, svdTrueHits[i], i+nPXDTrueHits, isPrimary, particleID);
+				}
+				isPrimary = 1;
+				particleID = -1;
 			} // looping over all svd trueHits
 		} // storing svdTrueHits
 	}
+	
+	B2DEBUG(1," event " << m_eventCounter << " got ID " << m_eventCounter << ", internal eventID of " << m_exportContainer.getCurrentEventNumber())
+	B2DEBUG(1," event " << m_eventCounter << " got ID " << m_eventCounter << ", internal eventID of " << m_exportContainer.getCurrentEventNumber() << " and got /*" << m_exportContainer.getNumberOfHits() << "*/ hits")
+	
 	
 // 	if (m_PARAMExportClusters != "none") {
 // 		/// WARNING not working yet! Problems to solve: how to group Clusters to hits again?

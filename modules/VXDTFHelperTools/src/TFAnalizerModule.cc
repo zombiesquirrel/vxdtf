@@ -396,6 +396,10 @@ void TFAnalizerModule::extractHits(GFTrackCand* aTC,
   B2DEBUG(10, "starting extractHits... isMCTC: " << isMCTC << ", index: " << index)
   int numOfHits = aTC->getNHits();
   B2DEBUG(10, " found " << numOfHits << " hits for TC " << index)
+	if (int(aTC->getNHits()) == 0 ) {
+		B2ERROR("TFAnalizerModule::extractHits - event " << m_eventCounter << ": GfTrackcand with isMCTC " << isMCTC << " has no hits, neglecting tc...:")
+		return;
+	}
   vector<int> pxdHitIDsOfCurrentTC;
   vector<int> svdHitIDsOfCurrentTC;
   vector<TVector3> coordinates;
@@ -456,6 +460,7 @@ void TFAnalizerModule::extractHits(GFTrackCand* aTC,
   double pT = momentum_t.Mag();
   int pdgCode = aTC->getPdgCode();
   bool gotNewMomentum = false;
+	B2DEBUG(10, " tc no " << index << " with isMCTC " << isMCTC << " has got initial pValue " << pValue << ", pdgCode " << pdgCode << " and " << int(aTC->getNHits()) << " hits")
 
   if (isMCTC == true) {   // want momentum vector of innermost hit, not of primary vertex
 

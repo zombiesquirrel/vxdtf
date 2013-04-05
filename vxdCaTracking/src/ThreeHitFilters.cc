@@ -132,6 +132,13 @@ double ThreeHitFilters::fullAngle2D(TVector3& vecA, TVector3& vecB)
 
 
 
+// std::pair<bool, double> ThreeHitFilters::fullAngle2D360(TVector3& vecA, TVector3& vecB)
+// {
+//   return acos((vecA[0] * vecB[0] + vecA[1] * vecB[1]) / (sqrt(vecA.Perp() * vecB.Perp())));
+// }
+
+
+
 double ThreeHitFilters::calcRadius(TVector3& a, TVector3& b, TVector3& c, TVector3& circleCenter)
 {
   return (sqrt((circleCenter - a).Perp2() + (circleCenter - b).Perp2() + (circleCenter - c).Perp2())) * (1. / 3.); // = radius in [cm], sign here not needed. normally: signKappaAB/normAB1

@@ -1124,8 +1124,9 @@ void VXDTFModule::event()
         ClusterInfo aClusterUV(iPart);
         int numClusters = clustersOfEvent.size();
         clustersOfEvent.push_back(aClusterUV);
-        VXDTFHit* pTFHit = new VXDTFHit(hitGlobal, passNumber, 0, 0, iPart, Const::PXD, aSectorName, aVxdID, 0.0); // no timeInfo for PXDHits
-
+//         VXDTFHit* pTFHit = new VXDTFHit(hitGlobal, passNumber, 0, 0, iPart, Const::PXD, aSectorName, aVxdID, 0.0); // no timeInfo for PXDHits
+				VXDTFHit* pTFHit = new VXDTFHit(hitGlobal, passNumber, 0, 0, numClusters, Const::PXD, aSectorName, aVxdID, 0.0); // no timeInfo for PXDHits
+				
         currentPass->hitVector.push_back(pTFHit);
         secMapIter->second->addHit(pTFHit);
         currentPass->sectorSequence.push_back(activatedSector);
@@ -1186,7 +1187,7 @@ void VXDTFModule::event()
         for (int vClNum = 0; vClNum < numVclusters; ++vClNum) {
           ClusterHit aHit;
           aHit.uCluster = aSensor.second.uClusters[uClNum].second;
-          aHit.uClusterIndex = aSensor.second.uClusters[uClNum].first;
+          aHit.uClusterIndex = aSensor.second.uClusters[uClNum].first; // real index number for storearray of svdCluster
           aHit.vCluster = aSensor.second.vClusters[vClNum].second;
           aHit.vClusterIndex = aSensor.second.vClusters[vClNum].first;
           clusterHitList.push_back(aHit);
@@ -1293,8 +1294,8 @@ void VXDTFModule::event()
         clustersOfEvent.push_back(aClusterV);
 
         B2DEBUG(50, "A SVDCluster is found again within secID " << aSectorName << " using sectorSetup " << currentPass->sectorSetup);
-//         VXDTFHit* pTFHit = new VXDTFHit(hitGlobal, passNumber, clusterIndexU, clusterIndexV, 0, 1, aSectorName, aVxdID,  0.5 * (timeStampU + timeStampV));
-        VXDTFHit* pTFHit = new VXDTFHit(hitGlobal, passNumber, clusterIndexU, clusterIndexV, 0, Const::SVD, aSectorName, aVxdID,  0.5 * (timeStampU + timeStampV));
+        VXDTFHit* pTFHit = new VXDTFHit(hitGlobal, passNumber, numClusters, numClusters+1, 0, Const::SVD, aSectorName, aVxdID,  0.5 * (timeStampU + timeStampV));
+//         VXDTFHit* pTFHit = new VXDTFHit(hitGlobal, passNumber, clusterIndexU, clusterIndexV, 0, Const::SVD, aSectorName, aVxdID,  0.5 * (timeStampU + timeStampV));
 
         currentPass->hitVector.push_back(pTFHit);
         secMapIter->second->addHit(pTFHit);

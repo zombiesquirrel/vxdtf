@@ -266,7 +266,7 @@ void MCTrackFinderModule::event()
     }
     // check all "seen in" properties that the mcparticle should have in one line.
     if ((mcParticleProperties bitand m_particleProperties) != m_particleProperties) {
-      B2DEBUG(100, "PDG: " << aMcParticlePtr->getPDG() <<  " | property mask of particle " <<  mcParticleProperties << " demanded property mask " << m_particleProperties);
+      B2DEBUG(110, "PDG: " << aMcParticlePtr->getPDG() <<  " | property mask of particle " <<  mcParticleProperties << " demanded property mask " << m_particleProperties);
       continue; //goto next mcParticle, do not make track candidate
     }
     //make links only for interesting MCParticles: energy cut and check for neutrals
@@ -326,6 +326,7 @@ void MCTrackFinderModule::event()
     B2DEBUG(100, "Search a track for the MCParticle with index: " << iPart << " (PDG: " << aMcParticlePtr->getPDG() << ")");
 
     int ndf = 0; // cout the ndf of one track candidate
+    B2DEBUG(100,"directly after resetting ndf: ndf = " << ndf)
     // create a list containing the indices to the PXDHits that belong to one track
     vector<int> pxdHitsIndices;
     if (m_useClusters == false) {
@@ -334,6 +335,7 @@ void MCTrackFinderModule::event()
           for (unsigned int j = 0; j < mcPartToPXDTrueHits[i].getToIndices().size(); j++) {
             pxdHitsIndices.push_back(mcPartToPXDTrueHits[i].getToIndex(j));
             ndf += 2;
+						B2DEBUG(100,"within pxdTrueHits-check: ndf = " << ndf)
           }
         }
       }
@@ -343,6 +345,7 @@ void MCTrackFinderModule::event()
           if (pxdClusterToMCParticle[i].getToIndex(j) == unsigned(iPart)) {
             pxdHitsIndices.push_back(pxdClusterToMCParticle[i].getFromIndex());
             ndf += 2;
+						B2DEBUG(100,"within within pxdCluster-check: ndf = " << ndf)
           }
         }
       }
@@ -356,6 +359,7 @@ void MCTrackFinderModule::event()
           for (unsigned int j = 0; j < mcPartToSVDTrueHits[i].getToIndices().size(); j++) {
             svdHitsIndices.push_back(mcPartToSVDTrueHits[i].getToIndex(j));
             ndf += 2;
+						B2DEBUG(100,"within svdTrueHits-check: ndf = " << ndf)
           }
         }
       }
@@ -365,6 +369,7 @@ void MCTrackFinderModule::event()
           if (svdClusterToMCParticle[i].getToIndex(j) == unsigned(iPart)) {
             svdHitsIndices.push_back(svdClusterToMCParticle[i].getFromIndex());
             ndf += 1;
+						B2DEBUG(100,"within svdCluster-check: ndf = " << ndf)
           }
         }
       }
@@ -377,12 +382,14 @@ void MCTrackFinderModule::event()
         for (unsigned int j = 0; j < mcPartToCDCHits[i].getToIndices().size(); j++) {
           cdcHitsIndices.push_back(mcPartToCDCHits[i].getToIndex(j));
           ndf += 1;
+					B2DEBUG(100,"within cdcHitsIndices-check: ndf = " << ndf)
         }
       }
     }
 
     if (m_initialCov(0, 0) > 0.0) { //using a use set initial cov and corresponding smearing of inital state adds information
       ndf += 5;
+			B2DEBUG(100,"within m_initialCov-check: ndf = " << ndf)
     }
 
     if (ndf <= m_minimalNdf) {
@@ -392,7 +399,7 @@ void MCTrackFinderModule::event()
     }
     //Now create TrackCandidate
     int counter = trackCandidates.getEntries();
-    B2DEBUG(100, "We came pass all filter of the MCPartile and hit properties. TrackCandidate " << counter << " will be created from the MCParticle with index: " << iPart << " (PDG: " << aMcParticlePtr->getPDG() << ")");
+    B2DEBUG(100, "We came pass all filter of the MCPartile and hit properties. TrackCandidate " << counter << " with ndf " << ndf << " will be created from the MCParticle with index: " << iPart << " (PDG: " << aMcParticlePtr->getPDG() << ")");
 
     //create TrackCandidate
     trackCandidates.appendNew();
