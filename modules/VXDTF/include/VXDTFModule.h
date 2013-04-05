@@ -374,7 +374,8 @@ namespace Belle2 {
 
     /** calculate real kalman-QI's for each currently living TC */
     void calcQIbyKalman(TCsOfEvent& tcVector,
-                        StoreArray<PXDCluster>& pxdClusters); // ->auslagern!
+                        StoreArray<PXDCluster>& pxdClusters,
+												std::vector<ClusterInfo>& clusters); // ->auslagern!
 //    void calcQIbyKalman(TCsOfEvent& tcVector,
 //                         StoreArray<PXDCluster>& pxdClusters,
 //                         StoreArray<SVDCluster>& svdClusters,

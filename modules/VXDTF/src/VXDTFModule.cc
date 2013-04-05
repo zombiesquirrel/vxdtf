@@ -1547,7 +1547,7 @@ void VXDTFModule::event()
   }
   if (m_PARAMcalcQIType == "kalman" and allowKalman == true) {
 //     calcQIbyKalman(m_tcVector, aPxdClusterArray, aSvdClusterArray, clustersOfEvent); /// calcQIbyKalman // old version, backup 13-03-29
-    calcQIbyKalman(m_tcVector, aPxdClusterArray); /// calcQIbyKalman
+    calcQIbyKalman(m_tcVector, aPxdClusterArray, clustersOfEvent); /// calcQIbyKalman
   } else if (m_PARAMcalcQIType == "trackLength") {
     calcQIbyLength(m_tcVector, m_passSetupVector);                              /// calcQIbyLength
   } else { // if (m_PARAMcalcQIType == "circleFit") { // and if totalOverlaps > 500
@@ -3204,7 +3204,7 @@ void VXDTFModule::calcQIbyLength(TCsOfEvent& tcVector, PassSetupVector& passSetu
 
 
 // void VXDTFModule::calcQIbyKalman(TCsOfEvent& tcVector, StoreArray<PXDCluster>& pxdClusters, StoreArray<SVDCluster>& svdClusters, vector<ClusterInfo>& clusters) //old version, keeping as backup (13-03-29)
-void VXDTFModule::calcQIbyKalman(TCsOfEvent& tcVector, StoreArray<PXDCluster>& pxdClusters)
+void VXDTFModule::calcQIbyKalman(TCsOfEvent& tcVector, StoreArray<PXDCluster>& pxdClusters, vector<ClusterInfo>& clusters)
 {
   /// produce GFTrackCands for each currently living TC and calculate real kalman-QI's
   GFKalman kalmanFilter;
@@ -3229,7 +3229,7 @@ void VXDTFModule::calcQIbyKalman(TCsOfEvent& tcVector, StoreArray<PXDCluster>& p
 
     BOOST_FOREACH(VXDTFHit * tfHit, currentTC->getHits()) {
       if (tfHit->getDetectorType() == Const::PXD) {
-        PXDRecoHit* newRecoHit = new PXDRecoHit(pxdClusters[tfHit->getClusterIndexUV()]);
+        PXDRecoHit* newRecoHit = new PXDRecoHit(pxdClusters[clusters[tfHit->getClusterIndexUV()].getIndex()]);
         track.addHit(newRecoHit);
       } else if (tfHit->getDetectorType() == Const::SVD) {
         TVector3 pos = tfHit->getHitCoordinates();
