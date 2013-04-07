@@ -37,7 +37,8 @@ namespace Belle2 {
 		void addTc(ExporterTcInfo aTc);
 		
 		/** returns a pointer to internal vector of hits */
-		void getHits(std::vector<ExporterHitInfo>* hits);
+// 		void getHits(std::vector<ExporterHitInfo>* hits);
+		std::vector<ExporterHitInfo>* getHits();
 		
 		/** returns pointer to fully formatted string */
 // 		std::string* getHitsFormatted();

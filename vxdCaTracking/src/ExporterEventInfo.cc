@@ -19,6 +19,7 @@ void ExporterEventInfo::addHit(ExporterHitInfo aHit) { m_hits.push_back(aHit); }
 
 void ExporterEventInfo::addTc(ExporterTcInfo aTc) { m_tcs.push_back(aTc); }
 
-void ExporterEventInfo::getHits(std::vector<ExporterHitInfo>* hits) { hits = &m_hits; }
+// void ExporterEventInfo::getHits(std::vector<ExporterHitInfo>* hits) { hits = &m_hits; }
+std::vector<ExporterHitInfo>* ExporterEventInfo::getHits() { return &m_hits; }
 
 void ExporterEventInfo::getTcs(std::vector<ExporterTcInfo>* tcs) { tcs = &m_tcs; }

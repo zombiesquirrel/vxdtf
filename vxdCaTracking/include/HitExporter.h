@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #include <vxd/geometry/GeoCache.h>
+#include <vxd/geometry/SensorInfoBase.h>
 
 
 namespace Belle2 {
@@ -61,10 +62,10 @@ namespace Belle2 {
 // 		std::string storeGFTrackCands(StoreArray<GFTrackCand>* pArray, std::string arrayName);
 // 		
 		/** event wise call expected: Expects pointer to the PXDTrueHit to be stored. It stores its entries to hits. Returns string containing error message if something went wrong */
-		std::string storePXDTrueHit(VXD::GeoCache& geometry, PXDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost = -1, int particleID = -1); // default arguments are only allowed for .h-files, not in the .cc- version of the memberfunction
+		std::string storePXDTrueHit(VXD::GeoCache& geometry, PXDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost = -1, int particleID = -1, int pdg); // default arguments are only allowed for .h-files, not in the .cc- version of the memberfunction
 		
 		/** event wise call expected: Expects pointer to the SVDTrueHit to be stored. It stores its entries to hits. Returns string containing error message if something went wrong */
-		std::string storeSVDTrueHit(VXD::GeoCache& geometry, SVDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost = -1, int particleID = -1);
+		std::string storeSVDTrueHit(VXD::GeoCache& geometry, SVDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost = -1, int particleID = -1, int pdg);
 		
 // 		/** event wise call expected: Expects pointer to the storearray (StoreArray<PXDCluster>) to be stored. It stores its entries to hits. Returns string containing error message if something went wrong */
 // 		std::string storePXDClusters(StoreArray<PXDCluster>* pArray);

@@ -44,7 +44,7 @@ NonRootDataExportModule::NonRootDataExportModule() : Module()
 
 // 	vector<string> paramGfTcArrays;
 //   addParam("gfTcArrays", m_PARAMGfTcArrays, "insert a list of names for gfTrackCand-arrays if an array with no name shall be exported, please insert an empty string for it. Do not export gfTrackCands is standard", paramGfTcArrays);
-	addParam("exportTrueHits", m_PARAMExportTrueHits, "allows you to export true hits. Please choose between 'real' hits, 'background' hits or 'none', which is standard. Wrong input values will set to none with an error.", string("none"));
+	addParam("exportTrueHits", m_PARAMExportTrueHits, "allows you to export true hits. Please choose between 'all' hits, 'real' hits, 'background' hits or 'none', which is standard. Wrong input values will set to none with an error.", string("none"));
 // 	addParam("exportClusters", m_PARAMExportClusters, "allows you to export clusters (where SVD clusters will automatically grouped to 2D clusters). Please choose between 'real' hits, 'background' hits (which includes ghost hits) or 'none', which is standard. Wrong input values will set to none with an error.", ("none").str());
 	addParam("detectorType", m_PARAMDetectorType, "set detectorype. Please choose between 'PXD', 'SVD' (standard) or 'VXD'. Wrong input values will set to SVD with an error.", string("SVD"));
 }
@@ -80,7 +80,7 @@ void NonRootDataExportModule::initialize()
 		m_PARAMDetectorType = "SVD";
 	}
 	
-	if (m_PARAMExportTrueHits == "real" or m_PARAMExportTrueHits == "background") { // exportTrueHits
+	if (m_PARAMExportTrueHits == "real" or m_PARAMExportTrueHits == "background" or m_PARAMExportTrueHits == "all") { // exportTrueHits
 		if (m_PARAMDetectorType == "PXD" or "VXD") {
 			StoreArray<PXDTrueHit>::required();
 // 			m_exportContainer.initializeTrueHitContainer("PXD");
@@ -142,7 +142,7 @@ void NonRootDataExportModule::event()
 	
 	// looping over all mcparticles connected to each TrueHit, if there is at least one primary particle connected to current trueHit, the first found primary particle determines the state of the trueHit (means, if there is a primary particle attached to the trueHit, the trueHit is recognized as realhit, and recognized as background hit if otherwise, the particleID of the hit will be the first primary particle or the last secondary one attached to current trueHit):
 	if (m_PARAMExportTrueHits != "none") { // storing trueHits
-		int nPXDTrueHits = 0, nSVDTrueHits = 0, particleID = -1;
+		int nPXDTrueHits = 0, nSVDTrueHits = 0, particleID = -1, pdg;
 		int isPrimary = 1;
 // 		vector<MCParticle*> particlesOfTrueHit; // reused for every TrueHit
 		if (m_PARAMDetectorType == "PXD" or "VXD") { // storing pxd truehits
@@ -159,6 +159,7 @@ void NonRootDataExportModule::event()
 
 					const MCParticle* particle = rel.from;
 					particleID = particle->getIndex(); // 1-based index of Particle. If you want to have a 0-based index, use getArrayIndex() instead
+					pdg = particle->getPDG();
 					
 					if ((particle->hasStatus(MCParticle::c_PrimaryParticle) == true) and (m_PARAMExportTrueHits == "real")) {
 						isPrimary = 0;
@@ -166,9 +167,12 @@ void NonRootDataExportModule::event()
 					}
 				}
 				B2DEBUG(10," PXDTrueHit with ID " << i << " is attached to mcParticles with ID " << particleID << " and hasStatusPrimary (0 = true) " << isPrimary)
-				if ((m_PARAMExportTrueHits == "real" and isPrimary == 0) or (m_PARAMExportTrueHits == "background" and isPrimary == 1) ) {
-					m_exportContainer.storePXDTrueHit(aGeometry, pxdTrueHits[i], i, isPrimary, particleID);
+				if ((m_PARAMExportTrueHits == "real" and isPrimary != 0) or (m_PARAMExportTrueHits == "background" and isPrimary != 1) or (m_PARAMExportTrueHits == "all" and isPrimary == -1)) {
+					isPrimary = 1;
+					particleID = -1;
+					continue;
 				}
+				m_exportContainer.storePXDTrueHit(aGeometry, pxdTrueHits[i], i, isPrimary, particleID, pdg);
 				isPrimary = 1;
 				particleID = -1;
 			} // looping over all pxd trueHits
@@ -177,7 +181,7 @@ void NonRootDataExportModule::event()
 		if (m_PARAMDetectorType == "SVD" or "VXD") {
 			StoreArray<SVDTrueHit> svdTrueHits; // carries all trueHits of event
 			nSVDTrueHits = svdTrueHits.getEntries();
-			B2DEBUG(1,"NonRootDataExportModule event " << m_eventCounter << ": executing " << nSVDTrueHits << " SVTrueHits" )
+			B2DEBUG(1,"NonRootDataExportModule event " << m_eventCounter << ": executing " << nSVDTrueHits << " SVDTrueHits" )
 			RelationIndex<MCParticle, SVDTrueHit> mcParticlesToSvdTrueHits; // allows us to find out which particle caused which truehit
 			typedef RelationIndex<MCParticle, SVDTrueHit>::Element RelationElement;
 			
@@ -191,6 +195,8 @@ void NonRootDataExportModule::event()
 // 					}
 					const MCParticle* particle = rel.from;
 					particleID = particle->getIndex(); // 1-based index of Particle. If you want to have a 0-based index, use getArrayIndex() instead
+					pdg = particle->getPDG();
+					
 					if ((particle->hasStatus(MCParticle::c_PrimaryParticle) == true) and (m_PARAMExportTrueHits == "real")) {
 						isPrimary = 0;
 						break; // if there are any other true or background particles, they shall be ignored
@@ -198,7 +204,7 @@ void NonRootDataExportModule::event()
 				}
 				B2DEBUG(10," SVDTrueHit with ID " << i << " is attached to mcParticles with ID " << particleID << " and hasStatusPrimary (0 = true) " << isPrimary)
 				if ((m_PARAMExportTrueHits == "real" and isPrimary == 0) or (m_PARAMExportTrueHits == "background" and isPrimary == 1) ) {
-					m_exportContainer.storeSVDTrueHit(aGeometry, svdTrueHits[i], i+nPXDTrueHits, isPrimary, particleID);
+					m_exportContainer.storeSVDTrueHit(aGeometry, svdTrueHits[i], i+nPXDTrueHits, isPrimary, particleID, pdg);
 				}
 				isPrimary = 1;
 				particleID = -1;
@@ -207,7 +213,8 @@ void NonRootDataExportModule::event()
 	}
 	
 	B2DEBUG(1," event " << m_eventCounter << " got ID " << m_eventCounter << ", internal eventID of " << m_exportContainer.getCurrentEventNumber())
-	B2DEBUG(1," event " << m_eventCounter << " got ID " << m_eventCounter << ", internal eventID of " << m_exportContainer.getCurrentEventNumber() << " and got /*" << m_exportContainer.getNumberOfHits() << "*/ hits")
+	int numHits = m_exportContainer.getNumberOfHits();
+	B2DEBUG(1," event " << m_eventCounter << " got ID " << m_eventCounter << ", internal eventID of " << m_exportContainer.getCurrentEventNumber() << " and got /*" << numHits << "*/ hits")
 	
 	
 // 	if (m_PARAMExportClusters != "none") {
