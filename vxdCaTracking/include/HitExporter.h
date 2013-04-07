@@ -50,6 +50,8 @@ namespace Belle2 {
 // 		
 // 		/** initializes the internal storage for gfTrackCands, expects the name of the gftc-container as key */
 // 		void initializeGFContainer(std::string arrayName);
+		/** a call per run expected: takes given sensorInfoBase and stores relevant information about it */
+		void storeSensorInfo(const SensorInfoBase & 	aSensorInfo);
 		
 		/** event wise call expected: sets internal Event number needed for identifying hits */
 		void prepareEvent(int n);
@@ -62,10 +64,10 @@ namespace Belle2 {
 // 		std::string storeGFTrackCands(StoreArray<GFTrackCand>* pArray, std::string arrayName);
 // 		
 		/** event wise call expected: Expects pointer to the PXDTrueHit to be stored. It stores its entries to hits. Returns string containing error message if something went wrong */
-		std::string storePXDTrueHit(VXD::GeoCache& geometry, PXDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost = -1, int particleID = -1, int pdg); // default arguments are only allowed for .h-files, not in the .cc- version of the memberfunction
+		std::string storePXDTrueHit(VXD::GeoCache& geometry, PXDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost = -1, int particleID = -1, int pdg = -1); // default arguments are only allowed for .h-files, not in the .cc- version of the memberfunction
 		
 		/** event wise call expected: Expects pointer to the SVDTrueHit to be stored. It stores its entries to hits. Returns string containing error message if something went wrong */
-		std::string storeSVDTrueHit(VXD::GeoCache& geometry, SVDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost = -1, int particleID = -1, int pdg);
+		std::string storeSVDTrueHit(VXD::GeoCache& geometry, SVDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost = -1, int particleID = -1, int pdg = -1);
 		
 // 		/** event wise call expected: Expects pointer to the storearray (StoreArray<PXDCluster>) to be stored. It stores its entries to hits. Returns string containing error message if something went wrong */
 // 		std::string storePXDClusters(StoreArray<PXDCluster>* pArray);
@@ -79,6 +81,8 @@ namespace Belle2 {
 		 */
 		std::string exportAll(int n, std::string name = "");
   protected:
+		/** feeded by storePXDTrueHit or storeSVDTrueHit and does all the calculations and storing */
+		std::string storeTrueHit(VXD::SensorInfoBase aSensorInfo, double u, double v, int type, int iD, int isPrimaryBackgroundOrGhost, int aLayerID, int particleID, int pID);
 // 		void exprt(std::stringstream );
 
     int m_eventNumber; /**< stores current event number */

@@ -53,7 +53,7 @@ eventCounter.param('stepSize', 1)
 nonRootDataExporter = register_module('NonRootDataExport')
 nonRootDataExporter.logging.log_level = LogLevel.DEBUG
 nonRootDataExporter.logging.debug_level = 111
-nonRootDataExporter.param('exportTrueHits', 'real')
+nonRootDataExporter.param('exportTrueHits', 'all')
 nonRootDataExporter.param('detectorType', 'VXD')
 
 

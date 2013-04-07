@@ -121,6 +121,44 @@ void NonRootDataExportModule::beginRun()
 {
 	m_eventCounter = 0;
 	m_runCounter = 0;
+	
+	// importing whole geometry information:
+	VXDGeoCache& aGeometry = VXD:GeoCache::getInstance();
+	const std::set< VxdID > layers = aGeometry.getLayers(), ladders, sensors; // SensorInfoBase::SensorType sensortype=SensorInfoBase::VXD
+	BOOST_FOREACH(VxdID layer, layers) {
+		ladders = aGeometry.getLadders (layer);
+		BOOST_FOREACH(VxdID ladder, ladders) {
+			sensors = aGeometry.getSensors(ladder);
+			BOOST_FOREACH(VxdID sensor, sensors) {
+				const SensorInfoBase & 	aSensorInfo = aGeometry.getSensorInfo(sensor);
+				m_exportContainer.storeSensorInfo(aSensorInfo);
+			}
+		}
+	}
+	
+	// we don't need the whole geometry information, but only a guess for each layer:
+	VXDGeoCache& aGeometry = VXD:GeoCache::getInstance();
+	const std::set< VxdID > layers = aGeometry.getLayers(), ladders, sensors; // SensorInfoBase::SensorType sensortype=SensorInfoBase::VXD
+	BOOST_FOREACH(VxdID layer, layers) {
+		ladders = aGeometry.getLadders (layer);
+		sensors = aGeometry.getSensors(ladders);
+		BOOST_FOREACH(VxdID ladder, ladders) {
+			sensors = aGeometry.getSensors(ladder);
+			BOOST_FOREACH(VxdID sensor, sensors) {
+				const SensorInfoBase & 	aSensorInfo = aGeometry.getSensorInfo(sensor);
+				m_exportContainer.storeSensorInfo(aSensorInfo);
+			}
+		}
+	}
+ 
+const std::set< VxdID > & 	getLadders (VxdID layer) const
+ 	Return a set of all ladder IDs belonging to a given layer.
+ 
+const std::set< VxdID > & 	getSensors (VxdID ladder) const
+ 	Return a set of all sensor IDs belonging to a given ladder.
+ 
+const SensorInfoBase & 	getSensorInfo (VxdID id) const
+ 	Return a referecne to the SensorInfo of a given SensorID. 
 }
 
 

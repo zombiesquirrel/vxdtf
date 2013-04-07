@@ -23,7 +23,7 @@ namespace Belle2 {
 	class ExporterHitInfo {
 	public:
 		/** Standard constructor. */
-		ExporterHitInfo(TVector3 globalHitPosition, TVector3 covValues, int layerID, double angleOfSensor, int hitID, int hitType, int classification = -1, int particleID = -1):
+		ExporterHitInfo(TVector3 globalHitPosition, TVector3 covValues, int layerID, double angleOfSensor, int hitID, int hitType, int classification = -1, int particleID = -1, int pdg = -1):
 					m_hitPos(globalHitPosition),
 					m_covVal(covValues),
 					m_layerID(layerID),
@@ -31,7 +31,8 @@ namespace Belle2 {
 					m_hitID(hitID),
 					m_hitType(hitType),
 					m_classification(classification),
-					m_particleID(particleID) {}
+					m_particleID(particleID),
+					m_pdg(pdg) {}
 		
 		/** Destructor. */
     ~ExporterHitInfo() {}
@@ -54,6 +55,7 @@ namespace Belle2 {
 		int m_hitType; /**< defines whether it is a truehit (0=PXDTrueHit, 1=SVDTrueHit) or a cluster (2=PXDCluster, 3=SVDCluster) */
 		int m_classification; /**< defines whether the particle is primary = 0, secondary=1 (background) or ghost=2 (only for SVDClusters), if unknown, it is -1 */
 		int m_particleID; /**< attaches the hit to a particle for recognition. It's -1 if particle ID is unknown */
+		int m_pdg; /**< pdgCode of particle causing hit */
 	}; //end class ExporterHitInfo
 } //end namespace Belle2
 

@@ -59,6 +59,24 @@ HitExporter::~HitExporter() {
 // {
 // 	
 // }
+void HitExporter::storeSensorInfo(const SensorInfoBase & aSensorInfo)
+{
+	/** Info dumping:
+	 * Radiation length:
+	 *
+	 * The radiation length is the mean distanc eover which a high-energy electron loses all but 1/e of its energy by bremsstrahlung.
+	 * For silicon, the radiation length is 21.82g/cm² (9.36cm)
+	 * The density of silicon is 2,336 g/cm³
+	**/
+	double radLengthX0 = 21.82; // g/cm²
+	double density = 2.336 // g/cm³
+	TVector3 local(0,0,0);
+	double thickness = aSensorInfo.getThickness();
+	double thicknessInRadiationLength = thickness/radLengthX0;
+	double thicknessInRadiationLengthNoUnits = thickness*density/radLengthX0;
+	TVector3 globalSensorPos = aSensorInfo.pointToGlobal(local); // center of the sensor in global coords
+	
+}
 
 
 void HitExporter::prepareEvent(int n)
@@ -93,65 +111,37 @@ int HitExporter::getNumberOfHits() {
 
 
 
-std::string HitExporter::storePXDTrueHit(VXD::GeoCache& geometry, PXDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost, int particleID)
+std::string HitExporter::storePXDTrueHit(VXD::GeoCache& geometry, PXDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost, int particleID, int pdg)
 {
 	if ( isPrimaryBackgroundOrGhost != 0 and isPrimaryBackgroundOrGhost != 1 )  {
 		isPrimaryBackgroundOrGhost = -1;
 	}
 	VxdID aVxdID = aHit->getSensorID();
   int aLayerID = aVxdID.getLayerNumber();
-	B2DEBUG(10,"within HitExporter::storePXDTrueHit. Hit " << iD << " with particleID " << particleID << " isPrimaryBackgroundOrGhost: " << isPrimaryBackgroundOrGhost << " has been found in sensorID " << aVxdID << " at Layer " << aLayerID)
+	B2DEBUG(10,"within HitExporter::storePXDTrueHit. Hit " << iD << " with particleID " << particleID << " and pdg " << pdg << " isPrimaryBackgroundOrGhost: " << isPrimaryBackgroundOrGhost << " has been found in sensorID " << aVxdID << " at Layer " << aLayerID)
 // 	const PXD::SensorInfo& geometry = dynamic_cast<const PXD::SensorInfo&>(VXD::GeoCache::get(m_sensorID));
   VXD::SensorInfoBase aSensorInfo = geometry.getSensorInfo(aVxdID);
-	storeTrueHit(aSensorInfo, aHit->getU(), aHit->getV(), 0, iD, aLayerID, particleID, pID);
-	double sigmaU = aSensorInfo.getUPitch(v/sqrt(12)); // this is NOT a typo!
-	double sigmaV = aSensorInfo.getVPitch(v/sqrt(12));
-	TVector3 hitLocal(u, v, 0);
-	TVector3 hitGlobal = aSensorInfo.pointToGlobal(hitLocal);
-	TVector3 covValues(sigmaU*sigmaU, 0, sigmaV*sigmaV); // there are no good estimations for that values yet. Therefore, the classic pitch/sqrt(12) is used. The hardware guys do not expect any correlation between u and v, therefore CovUV = 0
-	// determining a vector representing the global direction of the u-orientation of the sensor plane:
-	TVector3 leftHit(-1, 0, 0), rightHit(1, 0, 0), xAxis(1, 0, 0), origin(0,0,0);
-	leftHit = aSensorInfo.pointToGlobal(leftHit);
-	rightHit = aSensorInfo.pointToGlobal(rightHit);
-	TVector3 sensorUAxis = rightHit - leftHit;
-	// getting angle:
-	ThreeHitFilters filter;
-	int signOfCurvature = filter.calcSign(xAxis, origin, sensorUAxis); // in this case, the value is positive, if the angle is below 180° (grad)
-	double sensorAngle = filter.fullAngle2D(xAxis, sensorUAxis); // angle in Radians (0°-180°)
-	if ( signOfCurvature < 0 ) { sensorAngle = 180. + sensorAngle; }
-// 	double sensorAngle = 0.; /// WARNING TODO, wie komme ich an den ran? Es geht um den Winkel zwischen dem der x-Achse und dem orthogonal-Winkel der Sensorfläche in globalen Koords (im Uhrzeigersinn gedreht), dh reine winkel-zwischen-2-Vektoren-Rechnung tuts nicht...
-	
-	B2DEBUG(10, " -> this hit has got U/V " << hitLocal.X() <<"/"<< hitLocal.Y() << " and CovUU/CovVV " << covValues.X() <<"/"<< covValues.Z() << " and sensorAngle " << sensorAngle )
-	ExporterHitInfo aHitInfo(hitGlobal, covValues, aLayerID, sensorAngle, iD, type, isPrimaryBackgroundOrGhost, particleID);
-	m_thisEvent->addHit(aHitInfo);
-	string result = "";
-	return result;
+	return storeTrueHit(aSensorInfo, aHit->getU(), aHit->getV(), 0, iD, isPrimaryBackgroundOrGhost, aLayerID, particleID, pdg);
 }
 
 
 
-std::string HitExporter::storeSVDTrueHit(VXD::GeoCache& geometry, SVDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost, int particleID)
+std::string HitExporter::storeSVDTrueHit(VXD::GeoCache& geometry, SVDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost, int particleID, int pdg)
 {
+	if ( isPrimaryBackgroundOrGhost != 0 and isPrimaryBackgroundOrGhost != 1 )  {
+		isPrimaryBackgroundOrGhost = -1;
+	}
 	VxdID aVxdID = aHit->getSensorID();
   int aLayerID = aVxdID.getLayerNumber();
-	B2DEBUG(10,"within HitExporter::storeSVDTrueHit. Hit " << iD << " with particleID " << particleID << " isPrimaryBackgroundOrGhost: " << isPrimaryBackgroundOrGhost << " has been found in sensorID " << aVxdID << " at Layer " << aLayerID)
+	B2DEBUG(10,"within HitExporter::storeSVDDTrueHit. Hit " << iD << " with particleID " << particleID << " and pdg " << pdg << " isPrimaryBackgroundOrGhost: " << isPrimaryBackgroundOrGhost << " has been found in sensorID " << aVxdID << " at Layer " << aLayerID)
+// 	const PXD::SensorInfo& geometry = dynamic_cast<const PXD::SensorInfo&>(VXD::GeoCache::get(m_sensorID));
   VXD::SensorInfoBase aSensorInfo = geometry.getSensorInfo(aVxdID);
-	double sigmaU = aSensorInfo.getUPitch(aHit->getV()/sqrt(12)); // this is NOT a typo!
-	double sigmaV = aSensorInfo.getVPitch(aHit->getV()/sqrt(12));
-	TVector3 hitLocal(aHit->getU(), aHit->getV(), 0);
-	TVector3 hitGlobal = aSensorInfo.pointToGlobal(hitLocal);
-	TVector3 covValues(sigmaU*sigmaU, 0, sigmaV*sigmaV); // since these are 1D hits combined, there is definitely no correlation between u and v, CovUU & CovVV are rough estimations since there are no realistic estimations yet
-	double sensorAngle = 0.; /// WARNING TODO, wie komme ich an den ran? Es geht um den Winkel zwischen dem der x-Achse und dem orthogonal-Winkel der Sensorfläche in globalen Koords (im Uhrzeigersinn gedreht), dh reine winkel-zwischen-2-Vektoren-Rechnung tuts nicht...
-	B2DEBUG(10, " -> this hit has got U/V " << hitLocal.X() <<"/"<< hitLocal.Y() << " and CovUU/CovVV " << covValues.X() <<"/"<< covValues.Z() << " and sensorAngle " << sensorAngle )
-	ExporterHitInfo aHitInfo(hitGlobal, covValues, aLayerID, sensorAngle, iD, 1, isPrimaryBackgroundOrGhost, particleID);
-	m_thisEvent->addHit(aHitInfo);
-	string result = "";
-	return result;
+	return storeTrueHit(aSensorInfo, aHit->getU(), aHit->getV(), 1, iD, isPrimaryBackgroundOrGhost, aLayerID, particleID, pdg);
 }
 
 
 
-std::string HitExporter::storeTrueHit(VXD::SensorInfoBase aSensorInfo, double u, double v, int type, int iD, int aLayerID, int particleID, int pID) {
+std::string HitExporter::storeTrueHit(VXD::SensorInfoBase aSensorInfo, double u, double v, int type, int iD, int isPrimaryBackgroundOrGhost, int aLayerID, int particleID, int pdg) {
 	double sigmaU = aSensorInfo.getUPitch(v/sqrt(12)); // this is NOT a typo!
 	double sigmaV = aSensorInfo.getVPitch(v/sqrt(12));
 	TVector3 hitLocal(u, v, 0);
@@ -166,11 +156,11 @@ std::string HitExporter::storeTrueHit(VXD::SensorInfoBase aSensorInfo, double u,
 	ThreeHitFilters filter;
 	int signOfCurvature = filter.calcSign(xAxis, origin, sensorUAxis); // in this case, the value is positive, if the angle is below 180° (grad)
 	double sensorAngle = filter.fullAngle2D(xAxis, sensorUAxis); // angle in Radians (0°-180°)
-	if ( signOfCurvature < 0 ) { sensorAngle = 180. + sensorAngle; }
+	if ( signOfCurvature < 0 ) { sensorAngle = M_PI + sensorAngle; } else if ( signOfCurvature == 0 ) { }
 // 	double sensorAngle = 0.; /// WARNING TODO, wie komme ich an den ran? Es geht um den Winkel zwischen dem der x-Achse und dem orthogonal-Winkel der Sensorfläche in globalen Koords (im Uhrzeigersinn gedreht), dh reine winkel-zwischen-2-Vektoren-Rechnung tuts nicht...
 	
 	B2DEBUG(10, " -> this hit has got U/V " << hitLocal.X() <<"/"<< hitLocal.Y() << " and CovUU/CovVV " << covValues.X() <<"/"<< covValues.Z() << " and sensorAngle " << sensorAngle )
-	ExporterHitInfo aHitInfo(hitGlobal, covValues, aLayerID, sensorAngle, iD, type, isPrimaryBackgroundOrGhost, particleID);
+	ExporterHitInfo aHitInfo(hitGlobal, covValues, aLayerID, sensorAngle, iD, type, isPrimaryBackgroundOrGhost, particleID, pdg);
 	m_thisEvent->addHit(aHitInfo);
 	string result = "";
 	return result;
