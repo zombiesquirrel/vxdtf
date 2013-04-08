@@ -26,7 +26,7 @@ namespace Belle2 {
 		ExporterHitInfo(TVector3 globalHitPosition, TVector3 covValues, int layerID, double angleOfSensor, int hitID, int hitType, int classification = -1, int particleID = -1, int pdg = -1):
 					m_hitPos(globalHitPosition),
 					m_covVal(covValues),
-					m_layerID(layerID),
+					m_layerID(layerID-1), // they start at layer 0!
 					m_sensorAngle(angleOfSensor),
 					m_hitID(hitID),
 					m_hitType(hitType),
@@ -45,7 +45,13 @@ namespace Belle2 {
 		
 		/** Output of additional information in a string file: it is a line with layerID[empty space]hitID[empty space]sensorAngle */
 		std::string getAdditionalInfoFormatted();
+		
+		/** returns type of hit. (0=PXDTrueHit, 1=SVDTrueHit), (2=PXDCluster, 3=SVDCluster) */
+		int getType() { return m_hitType; }
+		
+		
 	protected:
+		
 		TVector3 m_hitPos; /**< global coordinates of hit */
 		TVector3 m_covVal; /**< carries relevant values of the covariance matrix for the hit. entries are (CovUU, CovUV, CoVV) */
 		int m_layerID; /**< layerID, for PXD, this is normally 1 or 2, for SVD its typically 3-6 */
@@ -60,5 +66,3 @@ namespace Belle2 {
 } //end namespace Belle2
 
 #endif //ExporterHitInfo
-
-

@@ -65,9 +65,8 @@ namespace Belle2 {
 
   protected:
 
-// 		std::vector<std::string> m_PARAMGfTcArrays; /** carries names of all storearrays for gftrackcand which shall be exported */
 		std::string m_PARAMExportTrueHits; /** allows you to export true hits. here, various values will be set at once, first part will determine whether you want to export PXD, SVD or VXD hits, second part says whether you want to export 'real' hits or 'background' hits, full example: 'SVDreal'. Wrong input values will cause fatal error. If you don't want to export trueHits, use 'none' */
-// 		std::string m_PARAMExportClusters; /** TODO */
+		bool m_PARAMExportGFTCs; /**< allows you to export mcInformation about whole tracks, set true for tcOutput */
 		std::string m_PARAMDetectorType; /** set detectorype. Please choose between 'PXD', 'SVD' (standard) or 'VXD'. Wrong input values will set to SVD with an error. */
 		HitExporter m_exportContainer; /** container storing storing hit infos */
     int m_eventCounter; /**< knows current event number */

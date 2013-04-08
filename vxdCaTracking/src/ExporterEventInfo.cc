@@ -9,17 +9,42 @@
  **************************************************************************/
 
 #include "../include/ExporterEventInfo.h"
-#include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
+// #include <boost/lexical_cast.hpp>
 
 using namespace std;
 using namespace Belle2;
 
 
+
 void ExporterEventInfo::addHit(ExporterHitInfo aHit) { m_hits.push_back(aHit); }
+
+
 
 void ExporterEventInfo::addTc(ExporterTcInfo aTc) { m_tcs.push_back(aTc); }
 
-// void ExporterEventInfo::getHits(std::vector<ExporterHitInfo>* hits) { hits = &m_hits; }
+
+
 std::vector<ExporterHitInfo>* ExporterEventInfo::getHits() { return &m_hits; }
 
-void ExporterEventInfo::getTcs(std::vector<ExporterTcInfo>* tcs) { tcs = &m_tcs; }
+
+
+std::vector<ExporterTcInfo>* ExporterEventInfo::getTcs() { return &m_tcs; }
+
+
+
+int ExporterEventInfo::getNPXDTrueHits() { return countHitsOfType(0); }
+
+
+
+int ExporterEventInfo::getNSVDTrueHits() { return countHitsOfType(1); }
+
+
+
+int ExporterEventInfo::countHitsOfType(int type) {
+	int counter = 0;
+	BOOST_FOREACH (ExporterHitInfo hit, m_hits) {
+		if (hit.getType() == type ) { ++counter; }
+	}
+	return counter;
+}

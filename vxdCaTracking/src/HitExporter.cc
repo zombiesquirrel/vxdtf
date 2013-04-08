@@ -45,21 +45,7 @@ HitExporter::~HitExporter() {
 
 
 
-// void HitExporter::initializeTrueHitContainer(std::string detectorType)
-// {
-// 	
-// }
-// 
-// void HitExporter::initializeClusterContainer(std::string detectorType)
-// {
-// 	
-// }
-// 
-// void void HitExporter::initializeGFContainer(std::string arrayName)
-// {
-// 	
-// }
-void HitExporter::storeSensorInfo(const SensorInfoBase & aSensorInfo)
+void HitExporter::storeSensorInfo(const VXD::SensorInfoBase & aSensorInfo)
 {
 	/** Info dumping:
 	 * Radiation length:
@@ -68,15 +54,19 @@ void HitExporter::storeSensorInfo(const SensorInfoBase & aSensorInfo)
 	 * For silicon, the radiation length is 21.82g/cm² (9.36cm)
 	 * The density of silicon is 2,336 g/cm³
 	**/
-	double radLengthX0 = 21.82; // g/cm²
-	double density = 2.336 // g/cm³
+	double radLengthX0 = 21.82; // g/cm ⁻²
+	double density = 2.336; // g/cm³
+	double redRadLengthX0 = radLengthX0/density; // cm
 	TVector3 local(0,0,0);
 	double thickness = aSensorInfo.getThickness();
-	double thicknessInRadiationLength = thickness/radLengthX0;
-	double thicknessInRadiationLengthNoUnits = thickness*density/radLengthX0;
+// 	double thicknessInRadiationLength = thickness/radLengthX0;
+// 	double thicknessInRadiationLengthNoUnits = thickness*density/radLengthX0;
 	TVector3 globalSensorPos = aSensorInfo.pointToGlobal(local); // center of the sensor in global coords
-	
+	double radius = globalSensorPos.Perp();
+	string formattedSensorInfo = (boost::format("%1% %2% %3%") %radius %(thickness/redRadLengthX0) %(thickness*density)).str();
+	m_geometry.push_back(formattedSensorInfo);
 }
+
 
 
 void HitExporter::prepareEvent(int n)
@@ -94,6 +84,8 @@ int HitExporter::getCurrentEventNumber() {
 	return m_thisEvent->getEventNumber();
 }
 
+
+
 int HitExporter::getNumberOfHits() {
 	std::vector<ExporterHitInfo>* hits = NULL;
 	B2DEBUG(10,"HitExporter::getNumberOfHits, before getting hits, vector points at " << hits)
@@ -103,15 +95,21 @@ int HitExporter::getNumberOfHits() {
 	return hits->size();
 }
 
-// std::string HitExporter::storeGFTrackCands(StoreArray<GFTrackCand>* pArray, std::string arrayName)
-// {
-// 	B2FATAL("Hitexporter::storeGFTrackCands: member function not implemented yet!")
-// 	return "bleh";
-// }
+
+
+int HitExporter::getNumberOfPXDTrueHits() {
+	return m_thisEvent->getNPXDTrueHits();
+}
 
 
 
-std::string HitExporter::storePXDTrueHit(VXD::GeoCache& geometry, PXDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost, int particleID, int pdg)
+int HitExporter::getNumberOfSVDTrueHits() {
+	return m_thisEvent->getNSVDTrueHits();
+}
+
+
+
+std::string HitExporter::storePXDTrueHit(VXD::GeoCache& geometry, const PXDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost, int particleID, int pdg)
 {
 	if ( isPrimaryBackgroundOrGhost != 0 and isPrimaryBackgroundOrGhost != 1 )  {
 		isPrimaryBackgroundOrGhost = -1;
@@ -126,7 +124,7 @@ std::string HitExporter::storePXDTrueHit(VXD::GeoCache& geometry, PXDTrueHit* aH
 
 
 
-std::string HitExporter::storeSVDTrueHit(VXD::GeoCache& geometry, SVDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost, int particleID, int pdg)
+std::string HitExporter::storeSVDTrueHit(VXD::GeoCache& geometry, const SVDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost, int particleID, int pdg)
 {
 	if ( isPrimaryBackgroundOrGhost != 0 and isPrimaryBackgroundOrGhost != 1 )  {
 		isPrimaryBackgroundOrGhost = -1;
@@ -167,26 +165,38 @@ std::string HitExporter::storeTrueHit(VXD::SensorInfoBase aSensorInfo, double u,
 }
 
 
-// std::string HitExporter::storePXDClusters(StoreArray<PXDCluster>* pArray)
-// {
-// 	B2FATAL("Hitexporter::storePXDClusters: member function not implemented yet!")
-// 	return "bleh";
-// }
-// 
-// std::string HitExporter::storeSVDClusters(StoreArray<SVDCluster>* pArray)
-// {
-// 	B2FATAL("Hitexporter::storeSVDClusters: member function not implemented yet!")
-// 	/// hier haben wir wieder mal das Problem mit den 2 IDs für einen gescheiten hit. wie lösen?
-// 	return "bleh";
-// }
+
+std::string HitExporter::storeGFTC(VXD::GeoCache& geometry, const GFTRackCand* aTC, int tcIndex, std::vector<const PXDTrueHit*> pxdHits, std::vector<const SVDTrueHit*> svdHits)
+{
+	TVector3 momentum = aTC->getMomSeed();
+	TVector3 vertex = aTC->getPosSeed();
+	double chargeD = aTC->getChargeSeed();
+	int chargeI =  (double)(chargeD);
+	double pVal = momentum.Mag();
+	double pTVal = momentum.Perp();
+	double qP = chargeD/pVal;
+	TVector3 momentumU = momentum.Unit();
+	TVector3 hitMomentum, hitPosition;
+	BOOST_FOREACH( const PXDTrueHit* hit, pxdHits ) {
+		hitMomentum = hit->getMomentum();
+		hitPosition.SetXYZ(hit->getU(), hit->getV(), 0,);
+		hitPosition = aSensorInfo.pointToGlobal(hitPosition);
+		double hitQP = chargeD/(hitMomentum.Mag());
+	}
+	BOOST_FOREACH( const PXDTrueHit* hit, svdHits ) {
+		
+	}
+}
 
 
 
-std::string HitExporter::exportAll(int runNumber, std::string name)
+std::string HitExporter::exportAll(int runNumber, std::string name, float bz)
 {
 	string fileName;
-	ofstream outputFileStream;
+	ofstream hitFileStream, settingFileStream;
 	B2DEBUG(1," HitExporter::exportAll: got " << m_storedOutput.size() << " events, exporting to file " << (boost::format("event%1%_%2%") % m_storedOutput.find(m_eventNumber)->first % name).str())
+	
+	// doing the eventXX_hits.data:
 	if ( name != string("") ) {
 		
 		BOOST_FOREACH(EventMapEntry eventInfo, m_storedOutput) {
@@ -197,7 +207,7 @@ std::string HitExporter::exportAll(int runNumber, std::string name)
 				fileName = (boost::format("run%1%_event%2%_hits") %runNumber %eventInfo.first).str();
 			}
 			//opening file and exporting data
-			outputFileStream.open(fileName.c_str(), std::ios_base::trunc); // trunc=overwrite app=append
+			hitFileStream.open(fileName.c_str(), std::ios_base::trunc); // trunc=overwrite app=append
 			vector<ExporterHitInfo>* hitsOfEvent = NULL;
 // 			eventInfo.second->getHits(hitsOfEvent);
 			hitsOfEvent = eventInfo.second->getHits();
@@ -206,13 +216,24 @@ std::string HitExporter::exportAll(int runNumber, std::string name)
 				continue;
 			}
 			int nHits = hitsOfEvent->size();
-			outputFileStream << nHits << endl;
+			hitFileStream << nHits << endl;
 			BOOST_FOREACH(ExporterHitInfo hit, (*hitsOfEvent)) {
-				outputFileStream << hit.getPositionFormatted() << hit.getCovValuesFormatted() << hit.getAdditionalInfoFormatted();
+				hitFileStream << hit.getPositionFormatted() << hit.getCovValuesFormatted() << hit.getAdditionalInfoFormatted();
 			}
-			outputFileStream << endl;
-			outputFileStream.close();
+			hitFileStream << endl;
+			hitFileStream.close();
 		}
 	}
+	
+	//doing settings.data
+	fileName = "settings.data";
+	int nLayers = m_geometry.size();
+	settingFileStream.open(fileName.c_str(), std::ios_base::trunc);
+	settingFileStream << nLayers << endl << bz << endl; // TODO bz-Value should be able to be read from up-to-date source in case of changing values.
+	BOOST_FOREACH(string layer, m_geometry) {
+		settingFileStream << layer << endl;
+	}
+	settingFileStream << endl;
+	settingFileStream.close();
 	return "EVERYTHING IS FINE";
 }

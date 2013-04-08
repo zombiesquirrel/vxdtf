@@ -37,19 +37,25 @@ namespace Belle2 {
 		void addTc(ExporterTcInfo aTc);
 		
 		/** returns a pointer to internal vector of hits */
-// 		void getHits(std::vector<ExporterHitInfo>* hits);
 		std::vector<ExporterHitInfo>* getHits();
-		
-		/** returns pointer to fully formatted string */
-// 		std::string* getHitsFormatted();
 		
 		int getEventNumber() { return m_eventNumber; }
 		
 		/** returns a pointer to internal vector of tcs */
-		void getTcs(std::vector<ExporterTcInfo>* tcs);
+		std::vector<ExporterTcInfo>* getTcs();
 		
-
+		/** returns number of stored pxdTruehits */
+		int getNPXDTrueHits();
+		
+		/** returns number of stored svdTruehits */
+		int getNSVDTrueHits();
+		
+		
   protected:
+		/** used by getXXXHits to determine number of hits of certain type found in current event */
+		int countHitsOfType(int type);
+		
+		
 		int m_eventNumber; /**< knows number of current event */
 		std::vector<ExporterHitInfo> m_hits; /**< stores all hits of event */
 		std::vector<ExporterTcInfo> m_tcs; /**< stores all tcs of event */

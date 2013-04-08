@@ -8,7 +8,7 @@ from basf2 import *
 from time import time
 
 numTracks = 1 #pGun only
-numEvents = 10
+numEvents = 1000
 initialValue = 1
 pMin = 0.075 # pGun only
 pMax = 0.15 # pGun only
@@ -74,11 +74,10 @@ eventCounter.logging.log_level = LogLevel.INFO
 eventCounter.param('stepSize', 25)
 
 nonRootDataExporter = register_module('NonRootDataExport')
-nonRootDataExporter.logging.log_level = LogLevel.DEBUG
-nonRootDataExporter.logging.debug_level = 1
+nonRootDataExporter.logging.log_level = LogLevel.INFO
+nonRootDataExporter.logging.debug_level = 111
 nonRootDataExporter.param('exportTrueHits', 'all')
 nonRootDataExporter.param('detectorType', 'VXD')
-nonRootDataExporter.param('exportGFTCs', True)
 
 
 

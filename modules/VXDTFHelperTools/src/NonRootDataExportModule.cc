@@ -11,6 +11,7 @@
 #include "tracking/modules/VXDTFHelperTools/NonRootDataExportModule.h"
 #include <boost/foreach.hpp>
 #include <vxd/geometry/GeoCache.h>
+#include <vxd/geometry/SensorInfoBase.h>
 #include <framework/dataobjects/EventMetaData.h>
 #include <framework/datastore/StoreObjPtr.h>
 #include <framework/datastore/StoreArray.h>
@@ -36,18 +37,20 @@ REG_MODULE(NonRootDataExport)
 //                 Implementation
 //-----------------------------------------------------------------
 
+
+
 NonRootDataExportModule::NonRootDataExportModule() : Module()
 {
   //Set module properties
   setDescription("allows export of various data objects into files");
   setPropertyFlags(c_ParallelProcessingCertified | c_InitializeInProcess);
 
-// 	vector<string> paramGfTcArrays;
-//   addParam("gfTcArrays", m_PARAMGfTcArrays, "insert a list of names for gfTrackCand-arrays if an array with no name shall be exported, please insert an empty string for it. Do not export gfTrackCands is standard", paramGfTcArrays);
+	
 	addParam("exportTrueHits", m_PARAMExportTrueHits, "allows you to export true hits. Please choose between 'all' hits, 'real' hits, 'background' hits or 'none', which is standard. Wrong input values will set to none with an error.", string("none"));
-// 	addParam("exportClusters", m_PARAMExportClusters, "allows you to export clusters (where SVD clusters will automatically grouped to 2D clusters). Please choose between 'real' hits, 'background' hits (which includes ghost hits) or 'none', which is standard. Wrong input values will set to none with an error.", ("none").str());
+	addParam("exportGFTCs", m_PARAMExportGFTCs, "allows you to export mcInformation about whole tracks, set true for tcOutput", bool(false));
 	addParam("detectorType", m_PARAMDetectorType, "set detectorype. Please choose between 'PXD', 'SVD' (standard) or 'VXD'. Wrong input values will set to SVD with an error.", string("SVD"));
 }
+
 
 
 NonRootDataExportModule::~NonRootDataExportModule()
@@ -56,24 +59,11 @@ NonRootDataExportModule::~NonRootDataExportModule()
 }
 
 
+
 void NonRootDataExportModule::initialize()
 {
 	
 	B2INFO("NonRootDataExportModule::initialize() \n checking and setting initial parameters")
-// 	stringstream chosenGFTCarrays;
-// 	BOOST_FOREACH(string entry, m_PARAMGfTcArrays { // gfTcArrays
-// 		StoreArray<GFTrackCand>::required(entry);
-// 		chosenGFTCarrays << entry << " ";
-// 	}
-// 	int ngftcArrays = m_PARAMGfTcArrays.size();
-// 	if ( ngftcArrays != 0 ) {
-// 		std::sort(m_PARAMGfTcArrays.begin(, m_PARAMGfTcArrays.end()));
-// 		std::unique(m_PARAMGfTcArrays.begin(, m_PARAMGfTcArrays.end()));
-// 		ngftcArrays = m_PARAMGfTcArrays.size();
-// 		BOOST_FOREACH(string entry, m_PARAMGfTcArrays) {
-// 			m_exportContainer.initializeGFContainer(entry);
-// 		}
-// 	}
 	
 	if (m_PARAMDetectorType != "PXD" and m_PARAMDetectorType != "SVD" and m_PARAMDetectorType != "VXD" ) { // detectorType
 		B2ERROR(" chosen value '" << m_PARAMDetectorType << "' for parameter detectorType is unknown, setting to 'SVD'")
@@ -83,38 +73,23 @@ void NonRootDataExportModule::initialize()
 	if (m_PARAMExportTrueHits == "real" or m_PARAMExportTrueHits == "background" or m_PARAMExportTrueHits == "all") { // exportTrueHits
 		if (m_PARAMDetectorType == "PXD" or "VXD") {
 			StoreArray<PXDTrueHit>::required();
-// 			m_exportContainer.initializeTrueHitContainer("PXD");
 		}
 		if (m_PARAMDetectorType == "SVD" or "VXD") {
 			StoreArray<SVDTrueHit>::required();
-// 			m_exportContainer.initializeTrueHitContainer("SVD");
 		}
 	} else {
 		B2ERROR(" chosen value '" << m_PARAMExportTrueHits << "' for parameter exportTrueHits is unknown, setting to 'none'")
 		m_PARAMExportTrueHits = "none";
 	}
 	
-// 	if (m_PARAMExportClusters == "real" or m_PARAMExportClusters == "background") { // exportClusters
-// 		if (m_PARAMDetectorType == "PXD" or "VXD") {
-// 			StoreArray<PXDCluster>::required();
-// // 			m_exportContainer.initializeClusterContainer("PXD");
-// 		}
-// 		if (m_PARAMDetectorType == "SVD" or "VXD") {
-// 			StoreArray<SVDCluster>::required();
-// // 			m_exportContainer.initializeClusterContainer("SVD");
-// 		}
-// 	} else {
-// 		B2ERROR(" chosen value '" << m_PARAMExportClusters << "' for parameter exportClusters is unknown, setting to 'none'")
-// 		m_PARAMExportClusters = "none";
-// 	}
+	if (m_PARAMExportGFTCs == true ) {
+		StoreArray<GFTrackCand>::required();
+	}
 
 	StoreArray<MCParticle>::required();
-	
-	// TODO import layerInfos for settings.data (bZ, layer: R X/X0, X*Dichte(Si))
-	
-// 	B2INFO("NonRootDataExportModule: chosen detectorType: " << m_PARAMDetectorType << ", exporting TrueHits: " << m_PARAMExportTrueHits << ", exporting clusters: " << m_PARAMExportClusters << " and " << ngftcArrays << " GFTrackCand-Arrays with following names: " << str(chosenGFTCarrays) << ", total containers to store: " << m_exportContainer.initializedContainers())
-	B2INFO("NonRootDataExportModule: chosen detectorType: " << m_PARAMDetectorType << " and exporting TrueHits: " << m_PARAMExportTrueHits)
+	B2INFO("NonRootDataExportModule: chosen detectorType: " << m_PARAMDetectorType << ", exporting TrueHits: " << m_PARAMExportTrueHits << " and exporting GFTrackCands: " << m_PARAMExportGFTCs)
 }
+
 
 
 void NonRootDataExportModule::beginRun()
@@ -123,43 +98,36 @@ void NonRootDataExportModule::beginRun()
 	m_runCounter = 0;
 	
 	// importing whole geometry information:
-	VXDGeoCache& aGeometry = VXD:GeoCache::getInstance();
-	const std::set< VxdID > layers = aGeometry.getLayers(), ladders, sensors; // SensorInfoBase::SensorType sensortype=SensorInfoBase::VXD
+	// we don't need the whole geometry information, but only a guess for each layer, therefore we only store one sensor per layer. Since the info is stored within a set which needs a key to reveal its info, I have to loop over all entries until I find the right entries:
+	VXD::GeoCache& aGeometry = VXD::GeoCache::getInstance();
+	set< VxdID > layers = aGeometry.getLayers(); // SensorInfoBase::SensorType sensortype=SensorInfoBase::VXD
+	double forwardWidth, backwardWidth, diff;
 	BOOST_FOREACH(VxdID layer, layers) {
-		ladders = aGeometry.getLadders (layer);
+		const set<VxdID>& ladders = aGeometry.getLadders(layer);
+		bool stopLoop = false;
 		BOOST_FOREACH(VxdID ladder, ladders) {
-			sensors = aGeometry.getSensors(ladder);
+			const set<VxdID>& sensors = aGeometry.getSensors(ladder);
 			BOOST_FOREACH(VxdID sensor, sensors) {
-				const SensorInfoBase & 	aSensorInfo = aGeometry.getSensorInfo(sensor);
-				m_exportContainer.storeSensorInfo(aSensorInfo);
+				const VXD::SensorInfoBase& aSensorInfo = aGeometry.getSensorInfo(sensor);
+				if ( (aSensorInfo.getType() == 0 and m_PARAMDetectorType == "SVD") or (aSensorInfo.getType() == 1 and m_PARAMDetectorType == "PXD")) {
+					stopLoop = true;
+					break;
+				}
+				
+				forwardWidth = aSensorInfo.getForwardWidth();
+				backwardWidth = aSensorInfo.getBackwardWidth();
+				diff = forwardWidth - backwardWidth;
+				if ( diff < 0.0001  and diff > -0.0001) { // to prevent rounding errora, we don't want to store wedge/slanted sensors
+					m_exportContainer.storeSensorInfo(aSensorInfo);
+					stopLoop = true;
+					break;
+				}
 			}
+			if ( stopLoop == true ) { break; }
 		}
 	}
-	
-	// we don't need the whole geometry information, but only a guess for each layer:
-	VXDGeoCache& aGeometry = VXD:GeoCache::getInstance();
-	const std::set< VxdID > layers = aGeometry.getLayers(), ladders, sensors; // SensorInfoBase::SensorType sensortype=SensorInfoBase::VXD
-	BOOST_FOREACH(VxdID layer, layers) {
-		ladders = aGeometry.getLadders (layer);
-		sensors = aGeometry.getSensors(ladders);
-		BOOST_FOREACH(VxdID ladder, ladders) {
-			sensors = aGeometry.getSensors(ladder);
-			BOOST_FOREACH(VxdID sensor, sensors) {
-				const SensorInfoBase & 	aSensorInfo = aGeometry.getSensorInfo(sensor);
-				m_exportContainer.storeSensorInfo(aSensorInfo);
-			}
-		}
-	}
- 
-const std::set< VxdID > & 	getLadders (VxdID layer) const
- 	Return a set of all ladder IDs belonging to a given layer.
- 
-const std::set< VxdID > & 	getSensors (VxdID ladder) const
- 	Return a set of all sensor IDs belonging to a given ladder.
- 
-const SensorInfoBase & 	getSensorInfo (VxdID id) const
- 	Return a referecne to the SensorInfo of a given SensorID. 
 }
+
 
 
 void NonRootDataExportModule::event()
@@ -170,31 +138,24 @@ void NonRootDataExportModule::event()
 	
 	StoreArray<MCParticle> mcParticles;
 	VXD::GeoCache& aGeometry = VXD::GeoCache::getInstance();
-	
-	
-// 	BOOST_FOREACH(string entry, m_PARAMGfTcArrays) {
-// 		StoreArray<GFTrackCand> = gfTcs(entry);
-// 		m_exportContainer.storeGFTrackCands(gfTcs*, entry);
-// 	}
-	
+
 	
 	// looping over all mcparticles connected to each TrueHit, if there is at least one primary particle connected to current trueHit, the first found primary particle determines the state of the trueHit (means, if there is a primary particle attached to the trueHit, the trueHit is recognized as realhit, and recognized as background hit if otherwise, the particleID of the hit will be the first primary particle or the last secondary one attached to current trueHit):
 	if (m_PARAMExportTrueHits != "none") { // storing trueHits
 		int nPXDTrueHits = 0, nSVDTrueHits = 0, particleID = -1, pdg;
 		int isPrimary = 1;
-// 		vector<MCParticle*> particlesOfTrueHit; // reused for every TrueHit
-		if (m_PARAMDetectorType == "PXD" or "VXD") { // storing pxd truehits
+		
+		if (m_PARAMDetectorType == "PXD" or m_PARAMDetectorType == "VXD") { // storing pxd truehits
 			StoreArray<PXDTrueHit> pxdTrueHits; // carries all trueHits of event
 			nPXDTrueHits = pxdTrueHits.getEntries();
 			B2DEBUG(1,"NonRootDataExportModule event " << m_eventCounter << ": executing " << nPXDTrueHits << " PXDTrueHits")
 			RelationIndex<MCParticle, PXDTrueHit> mcParticlesToPxdTrueHits; // allows us to find out which particle caused which truehit
 			typedef RelationIndex<MCParticle, PXDTrueHit>::Element RelationElement;
 			
-			for(int i = 0; i < nPXDTrueHits; ++i) {
+			for( int i = 0; i < nPXDTrueHits; ++i ) {
 				const PXDTrueHit* aTrueHit = pxdTrueHits[i];
 				
 				BOOST_FOREACH(const RelationElement & rel, mcParticlesToPxdTrueHits.getElementsTo(aTrueHit)) {
-
 					const MCParticle* particle = rel.from;
 					particleID = particle->getIndex(); // 1-based index of Particle. If you want to have a 0-based index, use getArrayIndex() instead
 					pdg = particle->getPDG();
@@ -205,32 +166,31 @@ void NonRootDataExportModule::event()
 					}
 				}
 				B2DEBUG(10," PXDTrueHit with ID " << i << " is attached to mcParticles with ID " << particleID << " and hasStatusPrimary (0 = true) " << isPrimary)
+				
 				if ((m_PARAMExportTrueHits == "real" and isPrimary != 0) or (m_PARAMExportTrueHits == "background" and isPrimary != 1) or (m_PARAMExportTrueHits == "all" and isPrimary == -1)) {
 					isPrimary = 1;
 					particleID = -1;
+					 B2DEBUG(10, " PXD hit " << i << " neglected")
 					continue;
 				}
-				m_exportContainer.storePXDTrueHit(aGeometry, pxdTrueHits[i], i, isPrimary, particleID, pdg);
+				m_exportContainer.storePXDTrueHit(aGeometry, aTrueHit, i, isPrimary, particleID, pdg);
 				isPrimary = 1;
 				particleID = -1;
 			} // looping over all pxd trueHits
 		} // storing pxdTrueHits
 		
-		if (m_PARAMDetectorType == "SVD" or "VXD") {
+		
+		if (m_PARAMDetectorType == "SVD" or m_PARAMDetectorType == "VXD") {
 			StoreArray<SVDTrueHit> svdTrueHits; // carries all trueHits of event
 			nSVDTrueHits = svdTrueHits.getEntries();
 			B2DEBUG(1,"NonRootDataExportModule event " << m_eventCounter << ": executing " << nSVDTrueHits << " SVDTrueHits" )
 			RelationIndex<MCParticle, SVDTrueHit> mcParticlesToSvdTrueHits; // allows us to find out which particle caused which truehit
 			typedef RelationIndex<MCParticle, SVDTrueHit>::Element RelationElement;
 			
-			for(int i = 0; i < nSVDTrueHits; ++i) {
+			for( int i = 0; i < nSVDTrueHits; ++i ) {
 				const SVDTrueHit* aTrueHit = svdTrueHits[i];
 				
 				BOOST_FOREACH(const RelationElement & rel, mcParticlesToSvdTrueHits.getElementsTo(aTrueHit)) {
-// 					if(!rel) {
-// 						B2WARNING("no MCParticle found for SVDTrueHit " << i);
-// 						continue;
-// 					}
 					const MCParticle* particle = rel.from;
 					particleID = particle->getIndex(); // 1-based index of Particle. If you want to have a 0-based index, use getArrayIndex() instead
 					pdg = particle->getPDG();
@@ -241,34 +201,62 @@ void NonRootDataExportModule::event()
 					}
 				}
 				B2DEBUG(10," SVDTrueHit with ID " << i << " is attached to mcParticles with ID " << particleID << " and hasStatusPrimary (0 = true) " << isPrimary)
-				if ((m_PARAMExportTrueHits == "real" and isPrimary == 0) or (m_PARAMExportTrueHits == "background" and isPrimary == 1) ) {
-					m_exportContainer.storeSVDTrueHit(aGeometry, svdTrueHits[i], i+nPXDTrueHits, isPrimary, particleID, pdg);
+				
+				if ((m_PARAMExportTrueHits == "real" and isPrimary != 0) or (m_PARAMExportTrueHits == "background" and isPrimary != 1) or (m_PARAMExportTrueHits == "all" and isPrimary == -1)) {
+					isPrimary = 1;
+					particleID = -1;
+					 B2DEBUG(10, " PXD hit " << i << " neglected")
+					continue;
 				}
+				m_exportContainer.storeSVDTrueHit(aGeometry, aTrueHit, i+nPXDTrueHits, isPrimary, particleID, pdg);
 				isPrimary = 1;
 				particleID = -1;
 			} // looping over all svd trueHits
 		} // storing svdTrueHits
 	}
 	
-	B2DEBUG(1," event " << m_eventCounter << " got ID " << m_eventCounter << ", internal eventID of " << m_exportContainer.getCurrentEventNumber())
-	int numHits = m_exportContainer.getNumberOfHits();
-	B2DEBUG(1," event " << m_eventCounter << " got ID " << m_eventCounter << ", internal eventID of " << m_exportContainer.getCurrentEventNumber() << " and got /*" << numHits << "*/ hits")
 	
-	
-// 	if (m_PARAMExportClusters != "none") {
-// 		/// WARNING not working yet! Problems to solve: how to group Clusters to hits again?
-// 		if (m_PARAMDetectorType == "PXD" or "VXD") {
-// 			StoreArray<PXDCluster> pxdClusters;
-// 			m_exportContainer.storePXDClusters(pxdClusters*);
-// 		}
-// 		if (m_PARAMDetectorType == "SVD" or "VXD") {
-// 			StoreArray<SVDCluster> svdClusters;
-// 			m_exportContainer.storeSVDClusters(svdClusters*);
-// 		}
-// 	}
-//
+	// exporting GFTrackCands
+	if (m_PARAMExportGFTCs == true ) {
+		StoreArray<GFTrackCand> gftcs; // carries all trueHits of event
+		StoreArray<PXDTrueHit> pxdTrueHits;
+		StoreArray<SVDTrueHit> svdTrueHits;
+		int nTCs = gftcs.getEntries(), detID, hitID;
+		B2DEBUG(1,"NonRootDataExportModule event " << m_eventCounter << ": executing " << nTCs << " GFTrackCands")
+		
+		for ( int i = 0; i < nTCs; ++i ) {
+			GFTrackCand* aTC = gftcs[i];
+			vector<const PXDTrueHit*> pxdHits;
+			vector<const SVDTrueHit*> svdHits;
+			int nHits = aTC->getNHits();
+			
+			if (int(aTC->getNHits()) < 3 ) {
+				B2WARNING("NonRootDataExportModule - event " << m_eventCounter << ": GfTrackcand " << i << " has only " << nHits << " hits, neglecting tc...")
+				continue;
+			}
+			
+			for ( int j = 0; j < nHits; ++j ) {
+				detID = 0;
+				hitID = 0;
+				aTC-getHit(j, detID, hitID); // sets detId and hitId for given hitIndex
+				B2DEBUG(100, "----got Hitinfo. detID: " << detID << ", hitID: " << hitID)
+					if (detID == Const::PXD) { // pxd
+						const PXDTrueHit* hit = pxdTrueHits[hitID];
+						pxdHits.push_back(hit);
+					} else if (detID == Const::SVD) {
+						const SVDTrueHit* hit = svdTrueHits[hitID];
+						svdHits.push_back(hit);
+					}
+				}
+			}
+			B2DEBUG(10,"storing GFTC " << i << " with " << pxdHits.size() << " pxd hits and " << svdHits.size() << " svd hits")
+			m_exportContainer.storeGFTC(aGeometry, aTC, i, pxdHits, svdHits);
+		}
+	}
 
+	B2DEBUG(1," event " << m_eventCounter << " got ID " << m_eventCounter << ", internal eventID of " << m_exportContainer.getCurrentEventNumber() << " and got internal hits: " << m_exportContainer.getNumberOfHits() << " hits, of these were " << m_exportContainer.getNumberOfPXDTrueHits() << " PXDTrueHits, and " << m_exportContainer.getNumberOfSVDTrueHits() << " were SVDTrueHits")
 }
+
 
 
 void NonRootDataExportModule::endRun()
@@ -277,6 +265,7 @@ void NonRootDataExportModule::endRun()
 	string fileName = "hits.data";
 	m_exportContainer.exportAll(m_runCounter, fileName);
 }
+
 
 
 void NonRootDataExportModule::terminate()
