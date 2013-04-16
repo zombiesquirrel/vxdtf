@@ -7,7 +7,7 @@ from sys import argv
 from basf2 import *
 from time import time
 
-numEvents = 1000
+numEvents = 2500
 initialValue = 1
 
 print 'running {events:} events, Seed {theSeed:} - evtGen No BG'.format(events=numEvents,
@@ -25,12 +25,14 @@ evtmetainfo = register_module('EvtMetaInfo')
 
 gearbox = register_module('Gearbox')
 
-pxdDigitizer = register_module('PXDDigitizer')
-svdDigitizer = register_module('SVDDigitizer')
-pxdClusterizer = register_module('PXDClusterizer')
-svdClusterizer = register_module('SVDClusterizer')
+#pxdDigitizer = register_module('PXDDigitizer')
+#svdDigitizer = register_module('SVDDigitizer')
+#pxdClusterizer = register_module('PXDClusterizer')
+#svdClusterizer = register_module('SVDClusterizer')
+
 evtgeninput = register_module('EvtGenInput')
 evtgeninput.logging.log_level = LogLevel.WARNING
+
 
 geometry = register_module('Geometry')
 geometry.param('Components', [
@@ -43,18 +45,38 @@ geometry.param('Components', [
     'SVD-Support',
     ])
 
+
 g4sim = register_module('FullSim')
 g4sim.param('StoreAllSecondaries', True)
+
 
 eventCounter = register_module('EventCounter')
 eventCounter.logging.log_level = LogLevel.INFO
 eventCounter.param('stepSize', 25)
+
 
 nonRootDataExporter = register_module('NonRootDataExport')
 nonRootDataExporter.logging.log_level = LogLevel.INFO
 nonRootDataExporter.logging.debug_level = 111
 nonRootDataExporter.param('exportTrueHits', 'all')
 nonRootDataExporter.param('detectorType', 'VXD')
+nonRootDataExporter.param('exportGFTCs', True)
+
+
+mctrackfinder = register_module('MCTrackFinder')
+mctrackfinder.logging.log_level = LogLevel.WARNING
+param_mctrackfinder = {  # 'primary'
+    'UseCDCHits': 0,
+    'UseSVDHits': 1,
+    'UsePXDHits': 1,
+    'MinimalNDF': 2,
+    'UseClusters': 0,
+    'WhichParticles': ['PXD', 'SVD'],
+    'GFTrackCandidatesColName': '', #mcTracks
+    }
+    # 'Force2DSVDClusters': 1,
+    # 'forceExisting2DClusters4SVD': 0
+mctrackfinder.param(param_mctrackfinder)
 
 
 
@@ -72,10 +94,11 @@ main.add_module(geometry)
 # main.add_module(pGun)
 main.add_module(evtgeninput)  # instead of pGun
 main.add_module(g4sim)
-main.add_module(pxdDigitizer)
-main.add_module(pxdClusterizer)
-main.add_module(svdDigitizer)
-main.add_module(svdClusterizer)
+#main.add_module(pxdDigitizer)
+#main.add_module(pxdClusterizer)
+#main.add_module(svdDigitizer)
+#main.add_module(svdClusterizer)
+main.add_module(mctrackfinder)
 main.add_module(eventCounter)
 main.add_module(nonRootDataExporter)
 # main.add_module(display)

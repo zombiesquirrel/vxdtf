@@ -8,7 +8,7 @@ from basf2 import *
 from time import time
 
 numTracks = 1 #pGun only
-numEvents = 1000
+numEvents = 1
 initialValue = 1
 pMin = 0.075 # pGun only
 pMax = 0.15 # pGun only
@@ -30,12 +30,11 @@ evtmetainfo = register_module('EvtMetaInfo')
 
 gearbox = register_module('Gearbox')
 
-pxdDigitizer = register_module('PXDDigitizer')
-svdDigitizer = register_module('SVDDigitizer')
-pxdClusterizer = register_module('PXDClusterizer')
-svdClusterizer = register_module('SVDClusterizer')
-evtgeninput = register_module('EvtGenInput')
-evtgeninput.logging.log_level = LogLevel.WARNING
+#pxdDigitizer = register_module('PXDDigitizer')
+#svdDigitizer = register_module('SVDDigitizer')
+#pxdClusterizer = register_module('PXDClusterizer')
+#svdClusterizer = register_module('SVDClusterizer')
+
 
 geometry = register_module('Geometry')
 geometry.param('Components', [
@@ -74,11 +73,27 @@ eventCounter.logging.log_level = LogLevel.INFO
 eventCounter.param('stepSize', 25)
 
 nonRootDataExporter = register_module('NonRootDataExport')
-nonRootDataExporter.logging.log_level = LogLevel.INFO
+nonRootDataExporter.logging.log_level = LogLevel.DEBUG
 nonRootDataExporter.logging.debug_level = 111
 nonRootDataExporter.param('exportTrueHits', 'all')
 nonRootDataExporter.param('detectorType', 'VXD')
+nonRootDataExporter.param('exportGFTCs', True)
 
+
+mctrackfinder = register_module('MCTrackFinder')
+mctrackfinder.logging.log_level = LogLevel.WARNING
+param_mctrackfinder = {  # 'primary'
+    'UseCDCHits': 0,
+    'UseSVDHits': 1,
+    'UsePXDHits': 1,
+    'MinimalNDF': 2,
+    'UseClusters': 0,
+    'WhichParticles': ['PXD', 'SVD'],
+    'GFTrackCandidatesColName': '', #mcTracks
+    }
+    # 'Force2DSVDClusters': 1,
+    # 'forceExisting2DClusters4SVD': 0
+mctrackfinder.param(param_mctrackfinder)
 
 
 # Create paths
@@ -95,10 +110,11 @@ main.add_module(geometry)
 main.add_module(pGun)
 #main.add_module(evtgeninput)  # instead of pGun
 main.add_module(g4sim)
-main.add_module(pxdDigitizer)
-main.add_module(pxdClusterizer)
-main.add_module(svdDigitizer)
-main.add_module(svdClusterizer)
+#main.add_module(pxdDigitizer)
+#main.add_module(pxdClusterizer)
+#main.add_module(svdDigitizer)
+#main.add_module(svdClusterizer)
+main.add_module(mctrackfinder)
 main.add_module(eventCounter)
 main.add_module(nonRootDataExporter)
 # main.add_module(display)

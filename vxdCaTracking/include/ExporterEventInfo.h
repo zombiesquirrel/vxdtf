@@ -26,29 +26,41 @@ namespace Belle2 {
     /** Empty constructor. */
     ExporterEventInfo(int evtNum):
 					m_eventNumber(evtNum) {}
-
+		
+		
     /** Destructor. */
     ~ExporterEventInfo() {}
-
+    
+    
     /** adds Hit to internal storage.  */
 		void addHit(ExporterHitInfo aHit);
+		
 		
 		/** adds Tc to internal storage.  */
 		void addTc(ExporterTcInfo aTc);
 		
+		
 		/** returns a pointer to internal vector of hits */
 		std::vector<ExporterHitInfo>* getHits();
 		
+		
 		int getEventNumber() { return m_eventNumber; }
+		
 		
 		/** returns a pointer to internal vector of tcs */
 		std::vector<ExporterTcInfo>* getTcs();
 		
+		
 		/** returns number of stored pxdTruehits */
 		int getNPXDTrueHits();
 		
+		
 		/** returns number of stored svdTruehits */
 		int getNSVDTrueHits();
+		
+		
+		/** returns total number of stored mcHits stored in all Tcs of this event */
+		int getNMCHits();
 		
 		
   protected:

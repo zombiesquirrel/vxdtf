@@ -10,6 +10,8 @@
 
 #include "tracking/modules/VXDTFHelperTools/NonRootDataExportModule.h"
 #include <boost/foreach.hpp>
+
+#include <framework/gearbox/Const.h>
 #include <vxd/geometry/GeoCache.h>
 #include <vxd/geometry/SensorInfoBase.h>
 #include <framework/dataobjects/EventMetaData.h>
@@ -21,7 +23,7 @@
 #include <svd/dataobjects/SVDCluster.h>
 #include <pxd/dataobjects/PXDTrueHit.h>
 #include <svd/dataobjects/SVDTrueHit.h>
-
+#include <GFTrackCand.h>
 #include "tracking/vxdCaTracking/HitExporter.h"
 
 
@@ -44,11 +46,14 @@ NonRootDataExportModule::NonRootDataExportModule() : Module()
   //Set module properties
   setDescription("allows export of various data objects into files");
   setPropertyFlags(c_ParallelProcessingCertified | c_InitializeInProcess);
-
+	int minTCLength = 1;
 	
 	addParam("exportTrueHits", m_PARAMExportTrueHits, "allows you to export true hits. Please choose between 'all' hits, 'real' hits, 'background' hits or 'none', which is standard. Wrong input values will set to none with an error.", string("none"));
 	addParam("exportGFTCs", m_PARAMExportGFTCs, "allows you to export mcInformation about whole tracks, set true for tcOutput", bool(false));
 	addParam("detectorType", m_PARAMDetectorType, "set detectorype. Please choose between 'PXD', 'SVD' (standard) or 'VXD'. Wrong input values will set to SVD with an error.", string("SVD"));
+	addParam("minTCLength", m_PARAMminTCLength, "tracks with less than minTCLength hits will be neglected", minTCLength);
+	addParam("smearTrueHits", m_PARAMsmearTrueHits, "when using trueHits, hits and mcPoints have got exactly the same position. If you activate the smearing, the hits will be smeared using the sensor resolution", bool(false));
+	
 }
 
 
@@ -87,7 +92,7 @@ void NonRootDataExportModule::initialize()
 	}
 
 	StoreArray<MCParticle>::required();
-	B2INFO("NonRootDataExportModule: chosen detectorType: " << m_PARAMDetectorType << ", exporting TrueHits: " << m_PARAMExportTrueHits << " and exporting GFTrackCands: " << m_PARAMExportGFTCs)
+	B2INFO("NonRootDataExportModule: chosen detectorType: " << m_PARAMDetectorType << ", exporting TrueHits: " << m_PARAMExportTrueHits << " and exporting GFTrackCands: " << m_PARAMExportGFTCs << ", minimal ndf number of hits for tcs: " << m_PARAMminTCLength)
 }
 
 
@@ -138,12 +143,14 @@ void NonRootDataExportModule::event()
 	
 	StoreArray<MCParticle> mcParticles;
 	VXD::GeoCache& aGeometry = VXD::GeoCache::getInstance();
+	/// TODO statt Verlinkungen mit RelationIndex -> einfach folgende Zeilen nehmen!
+// 	RelationVector<MCParticle> mcRelations = hit->getRelationsFrom<MCParticle>();
+// 		B2DEBUG(10, " within HitExporter::storeGFTC: produced mcRelations-Vector with size: " << mcRelations.size() << " containing all McParticles responsible for a pxdHit")
 
 	
 	// looping over all mcparticles connected to each TrueHit, if there is at least one primary particle connected to current trueHit, the first found primary particle determines the state of the trueHit (means, if there is a primary particle attached to the trueHit, the trueHit is recognized as realhit, and recognized as background hit if otherwise, the particleID of the hit will be the first primary particle or the last secondary one attached to current trueHit):
+	int nPXDTrueHits = 0, nSVDTrueHits = 0, particleID = -1, pdg, isPrimary = 1;
 	if (m_PARAMExportTrueHits != "none") { // storing trueHits
-		int nPXDTrueHits = 0, nSVDTrueHits = 0, particleID = -1, pdg;
-		int isPrimary = 1;
 		
 		if (m_PARAMDetectorType == "PXD" or m_PARAMDetectorType == "VXD") { // storing pxd truehits
 			StoreArray<PXDTrueHit> pxdTrueHits; // carries all trueHits of event
@@ -173,7 +180,7 @@ void NonRootDataExportModule::event()
 					 B2DEBUG(10, " PXD hit " << i << " neglected")
 					continue;
 				}
-				m_exportContainer.storePXDTrueHit(aGeometry, aTrueHit, i, isPrimary, particleID, pdg);
+				m_exportContainer.storePXDTrueHit(aGeometry, aTrueHit, i, m_PARAMsmearTrueHits, isPrimary, particleID, pdg);
 				isPrimary = 1;
 				particleID = -1;
 			} // looping over all pxd trueHits
@@ -208,7 +215,8 @@ void NonRootDataExportModule::event()
 					 B2DEBUG(10, " PXD hit " << i << " neglected")
 					continue;
 				}
-				m_exportContainer.storeSVDTrueHit(aGeometry, aTrueHit, i+nPXDTrueHits, isPrimary, particleID, pdg);
+				
+				m_exportContainer.storeSVDTrueHit(aGeometry, aTrueHit, i+nPXDTrueHits, m_PARAMsmearTrueHits, isPrimary, particleID, pdg); // nPXDTrueHits is 0 if detectorType is SVD, therefore no check here
 				isPrimary = 1;
 				particleID = -1;
 			} // looping over all svd trueHits
@@ -221,36 +229,42 @@ void NonRootDataExportModule::event()
 		StoreArray<GFTrackCand> gftcs; // carries all trueHits of event
 		StoreArray<PXDTrueHit> pxdTrueHits;
 		StoreArray<SVDTrueHit> svdTrueHits;
-		int nTCs = gftcs.getEntries(), detID, hitID;
+		vector<const PXDTrueHit*> pxdHits;
+		vector<const SVDTrueHit*> svdHits;
+		vector<int> hitIDs; // pxd and svd can use the same vector since modified hitIDs are stored which are unique for each hit
+		int nTCs = gftcs.getEntries(), detID, hitID, countedTCs = 0;
 		B2DEBUG(1,"NonRootDataExportModule event " << m_eventCounter << ": executing " << nTCs << " GFTrackCands")
 		
 		for ( int i = 0; i < nTCs; ++i ) {
+			hitIDs.clear(); pxdHits.clear(); svdHits.clear();
 			GFTrackCand* aTC = gftcs[i];
-			vector<const PXDTrueHit*> pxdHits;
-			vector<const SVDTrueHit*> svdHits;
 			int nHits = aTC->getNHits();
+			B2DEBUG(10,"event " << m_eventCounter << ": TC " << i << " has got " << nHits << " hits")
 			
-			if (int(aTC->getNHits()) < 3 ) {
-				B2WARNING("NonRootDataExportModule - event " << m_eventCounter << ": GfTrackcand " << i << " has only " << nHits << " hits, neglecting tc...")
+			if (int(aTC->getNHits()) < m_PARAMminTCLength ) {
+				B2WARNING("NonRootDataExportModule - event " << m_eventCounter << ": GfTrackcand " << i << " has only " << nHits << " hits (threshold is " << m_PARAMminTCLength << "), neglecting tc...")
 				continue;
 			}
 			
 			for ( int j = 0; j < nHits; ++j ) {
 				detID = 0;
 				hitID = 0;
-				aTC-getHit(j, detID, hitID); // sets detId and hitId for given hitIndex
+				aTC->getHit(j, detID, hitID); // sets detId and hitId for given hitIndex
 				B2DEBUG(100, "----got Hitinfo. detID: " << detID << ", hitID: " << hitID)
-					if (detID == Const::PXD) { // pxd
-						const PXDTrueHit* hit = pxdTrueHits[hitID];
-						pxdHits.push_back(hit);
-					} else if (detID == Const::SVD) {
-						const SVDTrueHit* hit = svdTrueHits[hitID];
-						svdHits.push_back(hit);
-					}
+				if (detID == Const::PXD and m_PARAMDetectorType != "SVD") { // pxd
+					hitIDs.push_back(hitID);
+					const PXDTrueHit* hit = pxdTrueHits[hitID];
+					pxdHits.push_back(hit);
+				} else if (detID == Const::SVD and m_PARAMDetectorType != "PXD") {
+					hitIDs.push_back(hitID+nPXDTrueHits); // nPXDTrueHits is 0 if detectorType is SVD, therefore no check here
+					const SVDTrueHit* hit = svdTrueHits[hitID];
+					svdHits.push_back(hit);
 				}
 			}
 			B2DEBUG(10,"storing GFTC " << i << " with " << pxdHits.size() << " pxd hits and " << svdHits.size() << " svd hits")
-			m_exportContainer.storeGFTC(aGeometry, aTC, i, pxdHits, svdHits);
+			m_exportContainer.storeGFTC(aGeometry, aTC, countedTCs, i, pxdHits, svdHits, hitIDs);
+			++countedTCs;
+			hitIDs.clear();
 		}
 	}
 
@@ -263,7 +277,7 @@ void NonRootDataExportModule::endRun()
 {
 	m_runCounter++;
 	string fileName = "hits.data";
-	m_exportContainer.exportAll(m_runCounter, fileName);
+	m_exportContainer.exportAll(m_runCounter, 15.0); // second entry is the strength of the magnetic field
 }
 
 

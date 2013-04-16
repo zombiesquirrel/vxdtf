@@ -52,56 +52,7 @@ g4sim.param('StoreAllSecondaries', True)
 vxdtf = register_module('VXDTF')
 vxdtf.logging.log_level = LogLevel.INFO
 vxdtf.logging.debug_level = 1
-param_vxdtf = {  # #### tripple pass!
-                 # minimal layer number allowed for TC-seeds
-                 # minimal state allowed for TC-seeds. Higher numbers are more restrictive (better ghost rate), but remove good TCs as well
-                 # -1 = VXD, 0 = PXD, 1 = SVD
-                 # not working so far (too restrictive)
-                 # not working at the moment
-                 # 'tuneCutoffs': 3.,
-                 # 'tccMinState': [1],
-                 # # pxd : 1, SVD = 4
-                 # 'highestAllowedLayer': [6],
-                 # 'activateDistance3D': [True],
-                 # 'activateDistanceXY': [True],
-                 # 'activateDistanceZ': [True],
-                 # 'activateSlopeRZ': [True],
-                 # 'activateNormedDistance3D': [True],
-                 # 'activateDeltaSlopeRZ': [True],
-                 # 'activateHelixFit': [True],
-                 # 'activateDistance2IP': [True],
-                 # 'activateAngles3D': [True],
-                 # 'activateAnglesXY': [True],
-                 # 'activateAnglesRZ': [True],
-                 # 'activatePT': [True],
-                 # 'activateDeltaDistance2IP': [True],
-                 # 'activateZigZagXY': [True],
-                 # 'activateZigZagRZ': [True],
-                 # 'activateDeltaPt': [True],
-                 # 'activateCircleFit': [True],
-                 # 'activateAngles3DHioC': [True],
-                 # 'activateAnglesXYHioC': [True],
-                 # 'activateAnglesRZHioC': [True],
-                 # 'activateDeltaSlopeRZHioC': [True],
-                 # 'activateDistance2IPHioC': [True],
-                 # 'activatePTHioC': [True],
-                 # 'activateHelixFitHioC': [True],
-                 # 'activateDeltaPtHioC': [True],
-                 # 'activateDeltaDistance2IPHioC': [True],
-                 # 'tuneDistanceZ': [0.0],
-                 # 'tuneSlopeRZ': [0.0],
-                 # 'tuneHelixFit': [5.0],
-                 # 'tuneDeltaSlopeRZ': [0.0],
-                 # 'tuneDeltaPtHioC': [5.0],
-                 # 'tuneDeltaPt': [0.0],
-                 # 'tuneDeltaDistance2IPHioC': [5.0],
-                 # 'tuneCircleFit': [50.0],
-                 # 'highOccupancyThreshold': 17,
-                 # 'cleanOverlappingSet': True,
-                 # 'standardPdgCode': 211,
-                 # 'useHopfield': True,
-                 # 'qiSmear': True, # needed for both, for trackLength to avoid TCs having the same QI and for kalman, when storing broken QIs with QI ~ 0 (but not = 0)
-                 # 'kalman', 'circleFit' or 'trackLength'
+param_vxdtf = {
     'tccMinLayer': [4],
     'detectorType': [1],
     'sectorSetup': secSetup,

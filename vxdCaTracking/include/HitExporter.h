@@ -17,6 +17,7 @@
 
 #include <vxd/geometry/GeoCache.h>
 #include <vxd/geometry/SensorInfoBase.h>
+#include <GFTrackCand.h>
 
 
 namespace Belle2 {
@@ -25,6 +26,7 @@ namespace Belle2 {
 	class PXDCluster;
 	class SVDTrueHit;
 	class SVDCluster;
+// 	class GFTrackCand;
 	class ExporterEventInfo;
 	
   /** Bundles information for all events to be stored by NonRootDataExportModule and writes that info into text files */
@@ -34,6 +36,7 @@ namespace Belle2 {
 		
 		typedef std::map<int, ExporterEventInfo*> EventMap;
 		typedef std::pair<int, ExporterEventInfo*> EventMapEntry;
+		typedef std::pair<double, std::string> TcHitEntry;
 
     /** Empty constructor. */
     HitExporter():
@@ -68,28 +71,28 @@ namespace Belle2 {
 
 		
 		/** event wise call expected: Expects pointer to the PXDTrueHit to be stored. It stores its entries to hits. Returns string containing error message if something went wrong */
-		std::string storePXDTrueHit(VXD::GeoCache& geometry, const PXDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost = -1, int particleID = -1, int pdg = -1); // default arguments are only allowed for .h-files, not in the .cc- version of the memberfunction
+		std::string storePXDTrueHit(VXD::GeoCache& geometry, const PXDTrueHit* aHit, int iD, bool doSmear, int isPrimaryBackgroundOrGhost = -1, int particleID = -1, int pdg = -1); // default arguments are only allowed for .h-files, not in the .cc- version of the memberfunction
 
 		
 		/** event wise call expected: Expects pointer to the SVDTrueHit to be stored. It stores its entries to hits. Returns string containing error message if something went wrong */
-		std::string storeSVDTrueHit(VXD::GeoCache& geometry, const SVDTrueHit* aHit, int iD, int isPrimaryBackgroundOrGhost = -1, int particleID = -1, int pdg = -1);
+		std::string storeSVDTrueHit(VXD::GeoCache& geometry, const SVDTrueHit* aHit, int iD, bool doSmear, int isPrimaryBackgroundOrGhost = -1, int particleID = -1, int pdg = -1);
 		
 		
 		/** event wise call expected: It stores GFTrackCands and its containing TrueHits(as McPoints) */
-		std::string storeGFTC(VXD::GeoCache& geometry, const GFTRackCand* aTC, int tcIndex, std::vector<const PXDTrueHit*> pxdHits, std::vector<const SVDTrueHit*> svdHits);
+		std::string storeGFTC(VXD::GeoCache& geometry, const GFTrackCand* aTC, int tcFileIndex, int tcSimIndex, std::vector<const PXDTrueHit*> pxdHits, std::vector<const SVDTrueHit*> svdHits, std::vector<int> hitIDs);
 
 		
 		/** expected to be called at the end of a run: exports every TC and every hit stored. the naming convention for standard output will be:
 		 * run[X]_event[X]_hits for hits and rX_eX_tcs for track candidates
 		 * individual output will be event[X]_[name]
 		 */
-		std::string exportAll(int n, std::string name = "", float bz = 1.5);
+		std::string exportAll(int n, float bz = 1.5);
 
 		
   protected:
 		
 		/** feeded by storePXDTrueHit or storeSVDTrueHit and does all the calculations and storing */
-		std::string storeTrueHit(VXD::SensorInfoBase aSensorInfo, double u, double v, int type, int iD, int isPrimaryBackgroundOrGhost, int aLayerID, int particleID, int pID);
+		std::string storeTrueHit(VXD::SensorInfoBase aSensorInfo, double u, double v, int type, int iD, int isPrimaryBackgroundOrGhost, int aLayerID, int particleID, int pID, bool doSmear);
 
 
     int m_eventNumber; /**< stores current event number */

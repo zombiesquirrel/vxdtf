@@ -40,6 +40,13 @@ int ExporterEventInfo::getNPXDTrueHits() { return countHitsOfType(0); }
 int ExporterEventInfo::getNSVDTrueHits() { return countHitsOfType(1); }
 
 
+int ExporterEventInfo::getNMCHits() {
+	int nMCHits = 0;
+	BOOST_FOREACH(ExporterTcInfo tc, m_tcs) {
+		nMCHits += tc.getNHits();
+	}
+	return nMCHits;
+}
 
 int ExporterEventInfo::countHitsOfType(int type) {
 	int counter = 0;

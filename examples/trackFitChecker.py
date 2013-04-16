@@ -44,7 +44,7 @@ cdcDigitizer = register_module('CDCDigitizer')
 # mctrackfinder
 mctrackfinder = register_module('MCTrackFinder')
 param_mctrackfinder = {
-    'UseCDCHits': 1,
+    'UseCDCHits': 0,
     'UseSVDHits': 1,
     'UsePXDHits': 1,
     'Smearing': 0,

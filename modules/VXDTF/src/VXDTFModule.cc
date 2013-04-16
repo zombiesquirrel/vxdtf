@@ -1042,9 +1042,11 @@ void VXDTFModule::event()
 
   // importing hits
   StoreArray<PXDCluster> aPxdClusterArray;
-  int numOfPxdClusters = aPxdClusterArray.getEntries();
+  int numOfPxdClusters = 0;
+	 if (m_usePXDorSVDorVXDhits not_eq 1) { numOfPxdClusters = aPxdClusterArray.getEntries(); }
   StoreArray<SVDCluster> aSvdClusterArray;
-  int numOfSvdClusters = aSvdClusterArray.getEntries();
+  int numOfSvdClusters = 0;
+	 if (m_usePXDorSVDorVXDhits not_eq 0) { numOfSvdClusters = aSvdClusterArray.getEntries(); }
   thisInfoPackage.numPXDCluster = numOfPxdClusters;
   thisInfoPackage.numSVDCluster = numOfSvdClusters;
 
