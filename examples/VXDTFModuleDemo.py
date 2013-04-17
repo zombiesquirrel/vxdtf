@@ -7,7 +7,7 @@ from sys import argv
 from basf2 import *
 from time import time
 
-numEvents = 100
+numEvents = 5
 initialValue = 1
 secSetup = ['evtgenHIGH', 'evtgenSTD', 'evtgenLOW']  # ,'evtgenHIGH' 'evtgenSTD', 'evtgenLOW'] # when using the same secSetup several times, use this for setting Value
 
@@ -50,14 +50,15 @@ g4sim = register_module('FullSim')
 g4sim.param('StoreAllSecondaries', True)
 
 vxdtf = register_module('VXDTF')
-vxdtf.logging.log_level = LogLevel.INFO
-vxdtf.logging.debug_level = 1
+vxdtf.logging.log_level = LogLevel.DEBUG
+vxdtf.logging.debug_level = 111
 param_vxdtf = {
     'tccMinState': [2],
     'tccMinLayer': [3],
     'detectorType': ['SVD'], # Supports 'SVD' and 'VXD' so far
     'sectorSetup': secSetup,
     'calcQIType': 'kalman', # 'kalman', 'circleFit' or 'trackLength'
+    'TESTERexpandedTestingRoutines': True
     }
 vxdtf.param(param_vxdtf)
 
@@ -75,8 +76,6 @@ param_mctrackfinder = {  # 'primary'
     'WhichParticles': ['PXD', 'SVD'],
     'GFTrackCandidatesColName': 'mcTracks',
     }
-    # 'Force2DSVDClusters': 1,
-    # 'forceExisting2DClusters4SVD': 0
 mctrackfinder.param(param_mctrackfinder)
 
 eventCounter = register_module('EventCounter')
