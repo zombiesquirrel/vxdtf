@@ -42,9 +42,7 @@ double TwoHitFilters::calcSlopeRZ()
 
 
 double TwoHitFilters::filterNan(double value) {
-	if ((boost::math::isnan)(value) == true) {
-    return 0;
-  } else {
-    return value;
-  }
+	if ((boost::math::isnan)(value) == true) return 0;
+  return value;
+
 }

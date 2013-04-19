@@ -19,12 +19,9 @@ print 'running {events:} events, Seed {theSeed:} - evtGen No BG'.format(events=n
 set_log_level(LogLevel.ERROR)
 set_random_seed(rSeed)
 # register the modules and set there options
-evtmetagen = register_module('EvtMetaGen')
-evtmetagen.param('ExpList', [0])
-evtmetagen.param('RunList', [1])
-evtmetagen.param('EvtNumList', [numEvents])
-
-evtmetainfo = register_module('EvtMetaInfo')
+rootinput = register_module('RootInput')
+#rootinput.param('inputFileName', 'pGun1GeV5000ev2tea19t148.root')
+rootinput.param('inputFileName', 'evtGen2k.root')
 
 gearbox = register_module('Gearbox')
 

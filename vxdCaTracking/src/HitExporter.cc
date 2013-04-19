@@ -258,23 +258,15 @@ std::string HitExporter::exportAll(int runNumber, float bz)
 	string hitsFileName, mcPointsFileName, mcTracksFileName, settingsFileName, hitLabesFileName;
 	ofstream hitsFileStream, settingsFileStream, mcTracksFileStream, mcPointsFileStream, hitLabesFileStream;
 	B2DEBUG(1," HitExporter::exportAll: got " << m_storedOutput.size() << " events, exporting to files ")
+	stringstream returnStringStream;
+	returnStringStream  << " in run "<< runNumber << " the following events had to be dropped: ";
 	
 	// doing the eventXX_hits.data & eventXX_MCPoints.data & eventXX_MCTracks.data:
-	int mcPointCounter, mcTrackCounter;
+	int mcPointCounter, mcTrackCounter, droppedEventsCtr = 0, goodEventsCtr = 0, goodTCsCtr = 0;
 	BOOST_FOREACH(EventMapEntry eventInfo, m_storedOutput) {
 		mcPointCounter = 0, mcTrackCounter = 0; // counting them manually
 		typedef pair <int, int> HitIDRelation;
 		vector< HitIDRelation > hitIDRelations; // hitIDRelations: stores hitIDs of all hits (real=mcPoints and background) in .first, and their connected tc in .second. If they are not connected with a tc, they are linked with -1
-		// generating filenames
-		hitsFileName = (boost::format("event%1%_hits.data") % eventInfo.first).str();
-		mcPointsFileName = (boost::format("event%1%_MCPoints.data") %eventInfo.first).str();
-		mcTracksFileName = (boost::format("event%1%_MCTracks.data") %eventInfo.first).str();
-		hitLabesFileName = (boost::format("event%1%_hitLabels.data") % eventInfo.first).str();
-		//opening files:
-		hitsFileStream.open(hitsFileName.c_str(), std::ios_base::trunc); // trunc=overwrite app=append
-		mcPointsFileStream.open(mcPointsFileName.c_str(), std::ios_base::trunc);
-		mcTracksFileStream.open(mcTracksFileName.c_str(), std::ios_base::trunc);
-		hitLabesFileStream.open(hitLabesFileName.c_str(), std::ios_base::trunc);
 		// importing data:
 		vector<ExporterHitInfo>* hitsOfEvent = NULL;
 		hitsOfEvent = eventInfo.second->getHits();
@@ -283,6 +275,33 @@ std::string HitExporter::exportAll(int runNumber, float bz)
 		tcsOfEvent = eventInfo.second->getTcs();
 		int nMCtcs = tcsOfEvent->size();
 		int nMCHits = eventInfo.second->getNMCHits();
+		if ( nHits == 0 ) {
+			B2WARNING("event "<< eventInfo.first<<" has no hits! Dropping data...")
+			droppedEventsCtr++;
+			returnStringStream << eventInfo.first << " ";
+			continue;
+		} else if (nMCHits == 0) {
+			B2WARNING("event "<< eventInfo.first<<" has no mcHits! Dropping data...")
+			droppedEventsCtr++;
+			returnStringStream << eventInfo.first << " ";
+			continue;
+		} else if(tcsOfEvent == 0) {
+			B2WARNING("event "<< eventInfo.first<<" has no TCs! Dropping data...")
+			droppedEventsCtr++;
+			returnStringStream << eventInfo.first << " ";
+			continue;
+		}
+		
+		// generating filenames
+		hitsFileName = (boost::format("event%1%_hits.data") % (eventInfo.first-droppedEventsCtr)).str();
+		mcPointsFileName = (boost::format("event%1%_MCPoints.data") %(eventInfo.first-droppedEventsCtr)).str();
+		mcTracksFileName = (boost::format("event%1%_MCTracks.data") %(eventInfo.first-droppedEventsCtr)).str();
+		hitLabesFileName = (boost::format("event%1%_hitLabels.data") % (eventInfo.first-droppedEventsCtr)).str();
+		//opening files:
+		hitsFileStream.open(hitsFileName.c_str(), std::ios_base::trunc); // trunc=overwrite app=append
+		mcPointsFileStream.open(mcPointsFileName.c_str(), std::ios_base::trunc);
+		mcTracksFileStream.open(mcTracksFileName.c_str(), std::ios_base::trunc);
+		hitLabesFileStream.open(hitLabesFileName.c_str(), std::ios_base::trunc);
 		
 		if (hitsOfEvent == NULL) {
 			B2WARNING("event " << eventInfo.first <<" has no hits! Rejecting event...")
@@ -338,6 +357,7 @@ std::string HitExporter::exportAll(int runNumber, float bz)
 			
 			++mcTrackCounter;
 		} // looping over tcs
+		goodTCsCtr += mcTrackCounter;
 		
 		// storing hitLabes, has to be done out of the tc-loop to be independent of tc-behavior (if there are no tcs, rel.second will be -1):
 		BOOST_FOREACH(HitIDRelation rel, hitIDRelations) {
@@ -355,7 +375,10 @@ std::string HitExporter::exportAll(int runNumber, float bz)
 		mcTracksFileStream.close();
 		mcPointsFileStream.close();
 		hitLabesFileStream.close();
+		++goodEventsCtr;
 	} // looping over events
+	
+	returnStringStream << endl << " there were " << goodEventsCtr << " accepted events having a total of " << goodTCsCtr << " TCs" << endl;
 	
 	//doing settings.data
 	settingsFileName = "settings.data";
@@ -370,5 +393,5 @@ std::string HitExporter::exportAll(int runNumber, float bz)
 	settingsFileStream.close();
 
 
-	return "EVERYTHING IS FINE";
+	return returnStringStream.str();
 }

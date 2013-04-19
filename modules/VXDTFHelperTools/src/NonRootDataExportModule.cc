@@ -276,8 +276,8 @@ void NonRootDataExportModule::event()
 void NonRootDataExportModule::endRun()
 {
 	m_runCounter++;
-	string fileName = "hits.data";
-	m_exportContainer.exportAll(m_runCounter, 15.0); // second entry is the strength of the magnetic field
+	string returnValue = m_exportContainer.exportAll(m_runCounter, 15.0); // second entry is the strength of the magnetic field
+	B2INFO(" run " << m_runCounter <<": " << returnValue)
 }
 
 

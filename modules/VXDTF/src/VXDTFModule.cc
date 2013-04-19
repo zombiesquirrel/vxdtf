@@ -1054,12 +1054,19 @@ void VXDTFModule::event()
   thisInfoPackage.numPXDCluster = numOfPxdClusters;
   thisInfoPackage.numSVDCluster = numOfSvdClusters;
 	
-	vector<ClusterInfo> clustersOfEvent(numOfPxdClusters+numOfSvdClusters); /// contains info which tc uses which clusters
-	int sizeBeforeFilling = clustersOfEvent.size();
-	for (int i = 0; i < numOfPxdClusters; ++i) { clustersOfEvent.push_back(ClusterInfo(i, true)); }
-	for (int i = 0; i < numOfSvdClusters; ++i) { clustersOfEvent.push_back(ClusterInfo(i, false)); } // the position in the vector is NOT the index it has stored (except if there are no PXDClusters)
-	int sizeAfterFilling = clustersOfEvent.size();
-	B2DEBUG(100, " number of clusterInfo-instances: before filling: "<< sizeBeforeFilling<< ", after filling: " << sizeAfterFilling)
+	vector<ClusterInfo> clustersOfEvent; /// contains info which tc uses which clusters
+	for (int i = 0; i < numOfPxdClusters; ++i) {
+		ClusterInfo newCluster(i, true);
+		clustersOfEvent.push_back(newCluster);
+		B2DEBUG(100," PXDcluster "<<i<<" stores real Cluster " << clustersOfEvent[i].getIndex())
+	}
+	for (int i = 0; i < numOfSvdClusters; ++i) {
+		ClusterInfo newCluster(i, false);
+		clustersOfEvent.push_back(newCluster);
+		B2DEBUG(100," SVDcluster "<<i<<" in position "<<i+numOfPxdClusters<<" stores real Cluster " << clustersOfEvent[i+numOfPxdClusters].getIndex())
+	} // the position in the vector is NOT the index it has stored (except if there are no PXDClusters)
+	int nClusterInfos = clustersOfEvent.size();
+
   // preparing storearray for trackCandidates and fitted tracks
   StoreArray<GFTrackCand> finalTrackCandidates(m_PARAMgfTrackCandsColName);
   finalTrackCandidates.create();
@@ -1073,7 +1080,7 @@ void VXDTFModule::event()
   m_TESTERtimeConsumption.intermediateStuff += boost::chrono::duration_cast<boostNsec>(stopTimer - beginEvent);
   thisInfoPackage.sectionConsumption.intermediateStuff += boost::chrono::duration_cast<boostNsec>(stopTimer - beginEvent);
 
-  B2DEBUG(1, "VXDTF event " << m_eventCounter << ": size of arrays, PXDCluster: " << numOfPxdClusters << ", SVDCLuster: " << numOfSvdClusters);
+  B2DEBUG(1, "VXDTF event " << m_eventCounter << ": size of arrays, PXDCluster: " << numOfPxdClusters << ", SVDCLuster: " << numOfSvdClusters << ", clustersOfEvent: " << nClusterInfos);
 
   TVector3 hitGlobal, hitLocal, transformedHitLocal, localSensorSize;
   double vSize, uSizeAtHit, uCoord, vCoord;
@@ -1084,6 +1091,8 @@ void VXDTFModule::event()
   string checkString4badHits = "-", testString;
   for (int iPart = 0; iPart < numOfPxdClusters; ++iPart) { /// means: numOfPxdClusters > 0 if at least one pass wants PXD hits
     const PXDCluster* const aClusterPtr = aPxdClusterArray[iPart];
+		
+		B2DEBUG(100," pxdCluster has clusterIndexUV: " << iPart<< " with collected charge: " << aClusterPtr->getCharge()<< " and their infoClass is at: " << iPart << " with collected charge: " << aPxdClusterArray[iPart]->getCharge())
 
     hitLocal.SetXYZ(aClusterPtr->getU(), aClusterPtr->getV(), 0);
 
@@ -1221,7 +1230,7 @@ void VXDTFModule::event()
     }
     numOfClusterCombis = clusterHitList.size();
 
-    BOOST_FOREACH(ClusterHit aClusterCombi, clusterHitList) {
+    BOOST_FOREACH(ClusterHit& aClusterCombi, clusterHitList) {
       const SVDCluster* const uClusterPtr = aClusterCombi.uCluster; // uCluster
       const SVDCluster* const vClusterPtr = aClusterCombi.vCluster; // vCluster
       int clusterIndexU = aClusterCombi.uClusterIndex;
@@ -1229,6 +1238,8 @@ void VXDTFModule::event()
 
       float timeStampU = uClusterPtr->getClsTime();
       float timeStampV = vClusterPtr->getClsTime();
+// 			cerr << " clusterIndexU, clusterIndexV, numOfPxdClusters, nClusterInfos: " <<  clusterIndexU<<", "<<clusterIndexV<<", "<<numOfPxdClusters<<", "<<nClusterInfos << " - infoClusterU/infoClusterV store indices " << clustersOfEvent[numOfPxdClusters +clusterIndexU].getIndex() <<", "<< clustersOfEvent[numOfPxdClusters+clusterIndexV].getIndex() << endl;
+			B2DEBUG(100," svdClusterCombi has clusterIndexU/clusterIndexV: " << clusterIndexU<<"/"<<clusterIndexV << " with collected charge u/v: " << uClusterPtr->getCharge()<<"/"<< vClusterPtr->getCharge() << " and their infoClasses are at u/v: " << clusterIndexU+numOfPxdClusters <<"/"<< clusterIndexV+numOfPxdClusters << " with collected charge u/v: " << aSvdClusterArray[ clustersOfEvent[numOfPxdClusters+clusterIndexU].getIndex() ]->getCharge()<<"/"<<aSvdClusterArray[ clustersOfEvent[numOfPxdClusters+clusterIndexV].getIndex() ]->getCharge())
 
       aVxdID = uClusterPtr->getSensorID();
       aLayerID = aVxdID.getLayerNumber();
@@ -1475,11 +1486,11 @@ void VXDTFModule::event()
   bool  isOB = false;
   int countOverbookedClusters = 0;
   /// each clusterInfo knows which TCs are using it, following loop therefore checks each for overlapping ones
-  BOOST_FOREACH(ClusterInfo aCluster, clustersOfEvent) {
+  BOOST_FOREACH(ClusterInfo& aCluster, clustersOfEvent) {
     isOB = aCluster.isOverbooked();
     if (isOB == true) { countOverbookedClusters++; }
   } // now each TC knows whether it is overbooked or not (aCluster.isOverbooked() implicitly checked this)
-  B2DEBUG(1, "after checking overlaps: there are " << countOverbookedClusters << " clusters of " << clustersOfEvent.size() << " marked as 'overbooked'...")
+  B2DEBUG(1, "after checking overlaps: there are " << countOverbookedClusters << " clusters of " << nClusterInfos << " marked as 'overbooked'...")
 
   int countCurrentTCs = 0;
   BOOST_FOREACH(CurrentPassData * currentPass, m_passSetupVector) {
@@ -1609,11 +1620,11 @@ void VXDTFModule::event()
   isOB = false;
   countOverbookedClusters = 0;
   /// each clusterInfo knows which TCs are using it, following loop therefore checks each for overlapping ones
-  BOOST_FOREACH(ClusterInfo aCluster, clustersOfEvent) {
+  BOOST_FOREACH(ClusterInfo& aCluster, clustersOfEvent) {
     isOB = aCluster.isOverbooked();
     if (isOB == true) { countOverbookedClusters++; }
   } // now each TC knows whether it is overbooked or not (aCluster.isOverbooked() implicitly checked this)
-  B2DEBUG(1, "after checking overlaps again: there are " << countOverbookedClusters << " clusters of " << clustersOfEvent.size() << " marked as 'overbooked'...")
+  B2DEBUG(1, "after checking overlaps again: there are " << countOverbookedClusters << " clusters of " << nClusterInfos << " marked as 'overbooked'...")
   /** testing purposes - end */
 
 
@@ -1657,11 +1668,11 @@ void VXDTFModule::event()
   isOB = false;
   countOverbookedClusters = 0;
   /// each clusterInfo knows which TCs are using it, following loop therefore checks each for overlapping ones
-  BOOST_FOREACH(ClusterInfo aCluster, clustersOfEvent) {
+  BOOST_FOREACH(ClusterInfo& aCluster, clustersOfEvent) {
     isOB = aCluster.isOverbooked();
     if (isOB == true) { countOverbookedClusters++; }
   } // now each TC knows whether it is overbooked or not (aCluster.isOverbooked() implicitly checked this)
-  B2DEBUG(1, "after doing Hopfield again: there are " << countOverbookedClusters << " clusters of " << clustersOfEvent.size() << " marked as 'overbooked'...")
+  B2DEBUG(1, "after doing Hopfield again: there are " << countOverbookedClusters << " clusters of " << nClusterInfos << " marked as 'overbooked'...")
 
 
 
@@ -1677,8 +1688,31 @@ void VXDTFModule::event()
   timeStamp = boostClock::now();
   vector<int> totalIndices, tempIndices;
   BOOST_FOREACH(VXDTFTrackCandidate * currentTC, m_tcVector) {
-    if (currentTC->getCondition() == false) { continue; }
-
+		if (currentTC->getCondition() == false) { continue; }
+		
+		
+		
+		vector<int> pxdHits = currentTC->getPXDHitIndices();
+		stringstream printIndices, infoIndices;
+		infoIndices << "PXD: ";
+		printIndices << "PXD: ";
+		BOOST_FOREACH(int index, pxdHits) {
+			int clusterIndex = clustersOfEvent[index].getIndex();
+			printIndices << clusterIndex << " ";
+			infoIndices << index << " ";
+		}
+		vector<int> svdHits = currentTC->getSVDHitIndices();
+		infoIndices << ", SVD: ";
+		printIndices << ", SVD: ";
+		BOOST_FOREACH(int index, svdHits) {
+			int clusterIndex = clustersOfEvent[index].getIndex();
+			printIndices << clusterIndex << " ";
+			infoIndices << index << " ";
+		}
+		B2DEBUG(10, "before startint generateGFTrackCand: generated GFTC with following hits: " << printIndices.str());
+		B2DEBUG(10, "before startint generateGFTrackCand: generated GFTC with following intermediate clusters: " << infoIndices.str());
+		
+		
     tempIndices = currentTC->getSVDHitIndices();
     totalIndices.insert(totalIndices.end(), tempIndices.begin(), tempIndices.end());
 
@@ -1764,7 +1798,7 @@ void VXDTFModule::endRun()
   }
 
   infoStuff2 << ", following sensors had out of range hits: ";
-  BOOST_FOREACH(string badSensor, m_TESTERbadSensors) {
+  BOOST_FOREACH(string& badSensor, m_TESTERbadSensors) {
     infoStuff2 << badSensor << " ";
   }
   infoStuff2 << endl;
@@ -1808,7 +1842,7 @@ void VXDTFModule::endRun()
   int q90 = 9 * q10;
   B2INFO(" there were " << numLoggedEvents << " events recorded by the eventLogger, listing slowest, fastest, median q0.1 and q0.9 event:")
   int meanTimeConsumption = 0;
-  BOOST_FOREACH(EventInfoPackage infoPackage, m_TESTERlogEvents) {
+  BOOST_FOREACH(EventInfoPackage& infoPackage, m_TESTERlogEvents) {
     meanTimeConsumption += infoPackage.totalTime.count();
   }
   B2INFO("slowest event: " << m_TESTERlogEvents[0].Print());
@@ -2731,7 +2765,7 @@ int VXDTFModule::cellularAutomaton(CurrentPassData* currentPass)
     if (caRound > 30) { /// WARNING: hardcoded value
       B2ERROR("event " << m_eventCounter << ": VXDTF-CA: more than 30 ca rounds! " << activeCells << " living cells remaining");
       string currentSectors, space = " "; // stringstream currentSectors;
-      BOOST_FOREACH(SectorNameAndPointerPair key, currentPass->sectorSequence) {
+      BOOST_FOREACH(SectorNameAndPointerPair& key, currentPass->sectorSequence) {
         currentSectors += key.first; // currentSectors + key.first
         currentSectors += space;
       }
@@ -2959,7 +2993,7 @@ int VXDTFModule::tcFilter(CurrentPassData* currentPass, int passNumber, vector<C
   }
 
   int numTC = 0;
-  BOOST_FOREACH(VXDTFTrackCandidate * currentTC, currentPass->tcVector) {
+  BOOST_FOREACH(VXDTFTrackCandidate* currentTC, currentPass->tcVector) {
     vector<VXDTFHit*> currentHits = currentTC->getHits();
     int numOfHits = currentHits.size();
     stringstream secNameOutput;
@@ -2970,7 +3004,7 @@ int VXDTFModule::tcFilter(CurrentPassData* currentPass, int passNumber, vector<C
       if (currentHit->getDetectorType() == Const::PXD) {   // PXD
         clustersOfEvent[currentHit->getClusterIndexUV()].addTrackCandidate(currentTC);
       } else {
-        clustersOfEvent[currentHit->getClusterIndexU()].addTrackCandidate(currentTC); // should mean aVXDTFTrackCandidate*
+        clustersOfEvent[currentHit->getClusterIndexU()].addTrackCandidate(currentTC);
         clustersOfEvent[currentHit->getClusterIndexV()].addTrackCandidate(currentTC);
       }
     } // used for output and informing each cluster which TC is using it
@@ -3465,7 +3499,7 @@ void VXDTFModule::cleanEvent(CurrentPassData* currentPass, string centerSector)
 
   // sectors stay alive, therefore only reset!
   typedef pair<string, MapOfSectors::iterator> secEntry;
-  BOOST_FOREACH(secEntry aSector, currentPass->sectorSequence) {
+  BOOST_FOREACH(secEntry& aSector, currentPass->sectorSequence) {
     aSector.second->second->resetSector();
   }
   currentPass->sectorMap.find(centerSector)->second->resetSector(); // doing the same for the virtual sector which is not in the operation sequence

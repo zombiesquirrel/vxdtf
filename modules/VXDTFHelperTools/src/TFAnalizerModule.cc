@@ -182,10 +182,10 @@ void TFAnalizerModule::event()
   if (int(caTcVector.size()) != 0) {   // ! caTcVector.empty()
     B2DEBUG(1, " between loops: caTcVector.size():" << caTcVector.size() << ", caTcVector[0].indexNumber: " << caTcVector[0].indexNumber << ", finAssID: " << caTcVector[0].finalAssignedID << ", QI: " << caTcVector[0].qualityIndex)
   }
-  BOOST_FOREACH(VXDTrackCandidate & caTC, caTcVector) {
+  BOOST_FOREACH(VXDTrackCandidate& caTC, caTcVector) {
 
     B2DEBUG(10, " caTC " << caTC.indexNumber << ": has got the following assigned mc trackCandidates: (best value: mcTCID: " << caTC.finalAssignedID << ", QI: " << caTC.qualityIndex << ")")
-    BOOST_FOREACH(CompatibilityIndex thisEntry, caTC.compatiblePartners) {
+    BOOST_FOREACH(CompatibilityIndex& thisEntry, caTC.compatiblePartners) {
       B2DEBUG(10, "	Partner: " << boost::get<0>(thisEntry) << ", shares " << boost::get<1>(thisEntry) << " hits, thisTC has got " << boost::get<2>(thisEntry) << " dirty hits, " << boost::get<3>(thisEntry) << " hits are only in partner and they have a qualityRelation of " << boost::get<4>(thisEntry))
     }
     B2DEBUG(10, "-------------------------------------------------------------------------------")
@@ -234,7 +234,7 @@ void TFAnalizerModule::event()
     }
   } // print info about all found and lost mcTCs
 
-  BOOST_FOREACH(VXDTrackCandidate & caTC, caTcVector) {
+  BOOST_FOREACH(VXDTrackCandidate& caTC, caTcVector) {
     if (caTC.finalAssignedID == -1 || caTC.qualityIndex < m_PARAMqiThreshold) {
       if (m_PARAMprintExtentialAnalysisData == true) { printCA(false, caTC); } /// printCA
     } else {

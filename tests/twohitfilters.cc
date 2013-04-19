@@ -26,7 +26,8 @@ namespace Belle2 {
 		
 		EXPECT_DOUBLE_EQ(0., aFilter.calcDistZ());
 		
-// 		EXPECT_DOUBLE_EQ(0., aFilter.calcSlopeRZ());
+		/// uncomment following line and it wont compile anymore:
+		EXPECT_DOUBLE_EQ(0., aFilter.calcSlopeRZ());
 		
 // 		EXPECT_DOUBLE_EQ(0., aFilter.calcNormedDist3D());
 		
