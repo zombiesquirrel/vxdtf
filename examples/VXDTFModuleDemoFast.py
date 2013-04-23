@@ -48,9 +48,9 @@ vxdtf.logging.debug_level = 11
 param_vxdtf = {
     'tccMinState': [2],
     'tccMinLayer': [3],
-    'detectorType': ['VXD'], # Supports 'SVD' and 'VXD' so far
+    'detectorType': ['SVD'], # Supports 'SVD' and 'VXD' so far
     'sectorSetup': secSetup,
-    'calcQIType': 'circleFit', # 'kalman', 'circleFit' or 'trackLength'
+    'calcQIType': 'kalman', # 'kalman', 'circleFit' or 'trackLength'
     'cleanOverlappingSet': True,
     'useHopfield': True,
     'TESTERexpandedTestingRoutines': True
@@ -65,7 +65,7 @@ mctrackfinder.logging.debug_level = 101
 param_mctrackfinder = {  # 'primary'
     'UseCDCHits': 0,
     'UseSVDHits': 1,
-    'UsePXDHits': 1,
+    'UsePXDHits': 0,
     'MinimalNDF': 6,
     'UseClusters': 1,
     'WhichParticles': ['PXD', 'SVD'],
