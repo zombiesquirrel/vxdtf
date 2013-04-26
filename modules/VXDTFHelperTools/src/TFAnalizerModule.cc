@@ -90,7 +90,7 @@ void TFAnalizerModule::initialize()
 {
   StoreArray<GFTrackCand>::required(m_PARAMmcTCname);
   StoreArray<GFTrackCand>::required(m_PARAMcaTCname);
-	StoreArray<PXDCluster>::required();
+  StoreArray<PXDCluster>::required();
   StoreArray<SVDCluster>::required();
   StoreArray<PXDTrueHit>::required();
   StoreArray<SVDTrueHit>::required();
@@ -182,10 +182,10 @@ void TFAnalizerModule::event()
   if (int(caTcVector.size()) != 0) {   // ! caTcVector.empty()
     B2DEBUG(1, " between loops: caTcVector.size():" << caTcVector.size() << ", caTcVector[0].indexNumber: " << caTcVector[0].indexNumber << ", finAssID: " << caTcVector[0].finalAssignedID << ", QI: " << caTcVector[0].qualityIndex)
   }
-  BOOST_FOREACH(VXDTrackCandidate& caTC, caTcVector) {
+  BOOST_FOREACH(VXDTrackCandidate & caTC, caTcVector) {
 
     B2DEBUG(10, " caTC " << caTC.indexNumber << ": has got the following assigned mc trackCandidates: (best value: mcTCID: " << caTC.finalAssignedID << ", QI: " << caTC.qualityIndex << ")")
-    BOOST_FOREACH(CompatibilityIndex& thisEntry, caTC.compatiblePartners) {
+    BOOST_FOREACH(CompatibilityIndex & thisEntry, caTC.compatiblePartners) {
       B2DEBUG(10, "	Partner: " << boost::get<0>(thisEntry) << ", shares " << boost::get<1>(thisEntry) << " hits, thisTC has got " << boost::get<2>(thisEntry) << " dirty hits, " << boost::get<3>(thisEntry) << " hits are only in partner and they have a qualityRelation of " << boost::get<4>(thisEntry))
     }
     B2DEBUG(10, "-------------------------------------------------------------------------------")
@@ -216,9 +216,11 @@ void TFAnalizerModule::event()
     }
   }
 
-
+  vector<int>::iterator newEndOfVector;
+  /// WARNING: std:unique does delete double entries but does NOT resize the vector! This means that for every removed element, at the end of the vector remains one random value stored
   std::sort(foundIDs.begin(), foundIDs.end());
-  std::unique(foundIDs.begin(), foundIDs.end());
+  newEndOfVector = std::unique(foundIDs.begin(), foundIDs.end());
+  foundIDs.resize(std::distance(foundIDs.begin(), newEndOfVector));
   int numOfFoundIDs = foundIDs.size();
   m_countReconstructedTCs += numOfFoundIDs;
 
@@ -234,7 +236,7 @@ void TFAnalizerModule::event()
     }
   } // print info about all found and lost mcTCs
 
-  BOOST_FOREACH(VXDTrackCandidate& caTC, caTcVector) {
+  BOOST_FOREACH(VXDTrackCandidate & caTC, caTcVector) {
     if (caTC.finalAssignedID == -1 || caTC.qualityIndex < m_PARAMqiThreshold) {
       if (m_PARAMprintExtentialAnalysisData == true) { printCA(false, caTC); } /// printCA
     } else {
@@ -282,20 +284,15 @@ void TFAnalizerModule::printInfo(int recoveryState, VXDTrackCandidate& mcTC, VXD
     tcType = "PerfectMCTC";
   }
 
-  TVector3 zDir; // vector parallel to z-axis
-  zDir.SetXYZ(0., 0., 1.);
-  double residual = mcTC.pTValue - caTC.pTValue; // difference of estimated and real transverseMomentum;
+  TVector3 zDir(0., 0., 1.); // vector parallel to z-axis
   TVector3 caDirection = caTC.direction;
   TVector3 mcDirection = mcTC.direction;
 
-  double theta = mcDirection.Angle(zDir);
-  theta = theta * 180.*TMath::InvPi();
-  double angle = caDirection.Angle(mcDirection); // angle between the initial momentum vectors in rad
-  angle = angle * 180.*TMath::InvPi(); // ... and now in grad
+  double theta = mcDirection.Angle(zDir) * 180.*TMath::InvPi();
+  double angle = caDirection.Angle(mcDirection) * 180.*TMath::InvPi(); // angle between the initial momentum vectors in grad
   caDirection.SetZ(0.);
   mcDirection.SetZ(0.);
-  double transverseAngle = caDirection.Angle(mcDirection);
-  transverseAngle = transverseAngle * 180.*TMath::InvPi(); // ... and now in grad
+  double transverseAngle = caDirection.Angle(mcDirection) * 180.*TMath::InvPi();
 
   B2INFO("PRINTINFO: At event " << m_eventCounter <<
          ": mcType §" << tcType <<
@@ -304,7 +301,7 @@ void TFAnalizerModule::printInfo(int recoveryState, VXDTrackCandidate& mcTC, VXD
          "§° got pT of §" << setprecision(4) << mcTC.pTValue <<
          "§ GeV/c, assigned caTC got pT of §" << setprecision(4) << caTC.pTValue <<
          "§ GeV/c, and probValue of §" << setprecision(6) << caTC.probValue <<
-         "§. Their residual of pT was §" << setprecision(4) << residual <<
+         "§. Their residual of pT was §" << setprecision(4) << mcTC.pTValue - caTC.pTValue << /*difference of estimated and real transverseMomentum */
          "§ GeV/c, their residual of angle was §" << setprecision(4) << angle <<
          "§ in grad, their residual of transverse angle was §" << setprecision(4) << transverseAngle <<
          "§ with PDGCode of mcTC: §" << mcTC.pdgCode <<
@@ -333,25 +330,16 @@ void TFAnalizerModule::printMC(bool type, VXDTrackCandidate& mcTC)
   string info;
   if (type == true) { info = "FOUNDINFO"; } else { info = "LOSTINFO"; }
 
-  TVector3 zDir; // vector parallel to z-axis
-  zDir.SetXYZ(0., 0., 1.);
-  TVector3 mcDirection = mcTC.direction;
-
-  double theta = mcDirection.Angle(zDir);
-  theta = theta * 180.*TMath::InvPi();
-  double distVertex2Zero = mcTC.vertex.Mag();
-  double distTVertex2Zero = mcTC.vertex.Perp();
-  double distZVertex2Zero = mcTC.vertex.Z();
-  int pdg = mcTC.pdgCode;
+  TVector3 zDir(0., 0., 1.); // vector parallel to z-axis
 
   B2INFO(info << ": At event " << m_eventCounter <<
          ": MC with ID " << mcTC.indexNumber << " having §" << mcTC.coordinates.size() <<
-         "§ hits with theta of §" << setprecision(4) << theta <<
+         "§ hits with theta of §" << setprecision(4) <<  mcTC.direction.Angle(zDir) * 180.*TMath::InvPi() <<
          "§° got pT of §" << setprecision(4) << mcTC.pTValue <<
-         "§ GeV/c and vertex distance to origin: §" << setprecision(4) << distVertex2Zero <<
-         "§cm, transverseDistance: §" << setprecision(4) << distTVertex2Zero <<
-         "§cm, zDistance: §" << setprecision(4) << distZVertex2Zero <<
-         "§, and pdg of: §" << setprecision(4) << pdg <<
+         "§ GeV/c and vertex distance to origin: §" << setprecision(4) << mcTC.vertex.Mag() <<
+         "§cm, transverseDistance: §" << setprecision(4) << mcTC.vertex.Perp() <<
+         "§cm, zDistance: §" << setprecision(4) << mcTC.vertex.Z() <<
+         "§, and pdg of: §" << setprecision(4) << mcTC.pdgCode <<
          "§") // '§' will be used to filter
 }
 
@@ -362,20 +350,15 @@ void TFAnalizerModule::printCA(bool type, VXDTrackCandidate& caTC)
   string info;
   if (type == true) { info = "FOUNDCATCINFO"; } else { info = "LOSTCATCINFO"; }
 
-  TVector3 zDir; // vector parallel to z-axis
-  zDir.SetXYZ(0., 0., 1.);
-  TVector3 caDirection = caTC.direction;
-
-  double theta = caDirection.Angle(zDir);
-  theta = theta * 180.*TMath::InvPi();
-  int pdg = caTC.pdgCode;
+  TVector3 zDir(0., 0., 1.); // vector parallel to z-axis
 
   B2INFO(info << ": At event " << m_eventCounter <<
          ": CA with assigned ID " << caTC.finalAssignedID <<
          " having §" << caTC.coordinates.size() <<
-         "§ hits with theta of §" << setprecision(4) << theta <<
+         "§ hits with theta of §" << setprecision(4) << caTC.direction.Angle(zDir) * 180.*TMath::InvPi() <<
          "§° got pT of §" << setprecision(4) << caTC.pTValue <<
-         "§ GeV/c, QI of §" << setprecision(4) << caTC.qualityIndex << "§ and pdg of: " << pdg) // '§' will be used to filter
+         "§ GeV/c, QI of §" << setprecision(4) << caTC.qualityIndex <<
+         "§ and pdg of: " << caTC.pdgCode) // '§' will be used to filter
 }
 
 
@@ -396,10 +379,10 @@ void TFAnalizerModule::extractHits(GFTrackCand* aTC,
   B2DEBUG(10, "starting extractHits... isMCTC: " << isMCTC << ", index: " << index)
   int numOfHits = aTC->getNHits();
   B2DEBUG(10, " found " << numOfHits << " hits for TC " << index)
-	if (int(aTC->getNHits()) == 0 ) {
-		B2ERROR("TFAnalizerModule::extractHits - event " << m_eventCounter << ": GfTrackcand with isMCTC " << isMCTC << " has no hits, neglecting tc...:")
-		return;
-	}
+  if (int(aTC->getNHits()) == 0) {
+    B2ERROR("TFAnalizerModule::extractHits - event " << m_eventCounter << ": GfTrackcand with isMCTC " << isMCTC << " has no hits, neglecting tc...:")
+    return;
+  }
   vector<int> pxdHitIDsOfCurrentTC;
   vector<int> svdHitIDsOfCurrentTC;
   vector<TVector3> coordinates;
@@ -459,14 +442,12 @@ void TFAnalizerModule::extractHits(GFTrackCand* aTC,
   momentum_t.SetZ(0.);
   double pT = momentum_t.Mag();
   int pdgCode = aTC->getPdgCode();
-  bool gotNewMomentum = false;
-	B2DEBUG(10, " tc no " << index << " with isMCTC " << isMCTC << " has got initial pValue " << pValue << ", pdgCode " << pdgCode << " and " << int(aTC->getNHits()) << " hits")
+  B2DEBUG(10, " tc no " << index << " with isMCTC " << isMCTC << " has got initial pValue " << pValue << ", pdgCode " << pdgCode << " and " << int(aTC->getNHits()) << " hits")
 
   if (isMCTC == true) {   // want momentum vector of innermost hit, not of primary vertex
+    bool gotNewMomentum = false;
 
-    if (pT < m_PARAMminTMomentumFilter or pT > m_PARAMmaxTMomentumFilter) {
-      return; /// do not store mcTrack in this case
-    }
+    if (pT < m_PARAMminTMomentumFilter or pT > m_PARAMmaxTMomentumFilter) { return; } // do not store mcTrack in this case
 
     int detID = -1; // ID of detector
     int hitID = -1; // ID of Hit in StoreArray

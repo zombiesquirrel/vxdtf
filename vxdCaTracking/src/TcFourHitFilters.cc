@@ -21,7 +21,7 @@ bool TcFourHitFilters::checkDeltapT(string nameDeltapT)
   if (pCutoff != NULL) {
     double aResult = FourHitFilters::deltapT();
     if (/*aResult > pCutoff->getMinValue() &&*/ aResult < pCutoff->getMaxValue()) {
-			m_deltaPtCtr.first++;
+      m_deltaPtCtr.first++;
       return true;
     }
   }
@@ -36,7 +36,7 @@ bool TcFourHitFilters::checkDeltaDistCircleCenter(string nameDeltaDistCircleCent
   if (pCutoff != NULL) {
     double aResult = FourHitFilters::deltaDistCircleCenter();
     if (aResult < pCutoff->getMaxValue()) {
-			m_deltaDistCircleCenterCtr.first++;
+      m_deltaDistCircleCenterCtr.first++;
       return true;
     }
   }

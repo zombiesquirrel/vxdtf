@@ -87,20 +87,20 @@ namespace Belle2 {
 //    typedef std::map<std::string, VXDSector*> MapOfSectors;
 //    typedef std::map<std::string, Cutoff*> CutoffMap;
 //     typedef std::map<std::string, CutoffMap*> MapOfCutoffTypes;
-    typedef boost::unordered_map<std::string, VXDSector*> MapOfSectors;
-    typedef std::pair<std::string, VXDSector* > secMapEntry;
-    typedef boost::unordered_map<std::string, Cutoff*> CutoffMap;
-    typedef boost::unordered_map<std::string, CutoffMap*> MapOfCutoffTypes;
-    typedef std::vector<VXDTFHit*> HitsOfEvent;
+    typedef boost::unordered_map<std::string, VXDSector*> MapOfSectors; /**< stores whole sectorMap used for storing cutoffs */
+    typedef std::pair<std::string, VXDSector* > secMapEntry; /**< represents an entry of the MapOfSectors */
+    typedef boost::unordered_map<std::string, Cutoff*> CutoffMap; /**< Is a map storing cutoffs  */
+    typedef boost::unordered_map<std::string, CutoffMap*> MapOfCutoffTypes; /**< represents an entry of the CutoffMap */
+    typedef std::vector<VXDTFHit*> HitsOfEvent; /**< contains all hits of event */
     typedef std::list<VXDSegmentCell*> ActiveSegmentsOfEvent; /**< is list since random deleting processes are needed */
     typedef std::vector<VXDSegmentCell*> TotalSegmentsOfEvent; /**< is vector since no entries are deleted and random access is needed  */
     typedef std::pair<std::string, MapOfSectors::iterator> SectorNameAndPointerPair; /**< why string? we are storing the name of the sector to be able to sort them! */
     typedef std::list<SectorNameAndPointerPair> OperationSequenceOfActivatedSectors; /**< contains all active sectors, can be sorted by name (first entry) */
-    typedef std::vector<VXDTFTrackCandidate*> TCsOfEvent;
-    typedef std::vector<CurrentPassData*> PassSetupVector;
+    typedef std::vector<VXDTFTrackCandidate*> TCsOfEvent; /**< contains all track candidates of event */
+    typedef std::vector<CurrentPassData*> PassSetupVector; /**< contains all passes used for track reconstruction */
     typedef std::pair<bool, double> Filter; /**< defines whether current filter is allowed (.first) and whether the cutoffvalues shall be tuned (.second).  */
-    typedef boost::chrono::high_resolution_clock boostClock; // high_resolution_clock, process_cpu_clock
-    typedef boost::chrono::microseconds boostNsec; // microseconds, milliseconds
+    typedef boost::chrono::high_resolution_clock boostClock; /**< used for measuring time comsumption */ // high_resolution_clock, process_cpu_clock
+    typedef boost::chrono::microseconds boostNsec; /**< defines time resolution (currently mictroseconds) */ // microseconds, milliseconds
 //    typedef boost::chrono::duration_cast durationCast;
 //    typedef std::chrono::high_resolution_clock boostClock;
 //    typedef std::chrono::nanoseconds boostNsec;
@@ -112,7 +112,7 @@ namespace Belle2 {
     struct SensorStruct {
       std::vector<std::pair<int, Belle2::SVDCluster*> > uClusters; /**< .first is arrayIndex in StoreArray, .second is pointer to the Cluster itself */
       std::vector<std::pair<int, Belle2::SVDCluster*> > vClusters; /**< same as uClusters, but for vClusters  */
-      int layerID;
+      int layerID; /**< layer ID of the Cluster */
     };
 
 
@@ -375,7 +375,7 @@ namespace Belle2 {
     /** calculate real kalman-QI's for each currently living TC */
     void calcQIbyKalman(TCsOfEvent& tcVector,
                         StoreArray<PXDCluster>& pxdClusters,
-												std::vector<ClusterInfo>& clusters); // ->auslagern!
+                        std::vector<ClusterInfo>& clusters); // ->auslagern!
 //    void calcQIbyKalman(TCsOfEvent& tcVector,
 //                         StoreArray<PXDCluster>& pxdClusters,
 //                         StoreArray<SVDCluster>& svdClusters,
@@ -490,13 +490,13 @@ namespace Belle2 {
     NbFinderFilters m_threeHitFilterBox; /**< contains all the three hit filters needed by the nbFinder */
     TcFourHitFilters m_fourHitFilterBox; /**< contains all the four hit filters needed by the post-ca-Filter */
     TrackletFilters m_trackletFilterBox; /**< contains all the four-or-more hit filters needed by the post-ca-Filter */
-    LittleHelper m_littleHelperBox; /** bundles small but often used functions for smearing and others.  */
+    LittleHelper m_littleHelperBox; /**< bundles small but often used functions for smearing and others.  */
 
     int m_chargeSignFactor; /**< particle dependent. for leptons it is 1, for other particles it's -1... */
 
     int m_usePXDorSVDorVXDhits; /**< when having more than one pass per event, sector maps using PXD, SVD or VXD can be set independently. To produce TFHits only when needed, this value is set to -1,0 or 1 */
 
-    std::vector<std::string> m_PARAMmultiPassSectorSetup; /**< */// controls usage of one or several passes for TF per event (allows differnt pT's or curling track support)
+    std::vector<std::string> m_PARAMmultiPassSectorSetup; /**< controls usage of one or several passes for TF per event (allows differnt pT's or curling track support) */
     double m_PARAMtuneCutoffs; /**< for rapid changes of cutoffs (no personal xml files needed), reduces/enlarges the range of the cutoffs in percent (lower and upper values are changed by this value). Only valid in range -50% < x < +1000% */
 
     int m_eventCounter; /**< knows current event number */

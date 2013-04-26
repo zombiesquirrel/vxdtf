@@ -17,7 +17,7 @@
 
 namespace Belle2 {
 
-	/** Description:
+  /** Description:
      * stores the CutOffValues defined for a special constellation of combined VXDTFHits.
      * The constellation is stored in the scope-variable, the type of CutOff is stored in the type-variable.
      * maybe needed later:

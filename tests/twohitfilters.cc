@@ -18,19 +18,17 @@ namespace Belle2 {
   /** Test simple Setters and Getters. */
   TEST_F(TwoHitFiltersTest, simpleTest)
   {
-		TwoHitFilters aFilter = TwoHitFilters();
-		
-		EXPECT_DOUBLE_EQ(0., aFilter.calcDist3D());
-		
-		EXPECT_DOUBLE_EQ(0., aFilter.calcDistXY());
-		
-		EXPECT_DOUBLE_EQ(0., aFilter.calcDistZ());
-		
-		/// uncomment following line and it wont compile anymore:
-		EXPECT_DOUBLE_EQ(0., aFilter.calcSlopeRZ());
-		
-// 		EXPECT_DOUBLE_EQ(0., aFilter.calcNormedDist3D());
-		
-    EXPECT_EQ(11, 11);
+    TwoHitFilters aFilter = TwoHitFilters();
+
+    EXPECT_DOUBLE_EQ(0., aFilter.calcDist3D());
+
+    EXPECT_DOUBLE_EQ(0., aFilter.calcDistXY());
+
+    EXPECT_DOUBLE_EQ(0., aFilter.calcDistZ());
+
+    EXPECT_DOUBLE_EQ(0., aFilter.calcSlopeRZ());
+
+   EXPECT_DOUBLE_EQ(0., aFilter.calcNormedDist3D());
+	 
   }
 }  // namespace

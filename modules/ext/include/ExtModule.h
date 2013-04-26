@@ -36,6 +36,7 @@ class GFTrack;
 namespace Belle2 {
 
   class ExtManager;
+  class ExtCylSurfaceTarget;
 
   /** The geant4e-based track extrapolation module.
    *
@@ -134,6 +135,9 @@ namespace Belle2 {
 
     // Time of flight (ns) along the track from the interaction point
     double m_tof;
+
+    // virtual "target" cylinder
+    ExtCylSurfaceTarget* m_target;
 
   };
 

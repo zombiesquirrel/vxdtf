@@ -23,8 +23,8 @@ using boost::math::sign;
 
 double ThreeHitFilters::calcAngle3D()
 {
-	double angle = ((m_x2 + m_y2 + m_z2) / (m_vecAB.Mag2() * m_vecBC.Mag2())); // fullCalc would be acos(m_vecAB.Dot(m_vecBC) / m_vecAB.Mag()*m_vecBC.Mag())
-	return m_twoHitFilter.filterNan(angle);
+  double angle = ((m_x2 + m_y2 + m_z2) / (m_vecAB.Mag2() * m_vecBC.Mag2())); // fullCalc would be acos(m_vecAB.Dot(m_vecBC) / m_vecAB.Mag()*m_vecBC.Mag())
+  return m_twoHitFilter.filterNan(angle);
 } // return unit: none (calculation for degrees is incomplete, if you want readable numbers, use fullAngle3D instead)
 
 
@@ -32,14 +32,14 @@ double ThreeHitFilters::fullAngle3D()
 {
   double angle = acos(m_vecAB.Dot(m_vecBC) / m_vecAB.Mag() * m_vecBC.Mag()); // 0-pi
   angle = (angle * (180. / M_PI));
-	return m_twoHitFilter.filterNan(angle);
+  return m_twoHitFilter.filterNan(angle);
 } // return unit: ° (0 - 180°)
 
 
 double ThreeHitFilters::calcAngleXY()
 {
   double angle = ((m_x2 + m_y2) / (m_vecAB.Perp2() * m_vecBC.Perp2())); // fullAngle:
-	return m_twoHitFilter.filterNan(angle);
+  return m_twoHitFilter.filterNan(angle);
 } // return unit: none (calculation for degrees is incomplete, if you want readable numbers, use fullAngleXY instead)
 
 
@@ -47,7 +47,7 @@ double ThreeHitFilters::fullAngleXY()
 {
   double angle = fullAngle2D(m_vecAB, m_vecBC); // 0-pi
   angle = (angle * (180. / M_PI));
-	return m_twoHitFilter.filterNan(angle);
+  return m_twoHitFilter.filterNan(angle);
 } // return unit: ° (0 - 180°)
 
 
@@ -65,7 +65,7 @@ double ThreeHitFilters::fullAngleRZ()
   TVector3 rzVecBC(m_vecBC.Perp(), m_vecBC[2], 0.);
   double angle = fullAngle2D(rzVecAB, rzVecBC); // 0-pi
   angle = (angle * (180. / M_PI));
-	return m_twoHitFilter.filterNan(angle);
+  return m_twoHitFilter.filterNan(angle);
 } // return unit: ° (0 - 180°)
 
 
@@ -104,7 +104,7 @@ double ThreeHitFilters::calcDeltaSlopeRZ()
   m_twoHitFilter.resetValues(m_hitB, m_hitC);
   double slopeBC = m_twoHitFilter.calcSlopeRZ();
 
-	return m_twoHitFilter.filterNan(slopeBC / slopeAB); // value should be near 1
+  return m_twoHitFilter.filterNan(slopeBC / slopeAB); // value should be near 1
 } // return unit: none
 
 
@@ -125,7 +125,7 @@ double ThreeHitFilters::calcHelixFit()
 
 double ThreeHitFilters::calcAngle2D(TVector3& vecA, TVector3& vecB)
 {
-	double angle = ((vecA[0] * vecB[0] + vecA[1] * vecB[1]) / (vecA.Perp2() * vecB.Perp2()));
+  double angle = ((vecA[0] * vecB[0] + vecA[1] * vecB[1]) / (vecA.Perp2() * vecB.Perp2()));
   return m_twoHitFilter.filterNan(angle);
 }
 
@@ -134,7 +134,7 @@ double ThreeHitFilters::calcAngle2D(TVector3& vecA, TVector3& vecB)
 double ThreeHitFilters::fullAngle2D(TVector3& vecA, TVector3& vecB)
 {
   double angle = acos((vecA[0] * vecB[0] + vecA[1] * vecB[1]) / (sqrt(vecA.Perp() * vecB.Perp())));
-	return m_twoHitFilter.filterNan(angle);
+  return m_twoHitFilter.filterNan(angle);
 }
 
 

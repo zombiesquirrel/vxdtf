@@ -20,7 +20,7 @@ bool SegFinderFilters::checkDist3D(std::string nameDist3D)
   if (pCutoff != NULL) {
     double aResult = TwoHitFilters::calcDist3D();
     if (aResult > pCutoff->getMinValue() && aResult < pCutoff->getMaxValue()) {   // min & max
-			m_dist3DCtr.first++;
+      m_dist3DCtr.first++;
       return true;
     }
   }
@@ -34,7 +34,7 @@ bool SegFinderFilters::checkDistXY(std::string nameDistXY)
   if (pCutoff != NULL) {
     double aResult = TwoHitFilters::calcDistXY();
     if (aResult > pCutoff->getMinValue() && aResult < pCutoff->getMaxValue()) {   // min & max
-			m_distXYCtr.first++;
+      m_distXYCtr.first++;
       return true;
     }
   }
@@ -48,7 +48,7 @@ bool SegFinderFilters::checkDistZ(std::string nameDistZ)
   if (pCutoff != NULL) {
     double aResult = TwoHitFilters::calcDistZ();
     if (aResult > pCutoff->getMinValue() && aResult < pCutoff->getMaxValue()) {   // min & max
-			m_distZCtr.first++;
+      m_distZCtr.first++;
       return true;
     }
   }
@@ -62,7 +62,7 @@ bool SegFinderFilters::checkNormedDist3D(std::string nameNormDist3D)    // max o
   if (pCutoff != NULL) {
     double aResult = TwoHitFilters::calcNormedDist3D();
     if (aResult < pCutoff->getMaxValue()) {
-			m_normDist3DCtr.first++;
+      m_normDist3DCtr.first++;
       return true;
     }
   }
@@ -76,7 +76,7 @@ bool SegFinderFilters::checkSlopeRZ(std::string nameSlopeRZ)    // min & max
   if (pCutoff != NULL) {
     double aResult = TwoHitFilters::calcSlopeRZ();
     if (aResult > pCutoff->getMinValue() && aResult < pCutoff->getMaxValue()) {
-			m_slopeRZCtr.first++;
+      m_slopeRZCtr.first++;
       return true;
     }
   }
@@ -91,6 +91,6 @@ pair <double, double> SegFinderFilters::getCutoffs(string aFilter)
   if (pCutoff != NULL) {
 //     pair <double, double> aPair = make_pair(pCutoff->getMinValue(), pCutoff->getMaxValue());
     return make_pair(pCutoff->getMinValue(), pCutoff->getMaxValue());
-  } 
+  }
   return make_pair(0., 0.);
 }
