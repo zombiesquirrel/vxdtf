@@ -22,14 +22,14 @@ namespace Belle2 {
 		VxdID vxdID = VxdID(34624); // this should be a sensor on layer 3
 		int vxdIDInt = vxdID;
 		
-		EXPECT_EQ(3, vxdID.getLayerNumber());
+		EXPECT_EQ(4, vxdID.getLayerNumber());
 		
 		// now we are using the constructor with a VxdID, a subLayerID and a sectorID
 		bool subLayerID = true;
 		unsigned short sectorID = 15;
     FullSecID aFullSecID = FullSecID(vxdID, subLayerID, sectorID);
 
-    EXPECT_EQ(3, aFullSecID.getLayerID());
+    EXPECT_EQ(4, aFullSecID.getLayerID());
 
     EXPECT_EQ(subLayerID, aFullSecID.getSubLayerID());
 
@@ -37,11 +37,13 @@ namespace Belle2 {
 		
 		EXPECT_EQ(vxdIDInt, aFullSecID.getUniID());
 		
+		EXPECT_EQ(sectorID, aFullSecID.getSecID());
+		
 		// now we are using the second constructor using an encoded fullSecID as input:
 		
 		FullSecID anotherFullSecID = FullSecID(aFullSecID.getFullSecID());
 		
-		EXPECT_EQ(3, anotherFullSecID.getLayerID());
+		EXPECT_EQ(4, anotherFullSecID.getLayerID());
 
     EXPECT_EQ(subLayerID, anotherFullSecID.getSubLayerID());
 
@@ -49,7 +51,7 @@ namespace Belle2 {
 		
 		EXPECT_EQ(vxdIDInt, anotherFullSecID.getUniID());
 		
-		EXPECT_EQ(sectorID, anotherFullSecID.getFullSecID());
+		EXPECT_EQ(aFullSecID.getSecID(), anotherFullSecID.getSecID());
 		
 		EXPECT_EQ(aFullSecID.getFullSecID(), anotherFullSecID.getFullSecID());
 

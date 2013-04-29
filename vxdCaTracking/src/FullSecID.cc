@@ -10,6 +10,7 @@
 
 #include "../include/FullSecID.h"
 #include <assert.h>
+#include <iostream>
 
 using namespace std;
 using namespace Belle2;
@@ -28,7 +29,7 @@ const int FullSecID::LayerBitShift   = SubLayerBits + VxdIDBits + SectorBits;
 const int FullSecID::SubLayerBitShift   = VxdIDBits + SectorBits;
 const int FullSecID::VxdIDBitShift  = SectorBits;
 const int FullSecID::SubLayerMask = MaxSubLayer << SubLayerBitShift;
-const int FullSecID::VxdIDMask = MaxVxdID << SubLayerBitShift;
+const int FullSecID::VxdIDMask = MaxVxdID << VxdIDBitShift;
 const int FullSecID::SectorMask = MaxSector;
 
 
@@ -38,10 +39,11 @@ FullSecID::FullSecID(VxdID vxdID, bool subLayerID, unsigned int sectorNumber):
 	unsigned int SubLayerID = subLayerID; // converting to int
 	unsigned int UniID = vxdID;
 	
-	assert (LayerID > MaxLayer);
-	assert (SubLayerID > MaxSubLayer);
-	assert (UniID > MaxVxdID);
-	assert (sectorNumber > MaxSector);
+	cerr << "LayerID " << LayerID << ", MaxLayer " << MaxLayer << ", SubLayerID " << SubLayerID << ", MaxSubLayer " << MaxSubLayer << ", UniID " << UniID << ", MaxVxdID " << MaxVxdID << ", sectorNumber " << sectorNumber << ", MaxSector " << MaxSector << endl;
+	assert (LayerID < MaxLayer+1);
+	assert (SubLayerID < MaxSubLayer+1);
+	assert (UniID < MaxVxdID+1);
+	assert (sectorNumber < MaxSector+1);
 
 	LayerID <<= LayerBitShift;
 	SubLayerID <<= SubLayerBitShift;
@@ -51,21 +53,31 @@ FullSecID::FullSecID(VxdID vxdID, bool subLayerID, unsigned int sectorNumber):
 }
 
 short int FullSecID::getLayerID() {
+// 	cerr << "getLayerID: " << (m_fullSecID >> LayerBitShift) << endl;
 	return m_fullSecID >> LayerBitShift;
 }
 
 bool FullSecID::getSubLayerID() {
-	return m_fullSecID bitand SubLayerMask;
+// 	cerr << "getSubLayerID: " << ( (m_fullSecID bitand SubLayerMask) >> SubLayerBitShift) << endl;
+	return (m_fullSecID bitand SubLayerMask) >> SubLayerBitShift;
 }
 
 VxdID FullSecID::getVxdID() {
-	return m_fullSecID bitand VxdIDMask;
+	cerr << "getVxdID: " << (VxdID((m_fullSecID bitand VxdIDMask) >> VxdIDBitShift)) << endl;
+	return VxdID((m_fullSecID bitand VxdIDMask) >> VxdIDBitShift);
 }
 
-short int FullSecID::getUniID() {
-	return m_fullSecID bitand SectorMask;
+unsigned short int FullSecID::getUniID() {
+	cerr << "getUniID: " << ((m_fullSecID bitand VxdIDMask) >> VxdIDBitShift) << endl;
+	return (m_fullSecID bitand VxdIDMask) >> VxdIDBitShift;
+}
+
+short int FullSecID::getSecID() {
+// 	cerr << "getSecID: " << (m_fullSecID bitand SectorMask) << endl;
+	return (m_fullSecID bitand SectorMask);
 }
 
 int FullSecID::getFullSecID() {
+// 	cerr << "getFullSecID: " << m_fullSecID << endl;
 	return m_fullSecID;
 }

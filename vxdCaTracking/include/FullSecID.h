@@ -75,7 +75,10 @@ namespace Belle2 {
 		VxdID getVxdID();
 
 		/** returns uniID of sensor (basically the same as VxdID (can simply converted to vxdID(uniID)) but a trifle faster when only the short int value storing the VxdID information is wanted). */
-		short int getUniID();
+		unsigned short int getUniID();
+		
+		/** returns SecID of current FullSecID (only unique for each sensor). */
+		short int getSecID();
 
 		/** returns the FullSecID coded as integer for further use (can be reconverted to FullSecID by using FullSecID(value)) */
 		int getFullSecID();
