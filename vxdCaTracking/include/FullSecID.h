@@ -13,6 +13,7 @@
 #define FullSecID_H
 
 #include <vxd/dataobjects/VxdID.h>
+#include <string>
 
 
 
@@ -43,7 +44,7 @@ namespace Belle2 {
     FullSecID(const FullSecID& secID):
 					m_fullSecID(secID.m_fullSecID) {}
 
-    /** Constructor taking the encoded full Sec ID.
+    /** Constructor taking the encoded full Sec ID (int).
 		 * use this one if you have got an already existing integer storing the FullSecID information and you want the possibility to extract its entries (layer, sublayer, vxdID, secID)
      *
      *  @param id  Number of the SecID using the encoded format. Careful - SecIDs are not continuously within the encoded number.
@@ -52,7 +53,15 @@ namespace Belle2 {
     FullSecID(unsigned int id = 0):
 					m_fullSecID(id) {}
 
-					
+
+		/** Constructor taking the encoded full Sec ID (string).
+		 * use this one if you want to convert a string-encoded sector into the internal version (e.g. provided by the xml-files storing a sectormap) into the internal version. This constructor should be dispensable after changing from xml-based data storage to sql-storage
+     *
+     *  @param sid  global secID encoded in a string file eg "41_12345_3" 41 means layer 4, sublayer 1, 12345 is a dummy for the integer-version of the VxdID and the last digit is the local secID on the sensor
+     */
+    FullSecID(std::string sid);
+
+
     /** Constructor. If you want to create a new Full Sec ID using the information which shall be stored there
 		 * (e.g. layer, sublayer, vxdID, secID)
 		 * 
@@ -83,6 +92,8 @@ namespace Belle2 {
 		/** returns the FullSecID coded as integer for further use (can be reconverted to FullSecID by using FullSecID(value)) */
 		int getFullSecID();
 
+		/** returns the FullSecID coded as string compatible to secIDs stored in the xml-sectormaps */
+		std::string getFullSecString();
 
   protected:
 		/** Number of bits available to represent a layer */

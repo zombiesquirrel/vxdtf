@@ -1,6 +1,7 @@
 #include <framework/gearbox/Const.h>
 #include <framework/logging/Logger.h>
 #include <tracking/vxdCaTracking/FullSecID.h>
+#include <iostream>
 // #include <TMatrixF.h>
 // #include <RKTrackRep.h>
 #include <gtest/gtest.h>
@@ -39,7 +40,7 @@ namespace Belle2 {
 		
 		EXPECT_EQ(sectorID, aFullSecID.getSecID());
 		
-		// now we are using the second constructor using an encoded fullSecID as input:
+		// now we are using the second constructor using an encoded fullSecID (int) as input:
 		
 		FullSecID anotherFullSecID = FullSecID(aFullSecID.getFullSecID());
 		
@@ -54,6 +55,25 @@ namespace Belle2 {
 		EXPECT_EQ(aFullSecID.getSecID(), anotherFullSecID.getSecID());
 		
 		EXPECT_EQ(aFullSecID.getFullSecID(), anotherFullSecID.getFullSecID());
+		
+		// now we are using the third constructor using an encoded fullSecID (string) as input:
+		stringstream aSecIDString;
+		aSecIDString << aFullSecID.getLayerID() << aFullSecID.getSubLayerID() << "_" << int(aFullSecID.getVxdID()) << "_" << aFullSecID.getSecID();
 
+		FullSecID aThirdFullSecID = FullSecID(aSecIDString.str());
+
+		EXPECT_EQ(4, aThirdFullSecID.getLayerID());
+
+    EXPECT_EQ(subLayerID, aThirdFullSecID.getSubLayerID());
+
+    EXPECT_EQ(vxdID, aThirdFullSecID.getVxdID());
+		
+		EXPECT_EQ(vxdIDInt, aThirdFullSecID.getUniID());
+		
+		EXPECT_EQ(aFullSecID.getSecID(), aThirdFullSecID.getSecID());
+		
+		EXPECT_EQ(aFullSecID.getFullSecID(), aThirdFullSecID.getFullSecID());
+		
+		EXPECT_EQ(aSecIDString.str(), aThirdFullSecID.getFullSecString());
   }
 }  // namespace
