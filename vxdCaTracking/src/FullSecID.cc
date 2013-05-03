@@ -9,6 +9,7 @@
  **************************************************************************/
 
 #include "../include/FullSecID.h"
+#include <framework/logging/Logger.h>
 #include <limits> // needed for numeric_limits<t>::max()
 #include <assert.h> // testing purposes
 #include <iostream> // cerr, testing purposes
@@ -48,7 +49,7 @@ FullSecID::FullSecID(std::string sid) {
 	unsigned int SubLayerID = stringSegments[0][1] - '0';
 	unsigned int UniID =  atoi( stringSegments[1].c_str() ); // C++ 11: std::stoi( stringSegments[1] )
 	unsigned int sectorNumber = atoi( stringSegments[2].c_str() );
-	cerr << "Value before converting: "<< sid <<", after converting: layerID "<< LayerID <<", subLayerID "<< SubLayerID <<", UniID "<< UniID <<", secID "<< sectorNumber << endl;
+	B2DEBUG(1000,"FullSecID-constructor: Value before converting: "<< sid <<", after converting: layerID "<< LayerID <<", subLayerID "<< SubLayerID <<", UniID "<< UniID <<", secID "<< sectorNumber);
 	assert (LayerID < MaxLayer+1);
 	assert (SubLayerID < MaxSubLayer+1);
 	assert (UniID < MaxVxdID+1);
@@ -67,7 +68,7 @@ FullSecID::FullSecID(VxdID vxdID, bool subLayerID, unsigned int sectorNumber):
 	unsigned int SubLayerID = subLayerID; // converting to int
 	unsigned int UniID = vxdID;
 	
-	cerr << "LayerID " << LayerID << ", MaxLayer " << MaxLayer << ", SubLayerID " << SubLayerID << ", MaxSubLayer " << MaxSubLayer << ", UniID " << UniID << ", MaxVxdID " << MaxVxdID << ", sectorNumber " << sectorNumber << ", MaxSector " << MaxSector << endl;
+	B2DEBUG(1000,"FullSecID-constructor: LayerID " << LayerID << ", MaxLayer " << MaxLayer << ", SubLayerID " << SubLayerID << ", MaxSubLayer " << MaxSubLayer << ", UniID " << UniID << ", MaxVxdID " << MaxVxdID << ", sectorNumber " << sectorNumber << ", MaxSector " << MaxSector);
 	assert (LayerID < MaxLayer+1);
 	assert (SubLayerID < MaxSubLayer+1);
 	assert (UniID < MaxVxdID+1);
@@ -117,7 +118,7 @@ int FullSecID::getFullSecID() {
 }
 
 std::string FullSecID::getFullSecString() {
-	stringstream aSecIDString;
+// 	stringstream aSecIDString;
 // 	aSecIDString << getLayerID() << getSubLayerID() << "_" << getUniID() << "_" << getSecID();
 // 	return aSecIDString;
 // 	cerr << "getFullSecString: " << (boost::format("%1%0_%2%_%3%") % aLayerID % aUniID % aSecID).str() << endl;
