@@ -39,7 +39,7 @@ namespace Belle2 {
     void getSupportedCutoffs(std::vector<int>& supportedCutoffs); /**< returns list of cutoffs supported by current sector-friend-combination */
 
   protected:
-		std::vector<Cutoff*> m_filters; /**< a vector carrying all cutoffs stored in current sector-friend-combination */
+    std::vector<Cutoff*> m_filters; /**< a vector carrying all cutoffs stored in current sector-friend-combination */
     unsigned int m_friendName; /**< the name of the sector representing this friend. Info is encoded as an int, if you want to have human readable values, you have to convert it using FullSecId */
     unsigned int m_sectorName; /**< the name of the sector having this friend. Info is encoded as an int, if you want to have human readable values, you have to convert it using FullSecId */
   };

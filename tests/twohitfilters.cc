@@ -28,7 +28,7 @@ namespace Belle2 {
 
     EXPECT_DOUBLE_EQ(0., aFilter.calcSlopeRZ());
 
-   EXPECT_DOUBLE_EQ(0., aFilter.calcNormedDist3D());
-	 
+    EXPECT_DOUBLE_EQ(0., aFilter.calcNormedDist3D());
+
   }
 }  // namespace

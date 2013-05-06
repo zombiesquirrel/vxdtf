@@ -60,9 +60,10 @@ TVector3 VXDTFHit::getHitCoordinates() const {return TVector3(m_hit.X(), m_hit.Y
 const std::vector<int>& VXDTFHit::getAttachedInnerCell() const  { return m_attachedInnerCells; }
 const std::vector<int>& VXDTFHit::getAttachedOuterCell() const  { return m_attachedOuterCells; } /// not used so far
 int VXDTFHit::getNumberOfSegments() { return int(m_attachedInnerCells.size() + m_attachedOuterCells.size()); }
-std::string VXDTFHit::getSectorString() {
-	FullSecID fullSecID = FullSecID(m_papaSector);
-	return fullSecID.getFullSecString();
+std::string VXDTFHit::getSectorString()
+{
+  FullSecID fullSecID = FullSecID(m_papaSector);
+  return fullSecID.getFullSecString();
 }
 
 

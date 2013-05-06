@@ -41,86 +41,95 @@ const int FullSecID::SectorMask = MaxSector;
 
 
 
-FullSecID::FullSecID(std::string sid) {
-	vector<string> stringSegments;
-	boost::split(stringSegments, sid, boost::is_any_of("_"));
+FullSecID::FullSecID(std::string sid)
+{
+  vector<string> stringSegments;
+  boost::split(stringSegments, sid, boost::is_any_of("_"));
 
-	unsigned int LayerID = stringSegments[0][0] - '0'; // since chars are (compared to strings) very problematic to convert to ints, this solution is very dirty but at least it's short and easy to read.
-	unsigned int SubLayerID = stringSegments[0][1] - '0';
-	unsigned int UniID =  atoi( stringSegments[1].c_str() ); // C++ 11: std::stoi( stringSegments[1] )
-	unsigned int sectorNumber = atoi( stringSegments[2].c_str() );
-	B2DEBUG(1000,"FullSecID-constructor: Value before converting: "<< sid <<", after converting: layerID "<< LayerID <<", subLayerID "<< SubLayerID <<", UniID "<< UniID <<", secID "<< sectorNumber);
-	assert (LayerID < MaxLayer+1);
-	assert (SubLayerID < MaxSubLayer+1);
-	assert (UniID < MaxVxdID+1);
-	assert (sectorNumber < MaxSector+1);
+  unsigned int LayerID = stringSegments[0][0] - '0'; // since chars are (compared to strings) very problematic to convert to ints, this solution is very dirty but at least it's short and easy to read.
+  unsigned int SubLayerID = stringSegments[0][1] - '0';
+  unsigned int UniID =  atoi(stringSegments[1].c_str());   // C++ 11: std::stoi( stringSegments[1] )
+  unsigned int sectorNumber = atoi(stringSegments[2].c_str());
+  B2DEBUG(1000, "FullSecID-constructor: Value before converting: " << sid << ", after converting: layerID " << LayerID << ", subLayerID " << SubLayerID << ", UniID " << UniID << ", secID " << sectorNumber);
+  assert(LayerID < MaxLayer + 1);
+  assert(SubLayerID < MaxSubLayer + 1);
+  assert(UniID < MaxVxdID + 1);
+  assert(sectorNumber < MaxSector + 1);
 
-	LayerID <<= LayerBitShift;
-	SubLayerID <<= SubLayerBitShift;
-	UniID <<= VxdIDBitShift;
-	m_fullSecID = LayerID | SubLayerID | UniID | sectorNumber;
+  LayerID <<= LayerBitShift;
+  SubLayerID <<= SubLayerBitShift;
+  UniID <<= VxdIDBitShift;
+  m_fullSecID = LayerID | SubLayerID | UniID | sectorNumber;
 }
 
 
 FullSecID::FullSecID(VxdID vxdID, bool subLayerID, unsigned int sectorNumber):
-					m_fullSecID(0) { // setting to 0 to be shure that value is 0 when using it within the brackets
-	unsigned int LayerID = vxdID.getLayerNumber();
-	unsigned int SubLayerID = subLayerID; // converting to int
-	unsigned int UniID = vxdID;
-	
-	B2DEBUG(1000,"FullSecID-constructor: LayerID " << LayerID << ", MaxLayer " << MaxLayer << ", SubLayerID " << SubLayerID << ", MaxSubLayer " << MaxSubLayer << ", UniID " << UniID << ", MaxVxdID " << MaxVxdID << ", sectorNumber " << sectorNumber << ", MaxSector " << MaxSector);
-	assert (LayerID < MaxLayer+1);
-	assert (SubLayerID < MaxSubLayer+1);
-	assert (UniID < MaxVxdID+1);
-	assert (sectorNumber < MaxSector+1);
+  m_fullSecID(0)   // setting to 0 to be shure that value is 0 when using it within the brackets
+{
+  unsigned int LayerID = vxdID.getLayerNumber();
+  unsigned int SubLayerID = subLayerID; // converting to int
+  unsigned int UniID = vxdID;
 
-	LayerID <<= LayerBitShift;
-	SubLayerID <<= SubLayerBitShift;
-	UniID <<= VxdIDBitShift;
-	m_fullSecID = LayerID | SubLayerID | UniID | sectorNumber; // should be the same as below
-// 	m_fullSecID = LayerID + SubLayerID + UniID + sectorNumber; // should be the same as above
+  B2DEBUG(1000, "FullSecID-constructor: LayerID " << LayerID << ", MaxLayer " << MaxLayer << ", SubLayerID " << SubLayerID << ", MaxSubLayer " << MaxSubLayer << ", UniID " << UniID << ", MaxVxdID " << MaxVxdID << ", sectorNumber " << sectorNumber << ", MaxSector " << MaxSector);
+  assert(LayerID < MaxLayer + 1);
+  assert(SubLayerID < MaxSubLayer + 1);
+  assert(UniID < MaxVxdID + 1);
+  assert(sectorNumber < MaxSector + 1);
+
+  LayerID <<= LayerBitShift;
+  SubLayerID <<= SubLayerBitShift;
+  UniID <<= VxdIDBitShift;
+  m_fullSecID = LayerID | SubLayerID | UniID | sectorNumber; // should be the same as below
+//  m_fullSecID = LayerID + SubLayerID + UniID + sectorNumber; // should be the same as above
 }
 
 
-short int FullSecID::getLayerID() {
-// 	cerr << "getLayerID: " << (m_fullSecID >> LayerBitShift) << endl;
-	return m_fullSecID >> LayerBitShift;
+short int FullSecID::getLayerID()
+{
+//  cerr << "getLayerID: " << (m_fullSecID >> LayerBitShift) << endl;
+  return m_fullSecID >> LayerBitShift;
 }
 
 
-bool FullSecID::getSubLayerID() {
-// 	cerr << "getSubLayerID: " << ( (m_fullSecID bitand SubLayerMask) >> SubLayerBitShift) << endl;
-	return (m_fullSecID bitand SubLayerMask) >> SubLayerBitShift;
+bool FullSecID::getSubLayerID()
+{
+//  cerr << "getSubLayerID: " << ( (m_fullSecID bitand SubLayerMask) >> SubLayerBitShift) << endl;
+  return (m_fullSecID bitand SubLayerMask) >> SubLayerBitShift;
 }
 
 
-VxdID FullSecID::getVxdID() {
-// 	cerr << "getVxdID: " << (VxdID((m_fullSecID bitand VxdIDMask) >> VxdIDBitShift)) << endl;
-	return VxdID((m_fullSecID bitand VxdIDMask) >> VxdIDBitShift);
+VxdID FullSecID::getVxdID()
+{
+//  cerr << "getVxdID: " << (VxdID((m_fullSecID bitand VxdIDMask) >> VxdIDBitShift)) << endl;
+  return VxdID((m_fullSecID bitand VxdIDMask) >> VxdIDBitShift);
 }
 
 
-unsigned short int FullSecID::getUniID() {
-// 	cerr << "getUniID: " << ((m_fullSecID bitand VxdIDMask) >> VxdIDBitShift) << endl;
-	return (m_fullSecID bitand VxdIDMask) >> VxdIDBitShift;
+unsigned short int FullSecID::getUniID()
+{
+//  cerr << "getUniID: " << ((m_fullSecID bitand VxdIDMask) >> VxdIDBitShift) << endl;
+  return (m_fullSecID bitand VxdIDMask) >> VxdIDBitShift;
 }
 
 
-short int FullSecID::getSecID() {
-// 	cerr << "getSecID: " << (m_fullSecID bitand SectorMask) << endl;
-	return (m_fullSecID bitand SectorMask);
+short int FullSecID::getSecID()
+{
+//  cerr << "getSecID: " << (m_fullSecID bitand SectorMask) << endl;
+  return (m_fullSecID bitand SectorMask);
 }
 
 
-int FullSecID::getFullSecID() {
-// 	cerr << "getFullSecID: " << m_fullSecID << endl;
-	return m_fullSecID;
+int FullSecID::getFullSecID()
+{
+//  cerr << "getFullSecID: " << m_fullSecID << endl;
+  return m_fullSecID;
 }
 
-std::string FullSecID::getFullSecString() {
-// 	stringstream aSecIDString;
-// 	aSecIDString << getLayerID() << getSubLayerID() << "_" << getUniID() << "_" << getSecID();
-// 	return aSecIDString;
-// 	cerr << "getFullSecString: " << (boost::format("%1%0_%2%_%3%") % aLayerID % aUniID % aSecID).str() << endl;
-	return (boost::format("%1%%2%_%3%_%4%") %getLayerID() %getSubLayerID() %getUniID() %getSecID()).str();
+std::string FullSecID::getFullSecString()
+{
+//  stringstream aSecIDString;
+//  aSecIDString << getLayerID() << getSubLayerID() << "_" << getUniID() << "_" << getSecID();
+//  return aSecIDString;
+//  cerr << "getFullSecString: " << (boost::format("%1%0_%2%_%3%") % aLayerID % aUniID % aSecID).str() << endl;
+  return (boost::format("%1%%2%_%3%_%4%") % getLayerID() % getSubLayerID() % getUniID() % getSecID()).str();
 }

@@ -314,11 +314,11 @@ namespace Belle2 {
 
     /** searches for sectors fitting current hit coordinates, returns blank string if nothing could be found */
     VXDTFModule::SectorNameAndPointerPair searchSector4Hit(VxdID aVxdID,
-        TVector3 localHit,
-        TVector3 sensorSize,
-        VXDTFModule::MapOfSectors& m_sectorMap,
-        std::vector<double>& uConfig,
-        std::vector<double>& vConfig); // -> TODO: generally usefull for VXD-related modules
+                                                           TVector3 localHit,
+                                                           TVector3 sensorSize,
+                                                           VXDTFModule::MapOfSectors& m_sectorMap,
+                                                           std::vector<double>& uConfig,
+                                                           std::vector<double>& vConfig); // -> TODO: generally usefull for VXD-related modules
 
 
     /** needed for sorting sectorSequence and compares strings... */
@@ -509,6 +509,8 @@ namespace Belle2 {
     bool m_KFBackwardFilter; /**< determines whether the kalman filter moves inwards or backwards, bool means inwards */
     bool m_highOccupancyCase; /**< is determined by a userdefined threshold. If there are more hits in the event than threshold value, high occupancy filters are activated (segFinder and nbFinder only) */
     int m_PARAMhighOccupancyThreshold; /**< If there are more hits in a sensor than threshold value, high occupancy filters are activated (segFinder and nbFinder only) */
+    int m_PARAMkillBecauseOfOverlappsThreshold; /**< if there are more TCs overlapping than threshold value, event kalman gets replaced by circleFit. If there are 10 times more than threshold value of TCs, the complete event gets aborted */
+    int m_PARAMkillEventBecauseOfSegmentsThreshold; /**< if there are more segments than threshold value, the complete event gets aborted */
 
     double m_PARAMomega; /**< tuning parameter for hopfield network */
     double m_tcThreshold;   /**< defines threshold for hopfield network. neurons having values below threshold are discarded */

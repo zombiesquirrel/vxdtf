@@ -19,13 +19,13 @@ namespace Belle2 {
   /** Test simple Setters and Getters. */
   TEST_F(FilterIDTest, simpleTest)
   {
-		// provides a usefull filterType
-		FilterID aFilterIDTranslator;
-		FilterID::filterTypes aFilterType = aFilterIDTranslator.getFilterType(FilterID::nameHelixFit);
-		
-		EXPECT_EQ(FilterID::nameHelixFit, aFilterIDTranslator.getFilterString(aFilterType));
-		
-		EXPECT_EQ(aFilterType, aFilterIDTranslator.getFilterType(FilterID::nameHelixFit));
-		
+    // provides a usefull filterType
+    FilterID aFilterIDTranslator;
+    FilterID::filterTypes aFilterType = aFilterIDTranslator.getFilterType(FilterID::nameHelixFit);
+
+    EXPECT_EQ(FilterID::nameHelixFit, aFilterIDTranslator.getFilterString(aFilterType));
+
+    EXPECT_EQ(aFilterType, aFilterIDTranslator.getFilterType(FilterID::nameHelixFit));
+
   }
 }  // namespace
