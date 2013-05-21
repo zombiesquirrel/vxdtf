@@ -354,6 +354,16 @@ void VXDTFModule::initialize()
   m_TESTERbrokenCaRound = 0;
   m_TESTERkalmanSkipped = 0;
 
+	if ( m_PARAMcalcQIType == "trackLength") {
+		m_calcQiType = 0;
+	} else if ( m_PARAMcalcQIType == "kalman") {
+		m_calcQiType = 1;
+	} else if ( m_PARAMcalcQIType == "circleFit") {
+		m_calcQiType = 2;
+	} else {
+		B2ERROR("VXDTFModule::initialize: chosen qiType " << m_PARAMcalcQIType << " is unknown, setting standard to circleFit...")
+		m_calcQiType = 2;
+	}
 }
 
 /** *************************************+************************************* **/
@@ -1538,8 +1548,8 @@ void VXDTFModule::event()
   timeStamp = boostClock::now();
   /// since KF is rather slow, Kf will not be used when there are many overlapping TCs. In this case, the simplified QI-calculator will be used.
   bool allowKalman = false;
-  if (m_PARAMcalcQIType == "kalman") { allowKalman = true; }
-  if (totalOverlaps > m_PARAMkillBecauseOfOverlappsThreshold * 10) { /// WARNING: hardcoded value!
+  if (m_calcQiType == 1) { allowKalman = true; }
+  if (totalOverlaps > m_PARAMkillBecauseOfOverlappsThreshold * 10) {
     B2ERROR("event " << m_eventCounter << ": total number of overlapping track candidates: " << totalOverlaps << ", termitating event!");
     m_TESTERbrokenEventsCtr++;
 
@@ -1548,19 +1558,19 @@ void VXDTFModule::event()
       cleanEvent(currentPass, centerSector);
     }
     return;
-  } else if (totalOverlaps > m_PARAMkillBecauseOfOverlappsThreshold && m_PARAMcalcQIType == "kalman") {
+  } else if (totalOverlaps > m_PARAMkillBecauseOfOverlappsThreshold && m_calcQiType == 1) {
     B2INFO("VXDTF event " << m_eventCounter << ": total number of overlapping TCs is " << totalOverlaps << " and therefore KF is too slow, will use simple QI calculation which produces worse results")
     allowKalman = false;
     m_TESTERkalmanSkipped++;
   }
-  if (m_PARAMcalcQIType == "kalman" and allowKalman == true) {
+  if (m_calcQiType == 1 and allowKalman == true) {
 //     calcQIbyKalman(m_tcVector, aPxdClusterArray, aSvdClusterArray, clustersOfEvent); /// calcQIbyKalman // old version, backup 13-03-29
     calcQIbyKalman(m_tcVector, aPxdClusterArray, clustersOfEvent); /// calcQIbyKalman
-  } else if (m_PARAMcalcQIType == "trackLength") {
+  } else if (m_calcQiType == 0) {
     calcQIbyLength(m_tcVector, m_passSetupVector);                              /// calcQIbyLength
-  } else { // if (m_PARAMcalcQIType == "circleFit") { // and if totalOverlaps > 500
+  } /*else { // if (m_calcQiType == 2) { // and if totalOverlaps > 500
     calcQIbyCircleFit(m_tcVector);                                              ///calcQIbyCircleFit
-  }
+  }*/
   stopTimer = boostClock::now();
   m_TESTERtimeConsumption.kalmanStuff += boost::chrono::duration_cast<boostNsec>(stopTimer - timeStamp);
   thisInfoPackage.sectionConsumption.kalmanStuff += boost::chrono::duration_cast<boostNsec>(stopTimer - timeStamp);
@@ -2874,17 +2884,29 @@ int VXDTFModule::tcFilter(CurrentPassData* currentPass, int passNumber, vector<C
     }
 
     if (currentPass->circleFit.first == true) {
+			boostNsec duration;
+			boostClock::time_point timer = boostClock::now();
       double closestApproachPhi, closestApproachR, estimatedRadius;
       double chi2 = m_trackletFilterBox.circleFit(closestApproachPhi, closestApproachR, estimatedRadius);
       (*currentTC)->setEstRadius(estimatedRadius);
-      B2DEBUG(100, "TCC Filter: estimated closestApproachPhi, closestApproachR, estimatedRadius: " << closestApproachPhi << ", " << closestApproachR << ", " << estimatedRadius)
+      B2DEBUG(100, "TCC Filter at tc " << tcCtr << ": estimated closestApproachPhi, closestApproachR, estimatedRadius: " << closestApproachPhi << ", " << closestApproachR << ", " << estimatedRadius << " got fitted with chi2 of " << chi2 << " and probability of " << TMath::Prob(chi2, numOfCurrentHits - 3) << " with ndf: " << numOfCurrentHits - 3)
       if (chi2 > currentPass->circleFit.second) {  // means chi2 is bad
         B2DEBUG(20, "TCC filter: tc " << tcCtr << " rejected by circleFit! ");
         m_TESTERtriggeredCircleFit++; tcCtr++;
         (*currentTC)->setCondition(false);
         continue;
       }
-      B2DEBUG(20, " TCC filter circleFit approved TC " << tcCtr);
+      if (m_calcQiType == 2) {
+				if (chi2 < 0) { chi2 = 0; }
+				double probability = TMath::Prob(chi2, numOfCurrentHits - 3);
+				if (m_PARAMqiSmear == true) { probability = m_littleHelperBox.smearNormalizedGauss(probability); }
+				(*currentTC)->setTrackQuality(probability);
+				(*currentTC)->setFitSucceeded(true);
+			}
+			boostClock::time_point timer2 = boostClock::now();
+			duration = boost::chrono::duration_cast<boostNsec>(timer2 - timer);
+		
+      B2DEBUG(20, " TCC filter circleFit approved TC " << tcCtr << " with numOfHits: " <<  numOfCurrentHits << ", time consumption: " << duration.count() << " ns");
     }
 
 
@@ -3076,7 +3098,7 @@ void VXDTFModule::calcInitialValues4TCs(TCsOfEvent& tcVector) /// TODO: use vxdC
       radialVector = (intersection - hitA);
     }
 
-    double radiusInCm = aTC->getEstRadius();
+    radiusInCm = aTC->getEstRadius();
     if (radiusInCm  < 0.1) { // if it is not set, value stays at zero, therefore small check should be enough
       radiusInCm = radialVector.Mag(); // = radius in [cm], sign here not needed. normally: signKappaAB/normAB1
     }
@@ -3250,50 +3272,50 @@ void VXDTFModule::calcQIbyKalman(TCsOfEvent& tcVector, StoreArray<PXDCluster>& p
 
 
 
-void VXDTFModule::calcQIbyCircleFit(TCsOfEvent& tcVector)
-{
-  /// setting quality indices and smear result if chosen
-  double chi2 = 0.;
-  int tcCtr = 0;
-  vector<TVector3> currentHits;
-  boostNsec duration;
-  B2DEBUG(10, "entered calcQIbyCircleFit, executing " << tcVector.size() << " TCs")
-  BOOST_FOREACH(VXDTFTrackCandidate * currentTC, tcVector) {
-    boostClock::time_point timer = boostClock::now();
-    if (currentTC->getCondition() == false) { tcCtr++; continue; }
-    currentHits = currentTC->getHitCoordinates();
-    int numHits = currentHits.size();
-    B2DEBUG(100, "calcQIbyCircleFit, TC " << tcCtr << " got " << numHits << " hits")
-    if (numHits < 4) {
-      if (m_PARAMqiSmear == true) {
-        currentTC->setTrackQuality(m_littleHelperBox.smearNormalizedGauss(0.));
-      } else {
-        currentTC->setTrackQuality(0);
-      }
-      continue;
-    }
-
-    m_trackletFilterBox.resetValues(currentHits);
-    chi2 = m_trackletFilterBox.circleFit();  /// circleFit
-    B2DEBUG(100, "calcQIbyCircleFit-external, TC " << tcCtr << " got fitted with chi2 of " << chi2 << " and probability of " << TMath::Prob(chi2, numHits - 3) << " with ndf: " << numHits - 3)
-
-    if (chi2 < 0) { chi2 = 0; }
-    double probability = TMath::Prob(chi2, numHits - 3);
-    if (m_PARAMqiSmear == true) { probability = m_littleHelperBox.smearNormalizedGauss(probability); }
-
-    currentTC->setTrackQuality(probability);
-
-    boostClock::time_point timer2 = boostClock::now();
-    duration = boost::chrono::duration_cast<boostNsec>(timer2 - timer);
-
-    B2DEBUG(10, "calcQIbyCircleFit succeeded: calculated circleQI external: " << chi2 << " with NDF: " << numHits - 3 << ", p-value: " << probability << ", numOfHits: " <<  numHits << ", time consumption: " << duration.count() << " ns")
-    B2DEBUG(10, "calcQIbyCircleFit succeeded: calculated circleQI external with ndf*2: " << chi2 << " with NDF: " << 2 * numHits - 3 << ", p-value: " << m_littleHelperBox.smearNormalizedGauss(TMath::Prob(chi2, 2 * numHits - 3)) << ", numOfHits: " <<  numHits << ", time consumption: " << duration.count() << " ns")
-
-    currentTC->setFitSucceeded(true);
-    tcCtr++;
-  }
-}
-
+// // // // // void VXDTFModule::calcQIbyCircleFit(TCsOfEvent& tcVector)
+// // // // // {
+// // // // //   /// setting quality indices and smear result if chosen
+// // // // //   double chi2 = 0.;
+// // // // //   int tcCtr = 0;
+// // // // //   vector<TVector3> currentHits;
+// // // // //   boostNsec duration;
+// // // // //   B2DEBUG(10, "entered calcQIbyCircleFit, executing " << tcVector.size() << " TCs")
+// // // // //   BOOST_FOREACH(VXDTFTrackCandidate * currentTC, tcVector) {
+// // // // //     boostClock::time_point timer = boostClock::now();
+// // // // //     if (currentTC->getCondition() == false) { tcCtr++; continue; }
+// // // // //     currentHits = currentTC->getHitCoordinates();
+// // // // //     int numHits = currentHits.size();
+// // // // //     B2DEBUG(100, "calcQIbyCircleFit, TC " << tcCtr << " got " << numHits << " hits")
+// // // // //     if (numHits < 4) {
+// // // // //       if (m_PARAMqiSmear == true) {
+// // // // //         currentTC->setTrackQuality(m_littleHelperBox.smearNormalizedGauss(0.));
+// // // // //       } else {
+// // // // //         currentTC->setTrackQuality(0);
+// // // // //       }
+// // // // //       continue;
+// // // // //     }
+// // // // // 
+// // // // //     m_trackletFilterBox.resetValues(currentHits);
+// // // // //     chi2 = m_trackletFilterBox.circleFit();  /// circleFit
+// // // // //     B2DEBUG(100, "calcQIbyCircleFit-external, TC " << tcCtr << " got fitted with chi2 of " << chi2 << " and probability of " << TMath::Prob(chi2, numHits - 3) << " with ndf: " << numHits - 3)
+// // // // // 
+// // // // //     if (chi2 < 0) { chi2 = 0; }
+// // // // //     double probability = TMath::Prob(chi2, numHits - 3);
+// // // // //     if (m_PARAMqiSmear == true) { probability = m_littleHelperBox.smearNormalizedGauss(probability); }
+// // // // // 
+// // // // //     currentTC->setTrackQuality(probability);
+// // // // // 
+// // // // //     boostClock::time_point timer2 = boostClock::now();
+// // // // //     duration = boost::chrono::duration_cast<boostNsec>(timer2 - timer);
+// // // // // 
+// // // // //     B2DEBUG(10, "calcQIbyCircleFit succeeded: calculated circleQI external: " << chi2 << " with NDF: " << numHits - 3 << ", p-value: " << probability << ", numOfHits: " <<  numHits << ", time consumption: " << duration.count() << " ns")
+// // // // //     B2DEBUG(10, "calcQIbyCircleFit succeeded: calculated circleQI external with ndf*2: " << chi2 << " with NDF: " << 2 * numHits - 3 << ", p-value: " << m_littleHelperBox.smearNormalizedGauss(TMath::Prob(chi2, 2 * numHits - 3)) << ", numOfHits: " <<  numHits << ", time consumption: " << duration.count() << " ns")
+// // // // // 
+// // // // //     currentTC->setFitSucceeded(true);
+// // // // //     tcCtr++;
+// // // // //   }
+// // // // // }
+// // // // // 
 
 GFTrackCand VXDTFModule::generateGFTrackCand(VXDTFTrackCandidate* currentTC, vector<ClusterInfo>& clusters)
 {

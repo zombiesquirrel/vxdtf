@@ -80,6 +80,8 @@ MCTrackFinderModule::MCTrackFinderModule() : Module()
   addParam("SmearingCov", m_smearingCov, "Covariance matrix used to smear the true pos and mom before passed to track candidate. This matrix will also passed to Genfit as the initial covarance matrix. If any diagonal value is negative this feature will not be used. OFF DIAGNOLA ELEMENTS DO NOT HAVE AN EFFECT AT THE MOMENT", vector<double>(36, -1.0));
   // names of output containers
   addParam("GFTrackCandidatesColName", m_gfTrackCandsColName, "Name of collection holding the GFTrackCandidates (output)", string(""));
+
+  addParam("TrueHitMustExist", m_enforceTrueHit, "If set true only cluster hits that have a relation to a TrueHit will be included in the track candidate", false);
 }
 
 
@@ -157,6 +159,7 @@ void MCTrackFinderModule::beginRun()
 {
   m_notEnoughtHitsCounter = 0;
   m_noTrueHitCounter = 0;
+  m_nTrackCands = 0;
 }
 
 
@@ -410,7 +413,7 @@ void MCTrackFinderModule::event()
 
     //create TrackCandidate
     trackCandidates.appendNew();
-
+    ++m_nTrackCands;
     //set track parameters from MCParticle information
     TVector3 positionTrue = aMcParticlePtr->getProductionVertex();
     TVector3 momentumTrue = aMcParticlePtr->getMomentum();
@@ -487,7 +490,7 @@ void MCTrackFinderModule::event()
       unsigned int hitCounter = 0;
       BOOST_FOREACH(int hitID, pxdHitsIndices) {
         RelationIndex<PXDCluster, PXDTrueHit>::range_from iterPairCluTr = relPxdClusterTrueHit.getElementsFrom(pxdClusters[hitID]);
-        if (iterPairCluTr.first == iterPairCluTr.second) { // there is not trueHit! trow away hit because there is no time information for sorting
+        if (iterPairCluTr.first == iterPairCluTr.second && m_enforceTrueHit == true) { // there is not trueHit! trow away hit because there is no time information for sorting
           ++m_noTrueHitCounter;
           continue;
         }
@@ -521,7 +524,7 @@ void MCTrackFinderModule::event()
       unsigned int hitCounter = 0;
       BOOST_FOREACH(int hitID, svdHitsIndices) {
         RelationIndex<SVDCluster, SVDTrueHit>::range_from iterPairCluTr = relSvdClusterTrueHit.getElementsFrom(svdClusters[hitID]);
-        if (iterPairCluTr.first == iterPairCluTr.second) { // there is not trueHit! throw away hit because there is no time information for sorting
+        if (iterPairCluTr.first == iterPairCluTr.second && m_enforceTrueHit == true) { // there is not trueHit! throw away hit because there is no time information for sorting
           ++m_noTrueHitCounter;
           continue;
         }
@@ -594,6 +597,7 @@ void MCTrackFinderModule::endRun()
   if (m_noTrueHitCounter != 0) {
     B2WARNING(m_noTrueHitCounter << " cluster hits did not have a relation to a true hit and were therefore not included in a track candidate");
   }
+  B2INFO("The MCTrackFinder created a total of " << m_nTrackCands << " track candidates")
 }
 
 void MCTrackFinderModule::terminate()

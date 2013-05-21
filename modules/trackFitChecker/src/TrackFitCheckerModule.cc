@@ -80,7 +80,7 @@ TrackFitCheckerModule::TrackFitCheckerModule() : Module()
 
   //Parameter definition
   addParam("outputFileName", m_dataOutFileName, "A common name for all output files of this module. Suffixes to distinguish them will be added automatically", string("trackFitChecker"));
-  addParam("totalChi2Cut", m_totalChi2Cut, "only tracks with a total χ² lower than this value will be considered", 1E300);
+  addParam("p-valueCut", m_pvalueCut, "only tracks with a p-value larger than this value will be considered for the test. But still _all_ data will be writen to the root file", -1.0);
   addParam("testSi", m_testSi, "execute the layer wise tests for PXD/SVD", false);
   addParam("robustTests", m_robust, "activate additional robust statistical tests (median and MAD)", false);
   addParam("testLRRes", m_testLRRes, "test if DAF correctly resolved the left right ambiguity in the CDC", false);
@@ -90,6 +90,7 @@ TrackFitCheckerModule::TrackFitCheckerModule() : Module()
   addParam("writeToRootFile", m_writeToRootFile, "Set to True if you want the data from the statistical tests written into a root file", false);
   addParam("writeToTextFile", m_writeToFile, "Set to True if you want the results of the statistical tests written out in a normal text file", false);
   addParam("exportTracksForRaveDeveloper", m_exportTracksForRaveDeveloper, "Writes tracks into text file in a format used by rave developers", false);
+  addParam("trunctationRatio", m_trunctationRatio, "Ratio of the data sample that will be cut away before in the trunctated", 0.01);
 }
 
 
@@ -108,6 +109,7 @@ void TrackFitCheckerModule::initialize()
     //pass the magnetic field to genfit
     GFFieldManager::getInstance()->init(new GFGeant4Field());
     GFMaterialEffects::getInstance()->init(new GFTGeoMaterialInterface());
+    GFMaterialEffects::getInstance()->setMscModel("Highland"); // this line assumes the input tracks were fitted with this model. Otherwise there can be inconsistencies.
   }
 
   //set all user parameters
@@ -156,6 +158,7 @@ void TrackFitCheckerModule::initialize()
     registerTrackWiseData("relRes_curvVertex");
     registerTrackWiseData("relRes_p_T");
     registerTrackWiseData("res_r");
+    registerTrackWiseData("pullVertexAbsMom");
     registerTVector3("trueVertexPos");
     registerTVector3("trueVertexMom");
     registerInt("genfitStatusFlag");
@@ -243,27 +246,28 @@ void TrackFitCheckerModule::initialize()
     m_madScalingFactors["resVertexRZPtP"] = 1.4826;
     m_madScalingFactors["pullsVertexRZPtP"] = 1.4826;
     m_madScalingFactors["res_r"] = 1.4826;
+    m_madScalingFactors["pullVertexAbsMom"] = 1.4826;
     m_madScalingFactors["pValue_bu"] = 4.0 / 3.0;  //scaling factor for uniform distributed variables
     m_madScalingFactors["pValue_fu"] = 4.0 / 3.0;
     //set the cut away ratio for the truncated mean and std. No truncated mean and std will be calculated when this value is not set or 0 or negative
-    m_trunctationRatios["pulls_vertexPosMom"] = 0.02; //scaling factor for normal distributed variables
-    m_trunctationRatios["absMomVertex"] = 0.02;
-    m_trunctationRatios["res_vertexPosMom"] = 0.02;
-    m_trunctationRatios["vertexPosMom"] = 0.02;
-    m_trunctationRatios["res_curvVertex"] = 0.02;
-    m_trunctationRatios["relRes_curvVertex"] = 0.02;
-    m_trunctationRatios["relRes_p_T"] = 0.02;
-    m_trunctationRatios["pValue_bu"] = 0.02;
-    m_trunctationRatios["pValue_fu"] = 0.02;
-    m_trunctationRatios["resVertexRZPtP"] = 0.02;
-    m_trunctationRatios["pullsVertexRZPtP"] = 0.02;
-    m_trunctationRatios["res_r"] = 0.02;
-    m_trunctationRatios["chi2tot_bu"] = 0.02;
-    m_trunctationRatios["chi2tot_fu"] = 0.02;
+    m_trunctationRatios["pulls_vertexPosMom"] = m_trunctationRatio; //scaling factor for normal distributed variables
+    m_trunctationRatios["absMomVertex"] = m_trunctationRatio;
+    m_trunctationRatios["res_vertexPosMom"] = m_trunctationRatio;
+    m_trunctationRatios["vertexPosMom"] = m_trunctationRatio;
+    m_trunctationRatios["res_curvVertex"] = m_trunctationRatio;
+    m_trunctationRatios["relRes_curvVertex"] = m_trunctationRatio;
+    m_trunctationRatios["relRes_p_T"] = m_trunctationRatio;
+    m_trunctationRatios["pValue_bu"] = m_trunctationRatio;
+    m_trunctationRatios["pValue_fu"] = m_trunctationRatio;
+    m_trunctationRatios["resVertexRZPtP"] = m_trunctationRatio;
+    m_trunctationRatios["pullsVertexRZPtP"] = m_trunctationRatio;
+    m_trunctationRatios["res_r"] = m_trunctationRatio;
+    m_trunctationRatios["chi2tot_bu"] = m_trunctationRatio;
+    m_trunctationRatios["chi2tot_fu"] = m_trunctationRatio;
 
   }
 
-
+  m_fillOnlyInRootFile = false;
   m_badR_fCounter = 0;
   m_badR_bCounter = 0;
   m_badR_smCounter = 0;
@@ -323,9 +327,11 @@ void TrackFitCheckerModule::event()
   if (nFittedTracks not_eq 0 and m_wAndPredPresentsTested == false) {
     if (m_testSi == true) {
       try {
-        fittedTracks[0]->getBK(0)->getNumber(GFBKKey_dafWeight, 0);
+        fittedTracks[0]->getBK(0)->getVector(GFBKKey_dafWeight, 0);
       } catch (GFException& e) {
+        std::cerr << e.what() << std::endl;
         m_testDaf = false;
+        B2DEBUG(100, "tried to detect the DAF. Result DAF is not used");
       }
     } else {
       m_testDaf = false;
@@ -352,15 +358,18 @@ void TrackFitCheckerModule::event()
     const double charge = aMcParticleArray[mcParticleIndex]->getCharge();
     const TVector3 trueVertexMom = aMcParticleArray[mcParticleIndex]->getMomentum();
     const TVector3 trueVertexPos = aMcParticleArray[mcParticleIndex]->getVertex();
-
+//    cerr << "trueVertexPos" << endl; trueVertexPos.Print();
     //write the mcparticle info to the root output
     fillTVector3("trueVertexPos", trueVertexPos);
     fillTVector3("trueVertexMom", trueVertexMom);
-    RKTrackRep* aRKTrackRepPtr = static_cast<RKTrackRep*>(aTrackPtr->getCardinalRep());
-
+    RKTrackRep* aRKTrackRepPtr = dynamic_cast<RKTrackRep*>(aTrackPtr->getCardinalRep());
+    if (aRKTrackRepPtr == NULL) {
+      B2FATAL("Only the RKTrackRep can be used by TrackFitChecker")
+    }
     const int genfitStatusFlag = aRKTrackRepPtr->getStatusFlag();
     fillInt("genfitStatusFlag", genfitStatusFlag);
-
+//    cerr << "first state cov" << endl;
+    //aRKTrackRepPtr->getFirstState().Print(); aRKTrackRepPtr->getFirstCov().Print();
     if (genfitStatusFlag not_eq 0) {
       // we have a track that was not fitted successfully no tests can be done. Goto next track
       if (m_writeToRootFile == true) {
@@ -371,9 +380,25 @@ void TrackFitCheckerModule::event()
     TVector3 poca; //point of closest approach will be overwritten
     TVector3 dirInPoca; //direction of the track at the point of closest approach will be overwritten
     aRKTrackRepPtr->setPropDir(-1);
+    TVectorD local5DState;
+    TMatrixDSym local5DCov;
+    TVector3 vertexPos;
+    TVector3 vertexMom;
+    TMatrixDSym vertexCov(6);
     try {
       B2DEBUG(100, "before propagation");
       aRKTrackRepPtr->extrapolateToPoint(trueVertexPos, poca, dirInPoca);
+//      cerr << "poca etc" << endl;
+//      poca.Print(); dirInPoca.Print();
+      GFDetPlane planeThroughVertex(poca, dirInPoca); //get planeThroughVertex through fitted vertex position
+//      cerr << "detplane" << endl;
+//      planeThroughVertex.Print();
+      B2DEBUG(100, "plane through vertex constructed");
+      aTrackPtr->getPosMomCov(planeThroughVertex, vertexPos, vertexMom, vertexCov);
+//      vertexCov.Print();
+      B2DEBUG(100, "pos mom cov extracted");
+      aRKTrackRepPtr->extrapolate(planeThroughVertex, local5DState, local5DCov);
+//      local5DCov.Print();
     } catch (GFException& e) {
       B2WARNING("Extrapolation of a track in Event " << eventCounter <<  " to his true vertex position failed. Track will be ignored in statistical tests");
       ++m_extrapFailed;
@@ -384,44 +409,30 @@ void TrackFitCheckerModule::event()
     //    dirInPoca.Print();
 
     const double chi2tot_bu = aTrackPtr->getChiSqu(); // returns the total chi2 from the backward filter
-    if (chi2tot_bu > m_totalChi2Cut) {//consider this track to be an outlier and discard it. Goto next track
-      ++m_nCutawayTracks;
-      continue;
-    }
-    // first part: get variables describing the hole track
     const double chi2tot_fu = aTrackPtr->getForwardChiSqu();
     const double ndf = aTrackPtr->getNDF();
     const double pValue_bu = ROOT::Math::chisquared_cdf_c(chi2tot_bu, ndf);
+    if (pValue_bu < m_pvalueCut) {//consider this track to be an outlier and do not use it in the statistical tests results written to the text file/ terminal but sill wirte the tests to the root file
+      ++m_nCutawayTracks;
+      m_fillOnlyInRootFile = true;
+    } else {
+      m_fillOnlyInRootFile = false;
+    }
+    // first part: get variables describing the hole track
+
     B2DEBUG(100, "p value of fitted track " << i << " is " << pValue_bu);
     const double pValue_fu = ROOT::Math::chisquared_cdf_c(chi2tot_fu, ndf);
     fillTrackWiseData("pValue_bu", pValue_bu);
     fillTrackWiseData("pValue_fu", pValue_fu);
     fillTrackWiseData("chi2tot_bu", chi2tot_bu);
     fillTrackWiseData("chi2tot_fu", chi2tot_fu);
-    TVector3 vertexPos;
-    TVector3 vertexMom;
-    TMatrixDSym vertexCov(6);
+
     vector<double> zVertexPosMom(6);
     vector<double> resVertexPosMom(6);
     vector<double> vertexPosMom(6);
     vector<double> resVertexRZPtP(6); // x,y,z,p_T,abs(p),p_T/p_T,t
     vector<double> pullsVertexRZPtP(5); // x,y,z,p_T,abs(p)
 
-    GFDetPlane planeThroughVertex(poca, dirInPoca); //get planeThroughVertex through fitted vertex position
-    TVectorD local5DState;
-    TMatrixDSym local5DCov;
-    B2DEBUG(100, "plane through vertex constructed");
-    //get fitted momentum at fitted vertex
-    try {
-      aTrackPtr->getPosMomCov(planeThroughVertex, vertexPos, vertexMom, vertexCov);
-      aRKTrackRepPtr->extrapolate(planeThroughVertex, local5DState, local5DCov);
-    } catch (GFException& e) {
-      B2WARNING("Extrapolation of a track in Event " << eventCounter <<  " to its true vertex position failed. Track will be ignored in statistical tests");
-      ++m_extrapFailed;
-      continue;
-    }
-
-    B2DEBUG(100, "pos mom cov extracted");
     if (m_exportTracksForRaveDeveloper == true) {
       if (i == 0) {
         m_forRaveOut << "event:simvtx: x=" << trueVertexPos[0] << "; y=" << trueVertexPos[1] << "; z=" << trueVertexPos[2] << ".\n"; //assuming all tracks in one event comming from the same vertex
@@ -473,7 +484,7 @@ void TrackFitCheckerModule::event()
     pullsVertexRZPtP[1] = resVertexRZPtP[1] / sqrt(vertexCov(1, 1));
     pullsVertexRZPtP[2] = resVertexRZPtP[2] / sqrt(vertexCov(2, 2));
     pullsVertexRZPtP[3] = resVertexRZPtP[3] / sqrt((vertexMom[0] * vertexMom[0] * vertexCov(3, 3) + vertexMom[1] * vertexMom[1] * vertexCov(4, 4) + 2 * vertexMom[0] * vertexMom[1] * vertexCov(3, 4)) / (vertexMom[0] * vertexMom[0] + vertexMom[1] * vertexMom[1]));
-    pullsVertexRZPtP[4] = resVertexRZPtP[4] / (fabs(charge) / local5DState(0) / local5DState(0) * sqrt(local5DCov(0, 0)));
+    pullsVertexRZPtP[4] = pullVertexAbsMom;
     fillTrackWiseVecData("pullsVertexRZPtP", pullsVertexRZPtP);
     B2DEBUG(100, "filled all track wise tests");
 
@@ -503,13 +514,10 @@ void TrackFitCheckerModule::event()
           B2DEBUG(100, "executed inspect tracks");
         }
       }
-
     }
     if (m_writeToRootFile == true) {
       m_statDataTreePtr->Fill();
     }
-
-
     ++m_processedTracks;
   }
   if (m_exportTracksForRaveDeveloper == true) {
@@ -523,7 +531,7 @@ void TrackFitCheckerModule::endRun()
   B2INFO("Now following the endRun Output from the trackFitChecker module");
 
   if (m_nCutawayTracks not_eq 0) {
-    B2WARNING(m_nCutawayTracks << " tracks where cut out because of too large total χ²");
+    B2WARNING(m_nCutawayTracks << " tracks where cut out because of too small p-value");
   }
   if (m_extrapFailed not_eq 0) {
     B2WARNING(m_extrapFailed << " tracks could not be extrapolated to their true vertex position.");
@@ -537,7 +545,7 @@ void TrackFitCheckerModule::endRun()
   if (m_notPosDefCounter not_eq 0) {
     B2WARNING(m_notPosDefCounter << " covs had eigenvalues <= 0 ");
   }
-  if (m_processedTracks <= 1) {
+  if (m_processedTracks - m_nCutawayTracks <= 1) {
     B2WARNING("Only " << m_processedTracks << " track(s) were processed. Statistics cannot be computed.");
   } else {
     m_textOutput << "Number of processed tracks: " << m_processedTracks << "\n";
@@ -640,6 +648,7 @@ void TrackFitCheckerModule::endRun()
     if (m_writeToFile == true) {
       ofstream testOutputToFile((m_dataOutFileName + "StatTests.txt").c_str());
       testOutputToFile << m_textOutput.str();
+      testOutputToFile << "Number of track excluded because of p-value cut: " << m_nCutawayTracks << "\n";
       testOutputToFile.close();
     }
 
@@ -866,7 +875,7 @@ void TrackFitCheckerModule::printLayerWiseStatistics(const string& nameOfDataSam
           } else {
             double mean = 0;
             double std = 0;
-            int nCutAwayTracks = trunctatedMeanAndStd(data, 0.02, false, mean, std);
+            int nCutAwayTracks = trunctatedMeanAndStd(data, m_trunctationRatio, false, mean, std);
             m_textOutput << "\t" << mean << "\t" << std << "\t" << nCutAwayTracks;
 
           }
@@ -1066,15 +1075,19 @@ void TrackFitCheckerModule::registerInt(const std::string& nameOfDataSample)
 void TrackFitCheckerModule::fillLayerWiseData(const string& nameOfDataSample, const int accuVecIndex, const vector<double>& newData)
 {
   const int nNewData = newData.size();
-  for (int i = 0; i not_eq nNewData; ++i) {
-    m_layerWiseDataSamples[nameOfDataSample][accuVecIndex][i](newData[i]);
-    //cout << "filled " << nameOfDataSample << " at index " << accuVecIndex << " and variable " << i << " with data bit " << newData[i] << endl;
-  }
   if (m_writeToRootFile == true and m_nLayers > 0) {
     for (int i = 0; i not_eq nNewData; ++i) {
       (*m_layerWiseDataForRoot[nameOfDataSample])[accuVecIndex][i] = float(newData[i]);
     }
   }
+  if (m_fillOnlyInRootFile == true) {
+    return;
+  }
+  for (int i = 0; i not_eq nNewData; ++i) {
+    m_layerWiseDataSamples[nameOfDataSample][accuVecIndex][i](newData[i]);
+    //cout << "filled " << nameOfDataSample << " at index " << accuVecIndex << " and variable " << i << " with data bit " << newData[i] << endl;
+  }
+
   if (m_robust == true and m_nLayers > 0) {
     for (int i = 0; i not_eq nNewData; ++i) {
       m_layerWiseData[nameOfDataSample][accuVecIndex][i].push_back(newData[i]);
@@ -1085,13 +1098,16 @@ void TrackFitCheckerModule::fillLayerWiseData(const string& nameOfDataSample, co
 void TrackFitCheckerModule::fillTrackWiseVecData(const string& nameOfDataSample, const vector<double>& newData)
 {
   const int nNewData = newData.size();
-  for (int i = 0; i not_eq nNewData; ++i) {
-    m_trackWiseVecDataSamples[nameOfDataSample][i](newData[i]);
-  }
   if (m_writeToRootFile == true) {
     for (int i = 0; i not_eq nNewData; ++i) {
       (*m_trackWiseVecDataForRoot[nameOfDataSample])[i] = float(newData[i]);
     }
+  }
+  if (m_fillOnlyInRootFile == true) {
+    return;
+  }
+  for (int i = 0; i not_eq nNewData; ++i) {
+    m_trackWiseVecDataSamples[nameOfDataSample][i](newData[i]);
   }
   if (m_robust == true) {
     for (int i = 0; i not_eq nNewData; ++i) {
@@ -1102,13 +1118,17 @@ void TrackFitCheckerModule::fillTrackWiseVecData(const string& nameOfDataSample,
 
 void TrackFitCheckerModule::fillTrackWiseData(const string& nameOfDataSample, const double newData)
 {
-  m_trackWiseDataSamples[nameOfDataSample](newData);
   if (m_writeToRootFile == true) {
     m_trackWiseDataForRoot[nameOfDataSample] = float(newData);
   }
+  if (m_fillOnlyInRootFile == true) {
+    return;
+  }
+  m_trackWiseDataSamples[nameOfDataSample](newData);
   if (m_robust == true) {
     m_trackWiseData[nameOfDataSample].push_back(newData);
   }
+
 }
 
 void TrackFitCheckerModule::fillTVector3(const std::string& nameOfDataSample, const TVector3& newData)
@@ -1304,8 +1324,8 @@ void TrackFitCheckerModule::extractTrackData(GFTrack* const aTrackPtr, const dou
 
 void TrackFitCheckerModule::truthTests()  //
 {
-//  cout << "TrackFitCheckerModule::truthTests" << endl;
-//  cout << "m_trackData.nHits" << m_trackData.nHits <<endl;
+  //  cout << "TrackFitCheckerModule::truthTests" << endl;
+  //  cout << "m_trackData.nHits" << m_trackData.nHits <<endl;
   for (int iGFHit = 0; iGFHit not_eq m_trackData.nHits; ++iGFHit) {
     //cout << "for loop " << iGFHit << endl;
     int detId = m_trackData.detIds[iGFHit];
@@ -1513,12 +1533,12 @@ void TrackFitCheckerModule::testDaf(GFTrack* const aTrackPtr)
   double dafWeight = -2.0;
   double dafChi2 = -2.0;
 
-  vector<vector<float> > allWeights(m_nLayers, vector<float>(5, -1.0)); //it is importent that the content is initalized to -1
+  vector<vector<float> > allWeights(m_nLayers, vector<float>(5, -1.0)); //it is important that the content is initalized to -1
   vector<vector<float> > allChi2s(m_nLayers, vector<float>(5, -1.0));
   for (int iGFHit = 0; iGFHit not_eq nHits; ++iGFHit) {
     int accuVecIndex = m_trackData.accuVecIndices[iGFHit];
     //aTrackPtr->getBK(0)->getNumber("dafChi2s", iGFHit,  dafChi2);
-    dafWeight = aTrackPtr->getBK(0)->getNumber(GFBKKey_dafWeight, iGFHit);// double check if this still works with background => more then one hit... probarbly it does work...
+    dafWeight = (aTrackPtr->getBK(0)->getVector(GFBKKey_dafWeight, iGFHit))(0);// double check if this still works with background => more then one hit... probarbly it does work...
     GFAbsRecoHit* aGFAbsRecoHitPtr = aTrackPtr->getHit(iGFHit);
     const PXDRecoHit*   aPxdRecoHitPtr = dynamic_cast<const PXDRecoHit* >(aGFAbsRecoHitPtr);
     const SVDRecoHit2D*   aSvdRecoHit2DPtr =  dynamic_cast<const SVDRecoHit2D* >(aGFAbsRecoHitPtr);
@@ -1671,9 +1691,9 @@ int TrackFitCheckerModule::trunctatedMeanAndStd(std::vector<double> data, const 
 
   const int n = data.size();
   int truncN = -1;
-//  if ((n* cutRatio < 2 and symmetric == true) or(n* cutRatio < 1 and symmetric == false)) {
-//    return 0;
-//  }
+  //  if ((n* cutRatio < 2 and symmetric == true) or(n* cutRatio < 1 and symmetric == false)) {
+  //    return 0;
+  //  }
   sort(data.begin(), data.end());
   std = 0;
   int i = 0;

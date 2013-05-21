@@ -37,9 +37,8 @@ namespace Belle2 {
     protected:
 
       char m_leftOrRight; /**< to store how the left right ambiguity of CDC hits should be resolved*/
-
-//public:
-//  ClassDef(CDCTrackCandHit, 1);
+      /** Needed by ROOT I/O*/
+      ClassDef(CDCTrackCandHit, 1);
 
     };
 
