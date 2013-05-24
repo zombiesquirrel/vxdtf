@@ -12,6 +12,7 @@
 #include <boost/foreach.hpp>
 
 #include <framework/gearbox/Const.h>
+#include <vxd/dataobjects/VxdID.h>
 #include <vxd/geometry/GeoCache.h>
 #include <vxd/geometry/SensorInfoBase.h>
 #include <framework/dataobjects/EventMetaData.h>

@@ -494,6 +494,8 @@ namespace Belle2 {
 
     int m_chargeSignFactor; /**< particle dependent. for leptons it is 1, for other particles it's -1... */
 
+    std::vector< std::vector< std::pair<double, double> > > m_globalizedErrorContainer; /**< stores error of u coordinates of each ladder in the vxd converted to x and y global coordinates. These values are needed by the circleFitter. How to access: container[layerID][ladderID].first = sigmaX, container[layerID][ladderID].second = sigmaY */
+    std::vector< std::pair<double, double> > m_errorContainer; /**< stores error of u and v coordinates of each layer in the vxd. These values are needed by the circleFitter. How to access: container[layerID].first = sigmaU, container[layerID].second = sigmaV */
     int m_usePXDorSVDorVXDhits; /**< when having more than one pass per event, sector maps using PXD, SVD or VXD can be set independently. To produce TFHits only when needed, this value is set to -1,0 or 1 */
 
 //     std::vector<std::string> m_PARAMmultiPassSectorSetup; /**< controls usage of one or several passes for TF per event (allows differnt pT's or curling track support) */
