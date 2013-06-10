@@ -19,6 +19,11 @@ class GFTrack;
 
 namespace Belle2 {
 
+  /** @addtogroup Tracking_dataobjects
+   *  @ingroup Dataobjects
+   *  @{ Track
+   *  @}
+   */
   /** Class that bundles various TrackFitResults.
    *
    *  As the GFTrack has a lot of information that is only necessary during the fit,

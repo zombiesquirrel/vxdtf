@@ -15,6 +15,7 @@
 #include <list>
 #include <iostream>
 #include <framework/logging/Logger.h>
+#include <stdio.h>
 
 using namespace std;
 using namespace Belle2;
@@ -40,11 +41,11 @@ void TrackletFilters::resetValues(vector<PositionInfo*>* hits)
 
 bool TrackletFilters::ziggZaggXY()
 {
-	if ( m_hits == NULL ) B2FATAL(" TrackletFilters::ziggZaggXY hits not set, therefore no calculation possible - please check that!")
-  list<int> chargeSigns;
+  if (m_hits == NULL) B2FATAL(" TrackletFilters::ziggZaggXY hits not set, therefore no calculation possible - please check that!")
+    list<int> chargeSigns;
   bool isZiggZagging = false; // good: not ziggZagging
   for (int i = 0; i < m_numHits - 2; ++i) {
-    int signValue = m_3hitFilterBox.calcSign(m_hits->at(i)->hitPosition, m_hits->at(i+1)->hitPosition, m_hits->at(i+2)->hitPosition);
+    int signValue = m_3hitFilterBox.calcSign(m_hits->at(i)->hitPosition, m_hits->at(i + 1)->hitPosition, m_hits->at(i + 2)->hitPosition);
     chargeSigns.push_back(signValue);
 //    cout << "zzXY charge was: " << signValue << endl;
   }
@@ -60,12 +61,12 @@ bool TrackletFilters::ziggZaggXY()
 
 bool TrackletFilters::ziggZaggRZ()
 {
-	if ( m_hits == NULL ) B2FATAL(" TrackletFilters::ziggZaggRZ hits not set, therefore no calculation possible - please check that!")
-  list<int> chargeSigns;
+  if (m_hits == NULL) B2FATAL(" TrackletFilters::ziggZaggRZ hits not set, therefore no calculation possible - please check that!")
+    list<int> chargeSigns;
   bool isZiggZagging = false; // good: not ziggZagging
   vector<TVector3> rzHits;
   TVector3 currentVector;
-  BOOST_FOREACH(PositionInfo* aHit, *m_hits) {
+  BOOST_FOREACH(PositionInfo * aHit, *m_hits) {
     currentVector.SetXYZ(aHit->hitPosition.Perp(), aHit->hitPosition[1], 0.);
     rzHits.push_back(currentVector);
   }
@@ -86,19 +87,20 @@ bool TrackletFilters::ziggZaggRZ()
 // clap = closest approach of fitted circle to origin
 double TrackletFilters::circleFit(double& clapPhi, double& clapR, double& radius)
 {
-	if ( m_hits == NULL ) B2FATAL(" TrackletFilters::circleFit hits not set, therefore no calculation possible - please check that!")
-	double stopper = 0.000000001;
+  if (m_hits == NULL) B2FATAL(" TrackletFilters::circleFit hits not set, therefore no calculation possible - please check that!")
+    double stopper = 0.000000001;
   double meanX = 0, meanY = 0, meanX2 = 0, meanY2 = 0, meanR2 = 0, meanR4 = 0, meanXR2 = 0, meanYR2 = 0, meanXY = 0; //mean values
   double r2 = 0, x = 0, y = 0, x2 = 0, y2 = 0; // coords
   double weight;// weight of each hit, so far no difference in hit quality
-	double sumWeights, divisor; // sumWeights is sum of weights, divisor is 1/sumWeights;
+  double sumWeights = 0, divisor; // sumWeights is sum of weights, divisor is 1/sumWeights;
 
   // looping over all hits and do the division afterwards
-  BOOST_FOREACH(PositionInfo* hit, *m_hits) {
-		weight = 1. / ((hit->sigmaX)*(hit->sigmaX));
-		sumWeights += weight;
-		if (hit->sigmaX < stopper) B2FATAL("TrackletFilters::circleFit, chosen sigma is too small (is/threshold: " <<hit->sigmaX<< "/" <<stopper<< ")")
-    x = hit->hitPosition.X();
+  BOOST_FOREACH(PositionInfo * hit, *m_hits) {
+    weight = 1. / ((hit->sigmaX) * (hit->sigmaX));
+		B2DEBUG(100," current hitSigma: " << hit->sigmaX << ", weight: " << weight)
+    sumWeights += weight;
+    if (hit->sigmaX < stopper) B2FATAL("TrackletFilters::circleFit, chosen sigma is too small (is/threshold: " << hit->sigmaX << "/" << stopper << ")")
+      x = hit->hitPosition.X();
     y = hit->hitPosition.Y();
     x2 = x * x;
     y2 = y * y;
@@ -145,7 +147,7 @@ double TrackletFilters::circleFit(double& clapPhi, double& clapR, double& radius
   double rootTerm = sqrt(1. - 4.*delta * kappa);
   double rho = 2.*kappa / (rootTerm); // rho = curvature in X-Y-plane = 1/radius of fitting circle, used for pT-calculation
   clapR = 2.*delta / (1. + rootTerm);
-	radius = 1. / rho;
+  radius = 1. / rho;
   double chi2 = sumWeights * (1. + rho * clapR) * (1. + rho * clapR) * (sinPhi * sinPhi * covXX - 2.*sinPhi * cosPhi * covXY + cosPhi * cosPhi * covYY - kappa * kappa * covR2R2);
   return chi2;
 }
