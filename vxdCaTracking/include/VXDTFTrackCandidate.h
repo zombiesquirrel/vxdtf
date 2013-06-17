@@ -57,7 +57,7 @@ namespace Belle2 {
     std::vector<Belle2::VXDTFTrackCandidate*> getBookingRivals() { return m_bookingRivals; } /**< returns all TCs sharing hits with current one */
     bool getOverlappingState(); /**< returns flag whether TC is sharing hits with other TCs or not (no manual check) */
     bool checkOverlappingState(); /**< returns flag whether TC is sharing hits with other TCs or not, after manual check, whether its rivals are still alive */
-		unsigned int getTrakNumber() { return m_trackNumber; } /** returns position of TC in vector containing all TCs of current event */
+    unsigned int getTrakNumber() { return m_trackNumber; } /** returns position of TC in vector containing all TCs of current event */
     bool getCondition() const { return m_alive; } /**< returns flag whether TC is still "alive" (part of the set of TCs which are probably real tracks based on the knowledge of the TF at the point of calling that function) */
     double getTrackQuality() { return m_qualityIndex; } /**< returns quality index of TC, has to be between 0 (bad) and 1 (perfect) */
     double getQQQ() { return m_qqq; } /**< returns aditional quality index */
@@ -70,7 +70,7 @@ namespace Belle2 {
     bool getFitSucceeded() { return m_fitSucceeded; } /**< returns true if kalman fit was possible and returned a result itself */
     int size() { return m_attachedHits.size(); } /**< returns number of attached hits */
 
-    
+
     /** setter **/
     void addSVDClusterIndex(int anIndex); /**< add index number of SVDCluster attached to current TC */
     void addPXDClusterIndex(int anIndex); /**< add index number of PXDCluster attached to current TC */
@@ -79,7 +79,7 @@ namespace Belle2 {
     void addSegments(VXDSegmentCell* pCell); /**< add segment attached to current TC */
     void addHits(VXDTFHit* pHit); /**< add hit attached to current TC */
     void setOverlappingState(bool newState); /**< set whether current TC is overlapped or not */
-		void setTrackNumber(unsigned int newNumber) { m_trackNumber = newNumber; } /**< tells the TC which position in the tcList it has got. Allows some faster overlap-procedures */
+    void setTrackNumber(unsigned int newNumber) { m_trackNumber = newNumber; } /**< tells the TC which position in the tcList it has got. Allows some faster overlap-procedures */
     void setTrackQuality(double newVal); /**< set estimated quality of TC */
     void setQQQ(double qqqScore, double maxScore); /**< set estimated extended quality of TC (a potential minimal replacement for kalman filter, interesting for online-use) */
     void setCondition(bool newCondition); /**< set condition. If true, TC is part of set of final TCs which are exported for further use */
@@ -113,7 +113,7 @@ namespace Belle2 {
 
     TVector3 m_initialHit;  /**< coordinates of initial hit of TC */
     TVector3 m_initialMomentum;  /**< momentum of initial hit of TC */
-    
+
     bool m_initialValuesSet; /**< if false, no initial values for position and momentum are calculated yet */
 
   };

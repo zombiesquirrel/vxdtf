@@ -57,30 +57,30 @@ namespace Belle2 {
 
   public:
 
-		typedef std::pair<int, double> foundIDentry; /**< .first: id of mcTC assigned, .second: qi of tc, the higher, the better */
-		
-		/** internal datastore for root export */
-		struct RootVariables  {
-			std::vector<double> totalMCMomValues; /**< used to store all momentum values of tracks reconstructed by the MCTF */
-			std::vector<double> totalCAMomValues; /**< used to store all momentum values of tracks reconstructed by the CATF */
-			std::vector<double> cleanCAMomValues; /**< used to store all momentum values of clean tracks reconstructed by the CATF */
-			std::vector<double> completeCAMomValues; /**< used to store all momentum values of full tracks reconstructed by the CATF */
-			std::vector<double> totalMomValues; /**< used to store all momentum values of tracks existing no matter they produced hits or not */
-			std::vector<double> totalMCpTValues; /**< used to store all pT values of tracks reconstructed by the MCTF */
-			std::vector<double> totalCApTValues; /**< used to store all pT values of tracks reconstructed by the CATF */
-			std::vector<double> cleanCApTValues; /**< used to store all pT values of clean tracks reconstructed by the CATF */
-			std::vector<double> completeCApTValues; /**< used to store all pT values of full tracks reconstructed by the CATF */
-			std::vector<double> totalpTValues; /**< used to store all pT values of tracks existing no matter they produced hits or not */
-			std::vector<double> totalMCThetaValues; /**< used to store all theta values of tracks reconstructed by the MCTF */
-			std::vector<double> totalCAThetaValues; /**< used to store all theta values of tracks reconstructed by the CATF */
-			std::vector<double> cleanCAThetaValues; /**< used to store all theta values of clean tracks reconstructed by the CATF */
-			std::vector<double> completeCAThetaValues; /**< used to store all theta values of full tracks reconstructed by the CATF */
-			std::vector<double> totalThetaValues; /**< used to store all theta values of tracks existing no matter they produced hits or not */
-			std::vector<int> mCreconstructedTrackLength; /**< used to store all track length values of tracks reconstructed by the MCTF */
-			std::vector<int> cAreconstructedTrackLength; /**< used to store all track length values of tracks reconstructed by the CATF */
-		};
-		
-		
+    typedef std::pair<int, double> foundIDentry; /**< .first: id of mcTC assigned, .second: qi of tc, the higher, the better */
+
+    /** internal datastore for root export */
+    struct RootVariables  {
+      std::vector<double> totalMCMomValues; /**< used to store all momentum values of tracks reconstructed by the MCTF */
+      std::vector<double> totalCAMomValues; /**< used to store all momentum values of tracks reconstructed by the CATF */
+      std::vector<double> cleanCAMomValues; /**< used to store all momentum values of clean tracks reconstructed by the CATF */
+      std::vector<double> completeCAMomValues; /**< used to store all momentum values of full tracks reconstructed by the CATF */
+      std::vector<double> totalMomValues; /**< used to store all momentum values of tracks existing no matter they produced hits or not */
+      std::vector<double> totalMCpTValues; /**< used to store all pT values of tracks reconstructed by the MCTF */
+      std::vector<double> totalCApTValues; /**< used to store all pT values of tracks reconstructed by the CATF */
+      std::vector<double> cleanCApTValues; /**< used to store all pT values of clean tracks reconstructed by the CATF */
+      std::vector<double> completeCApTValues; /**< used to store all pT values of full tracks reconstructed by the CATF */
+      std::vector<double> totalpTValues; /**< used to store all pT values of tracks existing no matter they produced hits or not */
+      std::vector<double> totalMCThetaValues; /**< used to store all theta values of tracks reconstructed by the MCTF */
+      std::vector<double> totalCAThetaValues; /**< used to store all theta values of tracks reconstructed by the CATF */
+      std::vector<double> cleanCAThetaValues; /**< used to store all theta values of clean tracks reconstructed by the CATF */
+      std::vector<double> completeCAThetaValues; /**< used to store all theta values of full tracks reconstructed by the CATF */
+      std::vector<double> totalThetaValues; /**< used to store all theta values of tracks existing no matter they produced hits or not */
+      std::vector<int> mCreconstructedTrackLength; /**< used to store all track length values of tracks reconstructed by the MCTF */
+      std::vector<int> cAreconstructedTrackLength; /**< used to store all track length values of tracks reconstructed by the CATF */
+    };
+
+
     /** internal datastore for TCs. Used by caTCs and mcTCs */
     struct VXDTrackCandidate {
 
@@ -122,14 +122,14 @@ namespace Belle2 {
     virtual void endRun();
 
     virtual void terminate();
-		
-		/** compares entries of a list which stores pair of values (which one is bigger?) */
-		static bool isFirstValueBigger(foundIDentry& lhs, foundIDentry& rhs);
-		
-		/** compares entries of a list which stores pair of values (are both the same?)*/
-		static bool isFirstValueTheSame(foundIDentry& lhs, foundIDentry& rhs);
-		
-		
+
+    /** compares entries of a list which stores pair of values (which one is bigger?) */
+    static bool isFirstValueBigger(foundIDentry& lhs, foundIDentry& rhs);
+
+    /** compares entries of a list which stores pair of values (are both the same?)*/
+    static bool isFirstValueTheSame(foundIDentry& lhs, foundIDentry& rhs);
+
+
 
     /** extracts hits from GFTrackCand. Working with both TC-types (mc (monte carlo) or ca (cellular automaton)) */
     void extractHits(GFTrackCand* aTC,
@@ -175,7 +175,7 @@ namespace Belle2 {
     int m_mcTrackVectorCounter; /**< another counter of mcTCs, consideres size of datastores containing mcTCs */
     double m_PARAMminTMomentumFilter; /**< to narrow down the relevant mcTracks, this minFilter can be set to filter tracks having lower transverse momentum than this threshold. Relevant for checking efficiency of TFs with certain transverse momentum ranges */
     double m_PARAMmaxTMomentumFilter; /**< to narrow down the relevant mcTracks, this maxFilter can be set to filter tracks having higher transverse momentum than this threshold. Relevant for checking efficiency of TFs with certain transverse momentum ranges */
-    
+
     // rootStuff:
     bool m_PARAMwriteToRoot; /**< if true, analysis data is stored to root file with file name chosen by 'rootFileName' */
     std::vector<std::string> m_PARAMrootFileName; /**< only two entries accepted, first one is the root filename, second one is 'RECREATE' or 'UPDATE' which is the write mode for the root file, parameter is used only if 'writeToRoot' = true */
@@ -199,6 +199,7 @@ namespace Belle2 {
     std::vector<int> m_rootMCreconstructedTrackLength; /**< used to store all track length values of tracks reconstructed by the MCTF */
     std::vector<int> m_rootCAreconstructedTrackLength; /**< used to store all track length values of tracks reconstructed by the CATF */
 
+    std::vector<int> m_forRootCountFoundIDs; /**< dirty hack to guarantee that no double found TCs are counted for the efficiency, gets deleted at the beginning of each event and stores each found ID of the event once */
   private:
 
   };

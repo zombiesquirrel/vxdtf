@@ -46,7 +46,7 @@ vector< vector< pair<double, double> > > Tracking::getGlobalizedHitErrors()
     errorContainer.push_back(layerErrors);
   }
 
-  B2DEBUG(1," Tracking::getGlobalizedHitErrors, " << errorContainer.size() << " layers stored...")
+  B2DEBUG(1, " Tracking::getGlobalizedHitErrors, " << errorContainer.size() << " layers stored...")
 
   return errorContainer;
 }
@@ -70,6 +70,6 @@ vector< pair<double, double> > Tracking::getHitErrors()
     errorContainer.push_back(make_pair(sigmaU, sigmaV));
   }
 
-  B2DEBUG(1," Tracking::getHitErrors, " << errorContainer.size() << " layers stored...")
+  B2DEBUG(1, " Tracking::getHitErrors, " << errorContainer.size() << " layers stored...")
   return errorContainer;
 }

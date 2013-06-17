@@ -303,19 +303,19 @@ namespace Belle2 {
                   double omega);
 
 
-		/** search for nonOverlapping trackCandidates using Greedy algorithm (start with TC of highest QI, remove all TCs incompatible with current TC, if there are still TCs there, repeat step until no incompatible TCs are there any more) */
-		void greedy(TCsOfEvent& tcVector);
+    /** search for nonOverlapping trackCandidates using Greedy algorithm (start with TC of highest QI, remove all TCs incompatible with current TC, if there are still TCs there, repeat step until no incompatible TCs are there any more) */
+    void greedy(TCsOfEvent& tcVector);
 
 
-		/** used by VXDTFModule::greedy, recursive function which takes tc with highest QI and kills all its rivals. After that, TC gets removed and process is repeated with shrinking list of TCs until no TCs alive has got rivals alive */
-		void greedyRecursive( std::list< std::pair<double, Belle2::VXDTFTrackCandidate*> >& overlappingTCs,
-																				double& totalSurvivingQI,
-																				int& countSurvivors,
-																				int& countKills);
+    /** used by VXDTFModule::greedy, recursive function which takes tc with highest QI and kills all its rivals. After that, TC gets removed and process is repeated with shrinking list of TCs until no TCs alive has got rivals alive */
+    void greedyRecursive(std::list< std::pair<double, Belle2::VXDTFTrackCandidate*> >& overlappingTCs,
+                         double& totalSurvivingQI,
+                         int& countSurvivors,
+                         int& countKills);
 
 
-		/** for the easy situation of 2 overlapping TCs we dont need comlex algorithms for finding the best subset of clean TCs... */
-		void tcDuel(TCsOfEvent& tcVector);
+    /** for the easy situation of 2 overlapping TCs we dont need comlex algorithms for finding the best subset of clean TCs... */
+    void tcDuel(TCsOfEvent& tcVector);
 
 
     /** calculates integer score for current filter (all filters combined deliver the QQQ (normed to 0-1)), works for filterTypes having both: min- and max-value */
@@ -542,9 +542,9 @@ namespace Belle2 {
 
     bool m_PARAMqiSmear; /**<  allows to smear QIs via qqq-Interface, needed when having more than one TC with the same QI */
     bool m_PARAMcleanOverlappingSet; /**< when true, TCs which are found more than once (possible because of multipass) will get filtered */
-    bool m_PARAMuseHopfield; 
+//     bool m_PARAMuseHopfield;
     std::string m_PARAMfilterOverlappingTCs; /**< defines which technique shall be used for filtering overlapping TCs, currently supported: 'hopfield', 'greedy', 'none' */
-		int m_filterOverlappingTCs; /**< is set by m_PARAMfilterOverlappingTCs and defines which technique shall be used for filtering overlapping TCs */
+    int m_filterOverlappingTCs; /**< is set by m_PARAMfilterOverlappingTCs and defines which technique shall be used for filtering overlapping TCs */
     double m_PARAMsmearMean; /**< allows to introduce a bias for QI (e.g. surpressing all values, ...)*/
     double m_PARAMsmearSigma; /**< bigger values deliver broader distribution*/
     bool m_PARAMstoreBrokenQI;/**< if true, TC survives QI-calculation-process even if fit was not possible */
@@ -560,8 +560,8 @@ namespace Belle2 {
     double m_rootChi2; /**< used for storing chi2values in a root file */
     int m_rootNdf; /**< used for storing numbers of degrees of freedom in a root file */
     std::vector<double>  m_rootVecPvalues; /**< used for storing grouped pValues in a root file */
-		std::vector<double> m_rootVecChi2; /**< used for storing grouped chi2values in a root file */
-		std::vector<int> m_rootVecNdf; /**< used for storing grouped numbers of degrees of freedom in a root file */
+    std::vector<double> m_rootVecChi2; /**< used for storing grouped chi2values in a root file */
+    std::vector<int> m_rootVecNdf; /**< used for storing grouped numbers of degrees of freedom in a root file */
 
     std::string m_PARAMcalcQIType; /**< allows you to chose the way, the QI's of the TC's shall be calculated. currently supported: 'kalman','trackLength', 'circleFit' */
     int m_calcQiType; /**< is set by m_PARAMcalcQIType and defines which qi type shall be calculated */

@@ -216,7 +216,8 @@ void VXDTFTrackCandidate::setPassIndex(int anIndex) { m_passIndex = anIndex; }
 
 void VXDTFTrackCandidate::setFitSucceeded(bool yesNo) { m_fitSucceeded = yesNo; }
 
-TVector3 VXDTFTrackCandidate::getInitialMomentum() {
-	if ( m_initialValuesSet == false ) { B2FATAL(" getInitialMomentum executed although no values set yet - arborting..."); }
-	return m_initialMomentum;
+TVector3 VXDTFTrackCandidate::getInitialMomentum()
+{
+  if (m_initialValuesSet == false) { B2FATAL(" getInitialMomentum executed although no values set yet - arborting..."); }
+  return m_initialMomentum;
 }
