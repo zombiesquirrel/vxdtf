@@ -571,36 +571,34 @@ struct reccdc_timing {
 
 namespace Belle {
 
-  extern const HepGeom::Point3D<double>  ORIGIN;
+extern const HepGeom::Point3D<double>  ORIGIN;
 
-  std::string
-  TConformalFinder::version(void) const
-  {
-    return "3.06";
-  }
+std::string
+TConformalFinder::version(void) const {
+    return "5.16";
+}
 
-  TConformalFinder::TConformalFinder(unsigned fastFinder,
-                                     unsigned slowFinder,
-                                     unsigned perfectSegmentFinding,
-                                     bool useSmallCells,
-                                     float maxSigma,
-                                     float maxSigmaStereo,
-                                     float salvageLevel,
-                                     unsigned minNLinksForSegment,
-                                     unsigned minNCoreLinks,
-                                     unsigned minNSegments,
-                                     unsigned salvageLoadWidth,
-                                     unsigned stereoMode,
-                                     unsigned stereoLoadWidth,
-                                     float szSegmentDistance,
-                                     float szLinkDistance,
-                                     unsigned fittingFlag)
+TConformalFinder::TConformalFinder(unsigned fastFinder,
+				   unsigned slowFinder,
+				   unsigned perfectSegmentFinding,
+				   bool useSmallCells,
+				   float maxSigma,
+				   float maxSigmaStereo,
+				   float salvageLevel,
+				   unsigned,
+				   unsigned minNCoreLinks,
+				   unsigned minNSegments,
+				   unsigned salvageLoadWidth,
+				   unsigned stereoMode,
+				   unsigned stereoLoadWidth,
+				   float szSegmentDistance,
+				   float szLinkDistance,
+				   unsigned fittingFlag)
     : _fastFinder(fastFinder),
       _slowFinder(slowFinder),
       _perfectSegmentFinding(perfectSegmentFinding),
       _useSmallCells(useSmallCells),
       _maxSigma2(maxSigma),
-      _minNLinksForSegment(minNLinksForSegment),
       _minNCoreLinks(minNCoreLinks),
       _minNSegments(minNSegments),
       _salvageLoadWidth(salvageLoadWidth),
@@ -611,8 +609,6 @@ namespace Belle {
       _T0ResetDone(false),
       _segmentSeparation(4),
       _minNLinksForSegmentInRefine(3),
-      //  _maxNLinksForSegment((Belle2::TRGCDC::getTRGCDC()->versionCDC()=="superb")?16:8),
-      _maxNLinksForSegment(8),
       _maxWidthForSegment(4),
       _minUsedFractionSlow2D(0.5),
       _appendLoad(2),
@@ -627,7 +623,7 @@ namespace Belle {
 #ifdef TRASAN_WINDOW
       , _rphiWindow("rphi window")
 #endif
-  {
+{
     _linkMaxDistance[0] = 0.02;
     _linkMaxDistance[1] = 0.025;
     _linkMaxDistance[2] = 0.025;
@@ -635,13 +631,17 @@ namespace Belle {
     _linkMinDirAngle[1] = 0.97;
     _linkMinDirAngle[2] = 0.97;
 
+    const Belle2::TRGCDC & cdc(* Belle2::TRGCDC::getTRGCDC());
+    const unsigned nSuperLayers = cdc.nSuperLayers();
+    for (unsigned i = 0; i < nSuperLayers; i++) {
+	const unsigned nLocalLayers = cdc.nLocalLayers(i);
+	_minNLinksForSegment[i] = nLocalLayers - 2;
+	_maxNLinksForSegment[i] = nLocalLayers * 2;
 
-
-//     if(Belle2::TRGCDC::getTRGCDC()->versionCDC()=="superb") {
-//       _maxNLinksForSegment=16;
-//     }
-
-  }
+	std::cout << "Conf. Seg. cut " << i << " : " << _minNLinksForSegment[i]
+		  << ", " << _maxNLinksForSegment[i] << std::endl;
+    }
+}
 
   TConformalFinder::~TConformalFinder()
   {
@@ -769,31 +769,29 @@ namespace Belle {
 #endif
   }
 
-  void
-  TConformalFinder::findSegments(void)
-  {
+void
+TConformalFinder::findSegments(void) {
+
     // no_superlyr
     const Belle2::TRGCDC& cdc(*Belle2::TRGCDC::getTRGCDC());
-    unsigned nSuperLayers = cdc.nSuperLayers();
-    unsigned maxNLinks = _maxNLinksForSegment;
-    unsigned maxWidth = _maxWidthForSegment;
+    const unsigned nSuperLayers = cdc.nSuperLayers();
     //...Create lists of links for each super layer...
     AList<TLink> links[9];
     unsigned n = _hits[2].length();
     for (unsigned i = 0; i < n; i++) {
-      TLink& l = * _hits[2][i];
-      links[l.wire()->superLayerId()].append(l);
+	TLink& l = * _hits[2][i];
+	links[l.wire()->superLayerId()].append(l);
     }
 
     //...Create phi hists...
     std::vector<THistogram*> hist;
     //    THistogram * hist[11];
     for (unsigned i = 0; i < nSuperLayers; ++i) {
-      unsigned nw = (*cdc.superLayer(i))[0]->nCells();
-      if (cdc.versionCDC() == "small cell" && i == 0) {
-        nw = 64;
-      }
-      hist.push_back(new THistogram(nw));
+	unsigned nw = (*cdc.superLayer(i))[0]->nCells();
+	if (cdc.versionCDC() == "small cell" && i == 0) {
+	    nw = 64;
+	}
+	hist.push_back(new THistogram(nw));
     }
 //     hist[0] = new THistogram(64);
 //     hist[1] = new THistogram(80);
@@ -806,44 +804,56 @@ namespace Belle {
 //     hist[8] = new THistogram(240);
 //     hist[9] = new THistogram(256);
 //     hist[10] = new THistogram(288);
+
     for (unsigned i = 0; i < nSuperLayers; i++) {
-      unsigned superLayerId = i / 2;
-      unsigned id = i % 2;
-      hist[i]->fillPhi(links[i]);
+	unsigned superLayerId = i / 2;
+	unsigned id = i % 2;
+	hist[i]->fillPhi(links[i]);
 //cnv   if(cdc.versionCDC()=="superb") {
 //    maxNLinks = cdc.superLayer(i)->length() * 2;
 //    maxWidth = cdc.superLayer(i)->length();
 //  }
 
-      //...Segment finding...
-      AList<TSegment> tmp = hist[i]->segments();
+	//...Segment finding...
+	AList<TSegment> tmp = hist[i]->segments();
 
-      //...Remove bad segments...
-      unsigned n = tmp.length();
-      if (id == 0) {
-        AList<TSegment> bad;
-        for (unsigned j = 0; j < n; j++) {
-          TSegment* s = tmp[j];
-          if ((unsigned) s->links().length() < _minNLinksForSegment) {
-            //      s->dump("detail","<min");
-            bad.append(s);
-          } else if ((unsigned) s->links().length() > maxNLinks) {
-            //      s->dump("detail",">max");
-            bad.append(s);
-          } else if (TLink::width(s->links()) > maxWidth) {
-            //      s->dump("detail",">width");
-            bad.append(s);
-          }
-        }
-        tmp.remove(bad);
-        for (unsigned j = 0; j < (unsigned) bad.length(); j++) {
-          _unused[id].append(bad[j]->links());
-          _unused[2].append(bad[j]->links());
-        }
-        HepAListDeleteAll(bad);
-      }
+	//...Remove bad segments...
+	unsigned n = tmp.length();
+	if (id == 0) {
+	    AList<TSegment> bad;
+	    for (unsigned j = 0; j < n; j++) {
+		TSegment* s = tmp[j];
+		if ((unsigned) s->links().length() < _minNLinksForSegment[i]) {
+		    bad.append(s);
+#ifdef TRASAN_DEBUG_DETAIL
+		    std::cout << Tab() << "cut by minNLInks" << std::endl;
+		    s->dump("detail","<min");
+#endif
+		}
+		else if ((unsigned) s->links().length() >
+			 _maxNLinksForSegment[i]) {
+		    bad.append(s);
+#ifdef TRASAN_DEBUG_DETAIL
+		    std::cout << Tab() << "cut by maxNLInks" << std::endl;
+		    s->dump("detail",">max");
+#endif
+		} else if (TLink::width(s->links()) > _maxWidthForSegment) {
+		    bad.append(s);
+#ifdef TRASAN_DEBUG_DETAIL
+		    std::cout << Tab() << "cut by maxWidth" << std::endl;
+		    s->dump("detail",">width");
+#endif
+		}
+	    }
+	    tmp.remove(bad);
+	    for (unsigned j = 0; j < (unsigned) bad.length(); j++) {
+		_unused[id].append(bad[j]->links());
+		_unused[2].append(bad[j]->links());
+	    }
+	    HepAListDeleteAll(bad);
+	}
 
-      //...Classify segments...
+	//...Classify segments...
 //    if (n > 1) {
 //        for (unsigned k = 0; k < (n - 1); k++) {
 //      TSegment & s0 = * tmp[k];
@@ -862,25 +872,31 @@ namespace Belle {
 //    }
 
 #ifdef TRASAN_DEBUG_DETAIL
-      std::cout << "    ... # of good segments=" << tmp.length()
-                << std::endl;
+	std::cout << "    ... # of good segments=" << tmp.length()
+		  << std::endl;
 #endif
 
-      //...Store them...
-      _allSegments[id][superLayerId].append(tmp);
-      _allUnused[id][superLayerId] = _allSegments[id][superLayerId];
-      //  delete hist[i];
+	//...Store them...
+	_allSegments[id][superLayerId].append(tmp);
+	_allUnused[id][superLayerId] = _allSegments[id][superLayerId];
+	//  delete hist[i];
     }
 
     for (std::vector<THistogram*>::iterator it = hist.begin();
          it != hist.end(); ++it) {
-      delete *it;
+	delete *it;
     }
 
 #ifdef TRASAN_DEBUG_DETAIL
     std::cout << "... segment finding finished" << std::endl;
+    for (unsigned i = 0; i < nSuperLayers; i++) {
+	unsigned superLayerId = i / 2;
+	unsigned id = i % 2;
+	std::cout << Tab() << "Super layer " << i << " : #good segments="
+		  << _allSegments[id][superLayerId].length() << std::endl;
+    }    
 #endif
-  }
+}
 
   void
   TConformalFinder::linkSegments(unsigned level)
@@ -1229,76 +1245,75 @@ namespace Belle {
     delete & t;
   }
 
-  void
-  TConformalFinder::removeUsedSegments(const AList<TTrack> & tracks)
-  {
+void
+TConformalFinder::removeUsedSegments(const AList<TTrack> & tracks) {
     unsigned n = tracks.length();
     for (unsigned i = 0; i < n; i++) {
-      TTrack& t = * tracks[i];
-      AList<TSegment> & segments = t.segments();
-      AList<TSegment> toBeRemoved;
-      unsigned nS = segments.length();
-      for (unsigned j = 0; j < nS; j++) {
-        TSegment& s = * segments[j];
-        unsigned sId = s.superLayerId();
-        unsigned as = sId % 2;
-        unsigned id = sId / 2;
+	TTrack& t = * tracks[i];
+	AList<TSegment> & segments = t.segments();
+	AList<TSegment> toBeRemoved;
+	unsigned nS = segments.length();
+	for (unsigned j = 0; j < nS; j++) {
+	    TSegment& s = * segments[j];
+	    unsigned sId = s.superLayerId();
+	    unsigned as = sId % 2;
+	    unsigned id = sId / 2;
 
-        //...Check used links...
-        AList<TLink> links = Links(s, t);
-        if (links.length() == 0) {
-          s.tracks().remove(t);
-          toBeRemoved.append(s);
+	    //...Check used links...
+	    AList<TLink> links = Links(s, t);
+	    if (links.length() == 0) {
+		s.tracks().remove(t);
+		toBeRemoved.append(s);
 #ifdef TRASAN_DEBUG
-          std::cout << "!!! why this happends???" << std::endl;
-          std::cout << "    no used link" << std::endl;
+		std::cout << "!!! why this happends???" << std::endl;
+		std::cout << "    no used link" << std::endl;
 #endif
-          continue;
-        }
+		continue;
+	    }
 
-        //...Remove from lists...
-        _allUnused[as][id].remove(s);
+	    //...Remove from lists...
+	    _allUnused[as][id].remove(s);
 
-        //...Remove incoming links...
-        const AList<TSegment> & outers = s.outerLinks();
-        unsigned nO = outers.length();
+	    //...Remove incoming links...
+	    const AList<TSegment> & outers = s.outerLinks();
+	    unsigned nO = outers.length();
 //        std::cout << " >>> removing outer links" << std::endl;
 //        s.dump("hits", "    To ");
-        for (unsigned i = 0; i < nO; i++) {
-          outers[i]->innerLinks().remove(s);
+	    for (unsigned i = 0; i < nO; i++) {
+		outers[i]->innerLinks().remove(s);
 //      outers[i]->dump("hits", "    From ");
-        }
+	    }
 
-        //...Remaining hits...
-        AList<TLink> unused = s.links();
-        unused.remove(links);
-        s.remove(unused);
-        unsigned nUnused = unused.length();
+	    //...Remaining hits...
+	    AList<TLink> unused = s.links();
+	    unused.remove(links);
+	    s.remove(unused);
+	    unsigned nUnused = unused.length();
 
-        //...Create new segment if too many remaining links...
-        if (nUnused < _minNLinksForSegment) {
-          for (unsigned k = 0; k < nUnused; k++) {
-            _unused[as].append(unused[k]);
-            _unused[2].append(unused[k]);
-          }
-        } else {
-          TSegment* ss = new TSegment(unused);
-          AList<TSegment> newSegments = ss->split();
-          if (newSegments.length() == 0) {
-            ss->solveDualHits();
-            newSegments.append(ss);
-            for (unsigned k = 0; k < nO; k++)
-              outers[k]->innerLinks().append(ss);
-          } else {
-            delete ss;
-          }
-          _allUnused[as][id].append(newSegments);
-          _allSegments[as][id].append(newSegments);
-        }
-      }
-      segments.remove(toBeRemoved);
+	    //...Create new segment if too many remaining links...
+	    if (nUnused < _minNLinksForSegment[sId]) {
+		for (unsigned k = 0; k < nUnused; k++) {
+		    _unused[as].append(unused[k]);
+		    _unused[2].append(unused[k]);
+		}
+	    } else {
+		TSegment* ss = new TSegment(unused);
+		AList<TSegment> newSegments = ss->split();
+		if (newSegments.length() == 0) {
+		    ss->solveDualHits();
+		    newSegments.append(ss);
+		    for (unsigned k = 0; k < nO; k++)
+			outers[k]->innerLinks().append(ss);
+		} else {
+		    delete ss;
+		}
+		_allUnused[as][id].append(newSegments);
+		_allSegments[as][id].append(newSegments);
+	    }
+	}
+	segments.remove(toBeRemoved);
     }
-  }
+}
 
   void
   TConformalFinder::updateTLinks(AList<TTrack> & tracks)
@@ -1314,20 +1329,19 @@ namespace Belle {
     }
   }
 
-  int
-  TConformalFinder::doit(const CAList<Belle2::TRGCDCWireHit> & axial,
-                         const CAList<Belle2::TRGCDCWireHit> & stereo,
-                         AList<TTrack> & tracks,
-                         AList<TTrack> & tracks2D)
-  {
+int
+TConformalFinder::doit(const CAList<Belle2::TRGCDCWireHit> & axial,
+		       const CAList<Belle2::TRGCDCWireHit> & stereo,
+		       AList<TTrack> & tracks,
+		       AList<TTrack> & tracks2D) {
 
     //...For debug...
     if (debugLevel() > 1)
-      std::cout << name() << " ... processing"
-                << " axial=" << axial.length()
-                << ",stereo=" << stereo.length()
-                << ",tracks=" << tracks.length()
-                << std::endl;
+	std::cout << name() << " ... processing"
+		  << " axial=" << axial.length()
+		  << ",stereo=" << stereo.length()
+		  << ",tracks=" << tracks.length()
+		  << std::endl;
 
 #ifdef TRASAN_DEBUG_DETAIL
     const std::string stage0 = "Conf";
@@ -1336,9 +1350,9 @@ namespace Belle {
 
     static bool first = true;
     if (first) {
-      first = false;
+	first = false;
 //cnv int size;
-      _s = 0;
+	_s = 0;
     }
 
     //...Create TLinks with conformal position...
@@ -1352,9 +1366,9 @@ namespace Belle {
 
     //...Segment finding...
     if (_perfectSegmentFinding)
-      findSegmentsPerfect();
+	findSegmentsPerfect();
     else
-      findSegments();
+	findSegments();
 
 #ifdef TRASAN_DEBUG_DETAIL
     LeaveStage(stage0);
@@ -1366,66 +1380,66 @@ namespace Belle {
     unsigned level = 0;
     _T0ResetDone = false;
     if (_fastFinder) {
-      linkSegments(level);
-      fastFinding2D(level);
-      updateTLinks(_2DTracks);
+	linkSegments(level);
+	fastFinding2D(level);
+	updateTLinks(_2DTracks);
 
-      //...T0 reset here...
-      if (_doT0Reset) {
-        std::cout
-            << "TConformalFinder ... T0 reset is done" << std::endl;
-        _T0ResetDone = true;
-        return 0;
-      }
+	//...T0 reset here...
+	if (_doT0Reset) {
+	    std::cout
+		<< "TConformalFinder ... T0 reset is done" << std::endl;
+	    _T0ResetDone = true;
+	    return 0;
+	}
 
-      fastFinding3D(level);
-      updateTLinks(_2DTracks);
-      updateTLinks(_3DTracks);
+	fastFinding3D(level);
+	updateTLinks(_2DTracks);
+	updateTLinks(_3DTracks);
 
 #ifdef TRASAN_WINDOW
-      _rphiWindow.skip(false);
-      displayTracks(_2DTracks, _allUnused, "all 2D after fast level 0");
-      displayTracks(_3DTracks, _allUnused, "all 3D after fast level 0");
+	_rphiWindow.skip(false);
+	displayTracks(_2DTracks, _allUnused, "all 2D after fast level 0");
+	displayTracks(_3DTracks, _allUnused, "all 3D after fast level 0");
 #endif
 #ifdef TRASAN_WINDOW_GTK
-      TWindowGTKConformal& w = Trasan::getTrasan()->w();
-      w.clear();
+	TWindowGTKConformal& w = Trasan::getTrasan()->w();
+	w.clear();
 //  w.skip(false);
-      w.stage("Conformal Finder : fast finding (level 0) finished");
-      w.append(_allHits[2], Gdk::Color("grey"));
-      w.append(_hits[2], Gdk::Color("pink"));
-      w.append(_2DTracks, Gdk::Color("red"));
-      w.append(_3DTracks, Gdk::Color("green"));
-      w.run();
+	w.stage("Conformal Finder : fast finding (level 0) finished");
+	w.append(_allHits[2], Gdk::Color("grey"));
+	w.append(_hits[2], Gdk::Color("pink"));
+	w.append(_2DTracks, Gdk::Color("red"));
+	w.append(_3DTracks, Gdk::Color("green"));
+	w.run();
 #endif
 
-      //...Fast finding again...
-      level = 1;
-      linkSegments(level);
-      fastFinding2D(level);
-      updateTLinks(_2DTracks);
+	//...Fast finding again...
+	level = 1;
+	linkSegments(level);
+	fastFinding2D(level);
+	updateTLinks(_2DTracks);
 
 #ifdef TRASAN_WINDOW
-      _rphiWindow.skip(false);
+	_rphiWindow.skip(false);
 #endif
-      fastFinding3D(level);
-      updateTLinks(_2DTracks);
-      updateTLinks(_3DTracks);
+	fastFinding3D(level);
+	updateTLinks(_2DTracks);
+	updateTLinks(_3DTracks);
 
 #ifdef TRASAN_WINDOW
-      _rphiWindow.skip(false);
-      displayTracks(_2DTracks, _allUnused, "all 2D after fast level 1");
-      displayTracks(_3DTracks, _allUnused, "all 3D after fast level 1");
+	_rphiWindow.skip(false);
+	displayTracks(_2DTracks, _allUnused, "all 2D after fast level 1");
+	displayTracks(_3DTracks, _allUnused, "all 3D after fast level 1");
 #endif
 #ifdef TRASAN_WINDOW_GTK
-      w.clear();
+	w.clear();
 //  w.skip(false);
-      w.stage("Conformal Finder : fast finding (level 1) finished");
-      w.append(_allHits[2], Gdk::Color("grey"));
-      w.append(_hits[2], Gdk::Color("pink"));
-      w.append(_2DTracks, Gdk::Color("red"));
-      w.append(_3DTracks, Gdk::Color("green"));
-      w.run();
+	w.stage("Conformal Finder : fast finding (level 1) finished");
+	w.append(_allHits[2], Gdk::Color("grey"));
+	w.append(_hits[2], Gdk::Color("pink"));
+	w.append(_2DTracks, Gdk::Color("red"));
+	w.append(_3DTracks, Gdk::Color("green"));
+	w.run();
 #endif
     }
 
@@ -1439,34 +1453,34 @@ namespace Belle {
 
     //...Slow finding...
     if (_slowFinder) {
-      level = 2;
-      linkSegments(level);
-      slowFinding2D(level);
-      updateTLinks(_2DTracks);
+	level = 2;
+	linkSegments(level);
+	slowFinding2D(level);
+	updateTLinks(_2DTracks);
 #ifdef TRASAN_WINDOW
-      _rphiWindow.skip(false);
+	_rphiWindow.skip(false);
 //  _rphiWindow.skipAllWindow(false);
 #endif
-      fastFinding3D(level);
-      updateTLinks(_2DTracks);
-      updateTLinks(_3DTracks);
+	fastFinding3D(level);
+	updateTLinks(_2DTracks);
+	updateTLinks(_3DTracks);
 
 #ifdef TRASAN_WINDOW
-      _rphiWindow.skip(false);
+	_rphiWindow.skip(false);
 //  _rphiWindow.skipAllWindow(false);
-      displayTracks(_2DTracks, _allUnused, "all 2D after slow level 2");
-      displayTracks(_3DTracks, _allUnused, "all 3D after slow level 2");
+	displayTracks(_2DTracks, _allUnused, "all 2D after slow level 2");
+	displayTracks(_3DTracks, _allUnused, "all 3D after slow level 2");
 #endif
 #ifdef TRASAN_WINDOW_GTK
-      TWindowGTKConformal& w = Trasan::getTrasan()->w();
-      w.clear();
+	TWindowGTKConformal& w = Trasan::getTrasan()->w();
+	w.clear();
 //  w.skip(false);
-      w.stage("Conformal Finder : slow finding finished");
-      w.append(_allHits[2], Gdk::Color("grey"));
-      w.append(_hits[2], Gdk::Color("pink"));
-      w.append(_2DTracks, Gdk::Color("red"));
-      w.append(_3DTracks, Gdk::Color("green"));
-      w.run();
+	w.stage("Conformal Finder : slow finding finished");
+	w.append(_allHits[2], Gdk::Color("grey"));
+	w.append(_hits[2], Gdk::Color("pink"));
+	w.append(_2DTracks, Gdk::Color("red"));
+	w.append(_3DTracks, Gdk::Color("green"));
+	w.run();
 #endif
     }
 
@@ -1484,44 +1498,43 @@ namespace Belle {
     //...Termination...
     tracks = _3DTracks;
     tracks2D = _2DTracks;
-    ++_s->_nEvents;
-    unsigned n3 = _3DTracks.length();
-    for (unsigned i = 0; i < n3; i++)
-      if (_3DTracks[i]->finder() & TrackFastFinder)
-        ++_s->_nTracksFast3D;
-      else if (_3DTracks[i]->finder() & TrackSlowFinder)
-        ++_s->_nTracksSlow3D;
-    unsigned n2 = _2DTracks.length();
-    for (unsigned i = 0; i < n2; i++)
-      if (_2DTracks[i]->finder() & TrackFastFinder)
-        ++_s->_nTracksFast2D;
-      else if (_2DTracks[i]->finder() & TrackSlowFinder)
-        ++_s->_nTracksSlow2D;
+//cnv
+    // ++_s->_nEvents;
+    // unsigned n3 = _3DTracks.length();
+    // for (unsigned i = 0; i < n3; i++)
+    //   if (_3DTracks[i]->finder() & TrackFastFinder)
+    //     ++_s->_nTracksFast3D;
+    //   else if (_3DTracks[i]->finder() & TrackSlowFinder)
+    //     ++_s->_nTracksSlow3D;
+    // unsigned n2 = _2DTracks.length();
+    // for (unsigned i = 0; i < n2; i++)
+    //   if (_2DTracks[i]->finder() & TrackFastFinder)
+    //     ++_s->_nTracksFast2D;
+    //   else if (_2DTracks[i]->finder() & TrackSlowFinder)
+    //     ++_s->_nTracksSlow2D;
 
     if (debugLevel() > 1) {
-      std::cout << name() << " ... # 3D tracks = " << _3DTracks.length()
-                << ", # 2D tracks = " << _2DTracks.length() << std::endl;
+	std::cout << name() << " ... # 3D tracks = " << _3DTracks.length()
+		  << ", # 2D tracks = " << _2DTracks.length() << std::endl;
     }
 
     //...For debug...
     if (debugLevel() > 1)
-      std::cout << name() << " ... processed"
-                << " axial=" << axial.length()
-                << ",stereo=" << stereo.length()
-                << ",tracks=" << tracks.length()
-                << std::endl;
+	std::cout << name() << " ... processed"
+		  << " axial=" << axial.length()
+		  << ",stereo=" << stereo.length()
+		  << ",tracks=" << tracks.length()
+		  << std::endl;
 
 #ifdef TRASAN_DEBUG_DETAIL
     LeaveStage(stage3);
 #endif
 
     return 0;
-  }
+}
 
-  void
-
-  TConformalFinder::fastFinding3D(unsigned level)
-  {
+void
+TConformalFinder::fastFinding3D(unsigned level) {
 
 #ifdef TRASAN_DEBUG_DETAIL
     const std::string stage = "ConformalFastFinding3D level"
@@ -1534,92 +1547,93 @@ namespace Belle {
     AList<TSegment> bads;
     unsigned n = _2DTracks.length();
     for (unsigned i = 0; i < n; i++) {
-      const TTrack& t = * _2DTracks[i];
+	const TTrack& t = * _2DTracks[i];
 
 #ifdef TRASAN_DEBUG_DETAIL
-      std::cout << "==> fast 3D building : " << t.name() << std::endl;
-      t.dump("hits sort flag", "    2D track hits=");
+	std::cout << "==> fast 3D building : " << t.name() << std::endl;
+	t.dump("hits sort flag", "    2D track hits=");
 #endif
-      AList<TSegment> segments = stereoSegments(t);
-      AList<TSegment> badSegments;
-      if (_stereoMode == 2)
-        badSegments = stereoSegmentsFromBadHits(t);
+	AList<TSegment> segments = stereoSegments(t);
+	AList<TSegment> badSegments;
+	if (_stereoMode == 2)
+	    badSegments = stereoSegmentsFromBadHits(t);
 
 #ifdef TRASAN_WINDOW
-      displayStatus("Conf::fast3D ... seed");
-      _rphiWindow.append(segments, leda_blue);
-      _rphiWindow.append(badSegments, leda_red);
-      _rphiWindow.oneShot(t, leda_green);
+	displayStatus("Conf::fast3D ... seed");
+	_rphiWindow.append(segments, leda_blue);
+	_rphiWindow.append(badSegments, leda_red);
+	_rphiWindow.oneShot(t, leda_green);
 #endif
 
-      //...Save a 2D track...
-      TTrack* s = NULL;
-      if (_stereoMode)
-        s = _builder.buildStereoNew(t, segments, badSegments);
-      else
-        s = _builder.buildStereo(t, segments);
-      HepAListDeleteAll(badSegments);
+	//...Save a 2D track...
+	TTrack* s = NULL;
+	if (_stereoMode)
+	    s = _builder.buildStereoNew(t, segments, badSegments);
+	else
+	    s = _builder.buildStereo(t, segments);
+	HepAListDeleteAll(badSegments);
 
-      if (! s) {
+	if (! s) {
 #ifdef TRASAN_DEBUG_DETAIL
-        std::cout << "... 3D failure" << std::endl;
+	    std::cout << "... 3D failure" << std::endl;
 #endif
 #ifdef TRASAN_WINDOW
-        displayStatus("Conf::fastd3D ... 3D failed");
-        _rphiWindow.append(segments, leda_blue);
-        _rphiWindow.oneShot(t, leda_red);
+	    displayStatus("Conf::fastd3D ... 3D failed");
+	    _rphiWindow.append(segments, leda_blue);
+	    _rphiWindow.oneShot(t, leda_red);
 #endif
-        continue;
-      }
+	    continue;
+	}
 
-      //...Quality check...
-      if (! TTrackManager::goodTrack(* s)) {
+	//...Quality check...
+	if (! TTrackManager::goodTrack(* s)) {
 #ifdef TRASAN_DEBUG_DETAIL
-        std::cout << "... 3D failure (bad quality)" << std::endl;
+	    std::cout << "... 3D failure (bad quality)" << std::endl;
 #endif
 #ifdef TRASAN_WINDOW
-        displayStatus("Conf::fastd3D ... 3D failed (bad quality)");
-        _rphiWindow.append(segments, leda_blue);
-        _rphiWindow.oneShot(* s, leda_red);
+	    displayStatus("Conf::fastd3D ... 3D failed (bad quality)");
+	    _rphiWindow.append(segments, leda_blue);
+	    _rphiWindow.oneShot(* s, leda_red);
 #endif
-        if (s->finder() & TrackFastFinder)
-          ++_s->_nTracksFast2DBadQuality;
-        else if (s->finder() & TrackSlowFinder)
-          ++_s->_nTracksSlow2DBadQuality;
 
-        deleteTrack(* s);
-        continue;
-      }
+//cnv        if (s->finder() & TrackFastFinder)
+        //   ++_s->_nTracksFast2DBadQuality;
+        // else if (s->finder() & TrackSlowFinder)
+        //   ++_s->_nTracksSlow2DBadQuality;
 
-      //...New name...
-      s->name(t.name() + "-3D");
+	    deleteTrack(* s);
+	    continue;
+	}
+
+	//...New name...
+	s->name(t.name() + "-3D");
 
 #ifdef TRASAN_WINDOW
-      displayStatus("Conf::fastd3D ... 3D ok");
-      _rphiWindow.append(segments, leda_blue);
-      _rphiWindow.oneShot(* s, leda_green);
+	displayStatus("Conf::fastd3D ... 3D ok");
+	_rphiWindow.append(segments, leda_blue);
+	_rphiWindow.oneShot(* s, leda_green);
 #endif
 
-      //...Salvage by segments...
-      salvage(* s, 3, bads);
-      tracks3D.append(s);
-      touched.append(_2DTracks[i]);
-      s->assign(CellHitConformalFinder);
-      s->quality(0);
+	//...Salvage by segments...
+	salvage(* s, 3, bads);
+	tracks3D.append(s);
+	touched.append(_2DTracks[i]);
+	s->assign(CellHitConformalFinder);
+	s->quality(0);
 
-      //...Segment...
-      static AList<TTrack> tmp;
-      tmp.removeAll();
-      tmp.append(s);
-      removeUsedSegments(tmp);
+	//...Segment...
+	static AList<TTrack> tmp;
+	tmp.removeAll();
+	tmp.append(s);
+	removeUsedSegments(tmp);
 
 #ifdef TRASAN_DEBUG_DETAIL
-      std::cout << "... 3D finished : " << s->name() << std::endl;
-      s->dump("detail", "    ");
+	std::cout << "... 3D finished : " << s->name() << std::endl;
+	s->dump("detail", "    ");
 #endif
 #ifdef TRASAN_WINDOW
-      displayStatus("Conf::fastd3D ... finished");
-      _rphiWindow.oneShot(* s, leda_green);
+	displayStatus("Conf::fastd3D ... finished");
+	_rphiWindow.oneShot(* s, leda_green);
 #endif
     }
 
@@ -1628,14 +1642,14 @@ namespace Belle {
     _2DTracks.remove(tracks3D);
     _2DTracks.remove(touched);
     for (unsigned i = 0; i < (unsigned) touched.length(); i++) {
-      deleteTrack(* touched[i]);
-      // saved[i]->fit();
+	deleteTrack(* touched[i]);
+	// saved[i]->fit();
     }
 
 #ifdef TRASAN_DEBUG_DETAIL
     LeaveStage(stage);
 #endif
-  }
+}
 
 #ifdef TRASAN_WINDOW
   void
@@ -1679,9 +1693,8 @@ namespace Belle {
 #endif
 
 #ifdef TRASAN_WINDOW_GTK
-  void
-  TConformalFinder::displayStatus(const std::string& m) const
-  {
+void
+TConformalFinder::displayStatus(const std::string &) const {
 //    _cw.clear();
 //     _cw.text(m);
 //     _cw.append(_allHits[2], leda_pink);
@@ -1689,7 +1702,7 @@ namespace Belle {
 //     _cw.append(_unused[2]);
 //     displayAppendSegments(_allSegments, leda_grey1);
 //     displayAppendSegments(_allUnused, leda_orange);
-  }
+}
 #endif
 
   bool
@@ -1794,10 +1807,9 @@ namespace Belle {
     return true;
   }
 
-  void
+void
+TConformalFinder::fastFinding2D(unsigned level) {
 
-  TConformalFinder::fastFinding2D(unsigned level)
-  {
     // no_superlyr
     const Belle2::TRGCDC& cdc(*Belle2::TRGCDC::getTRGCDC());
 //cnv  unsigned nSuperLayers = cdc.nSuperLayers();
@@ -1814,105 +1826,105 @@ namespace Belle {
     unsigned seedLayer = 6;
     while ((seedLayer--) > 2) {
 
-      //...Seed loop...
-      AList<TTrack> trackCandidates;
-      unsigned n = segments[seedLayer].length();
-      for (unsigned i = 0; i < n; i++) {
-        TSegment& seed = * segments[seedLayer][i];
-        std::string name = "f" + itostring(nTrial + idBase);
+	//...Seed loop...
+	AList<TTrack> trackCandidates;
+	unsigned n = segments[seedLayer].length();
+	for (unsigned i = 0; i < n; i++) {
+	    TSegment& seed = * segments[seedLayer][i];
+	    std::string name = "f" + itostring(nTrial + idBase);
 
 #ifdef TRASAN_DEBUG_DETAIL
-        std::cout << Tab() << "super layer " << seedLayer << "," << i
-                  << std::endl;
-        seed.dump("link", Tab());
+	    std::cout << Tab() << "super layer " << seedLayer << "," << i
+		      << std::endl;
+	    seed.dump("link", Tab());
 #endif
 
-        //...Check uniqueness...
-        AList<TSegment> seeds;
-        if (NUniqueLinks(seed) > 1) {
-          seeds = UniqueLinks(seed);
-        } else if (NMajorLinks(seed) > 1) {
-          seeds = MajorLinks(seed);
-        } else {
-          continue;
-        }
-        seeds.append(seed);
+	    //...Check uniqueness...
+	    AList<TSegment> seeds;
+	    if (NUniqueLinks(seed) > 1) {
+		seeds = UniqueLinks(seed);
+	    } else if (NMajorLinks(seed) > 1) {
+		seeds = MajorLinks(seed);
+	    } else {
+		continue;
+	    }
+	    seeds.append(seed);
 
-        //...Refine...
-refine:
+	    //...Refine...
+	refine:
 
 #ifdef TRASAN_WINDOW
-        displayStatus("Conf::fast2D ... seed segments");
-        _rphiWindow.oneShot(seeds, leda_green);
+	    displayStatus("Conf::fast2D ... seed segments");
+	    _rphiWindow.oneShot(seeds, leda_green);
 #endif
 #ifdef TRASAN_DEBUG_DETAIL
-        std::cout << Tab() << "seed layer = " << seedLayer << "," << name
-                  << std::endl;
+	    std::cout << Tab() << "seed layer = " << seedLayer << "," << name
+		      << std::endl;
 #endif
 
-        //...Try to build a track...
-        TTrack* t = _builder.buildRphi(seeds);
-        ++nTrial;
+	    //...Try to build a track...
+	    TTrack* t = _builder.buildRphi(seeds);
+	    ++nTrial;
 
-        //...Track check...
-        if (! t) continue;
-        t->name(name);
-        bool ok = quality2D(* t, 0);
-        if (! ok) {
-          deleteTrack(* t);
-          continue;
-        }
+	    //...Track check...
+	    if (! t) continue;
+	    t->name(name);
+	    bool ok = quality2D(* t, 0);
+	    if (! ok) {
+		deleteTrack(* t);
+		continue;
+	    }
 
-        //...Bad segment rejection...
-        AList<TSegment> bads = removeBadSegments(* t);
-        if (bads.length()) {
-          ok = quality2D(* t, 1);
-          if (! ok) {
-            seeds = refineSegments(* t);
-            if ((unsigned) seeds.length() >= _minNSegments) {
-              deleteTrack(* t);
-              goto refine;
-            }
-            deleteTrack(* t);
-            continue;
-          }
-        }
+	    //...Bad segment rejection...
+	    AList<TSegment> bads = removeBadSegments(* t);
+	    if (bads.length()) {
+		ok = quality2D(* t, 1);
+		if (! ok) {
+		    seeds = refineSegments(* t);
+		    if ((unsigned) seeds.length() >= _minNSegments) {
+			deleteTrack(* t);
+			goto refine;
+		    }
+		    deleteTrack(* t);
+		    continue;
+		}
+	    }
 
-        //...Salvage by segments...
-        salvage(* t, 1, bads);
-        refineLinks(* t, 3);
-        ok = quality2D(* t, 2);
-        if (! ok) {
-          deleteTrack(* t);
-          continue;
-        }
+	    //...Salvage by segments...
+	    salvage(* t, 1, bads);
+	    refineLinks(* t, 3);
+	    ok = quality2D(* t, 2);
+	    if (! ok) {
+		deleteTrack(* t);
+		continue;
+	    }
 
-        //...Append segments...
-        if (TLink::nSuperLayers(t->links()) < cdc.nAxialSuperLayers()) {
-          t = expand(* t);
-        }
+	    //...Append segments...
+	    if (TLink::nSuperLayers(t->links()) < cdc.nAxialSuperLayers()) {
+		t = expand(* t);
+	    }
 
 #ifdef TRASAN_DEBUG_DETAIL
-        std::cout << Tab() << "2D finished:" << t->name() << std::endl;
-        t->dump("hits sort flag pull", Tab(+1));
+	    std::cout << Tab() << "2D finished:" << t->name() << std::endl;
+	    t->dump("hits sort flag pull", Tab(+1));
 #endif
 #ifdef TRASAN_WINDOW
-        displayStatus("Conf::fast2D ... finished");
-        _rphiWindow.oneShot(* t, leda_green);
+	    displayStatus("Conf::fast2D ... finished");
+	    _rphiWindow.oneShot(* t, leda_green);
 #endif
 
-        t->finder(TrackFastFinder);
-        t->quality(TrackQuality2D);
-        t->fitting(TrackFitGlobal);
-        trackCandidates.append(t);
-      }
+	    t->finder(TrackFastFinder);
+	    t->quality(TrackQuality2D);
+	    t->fitting(TrackFitGlobal);
+	    trackCandidates.append(t);
+	}
 
-      //...Resolve multi-track candidates...
-      resolveSegments(trackCandidates);
+	//...Resolve multi-track candidates...
+	resolveSegments(trackCandidates);
 
-      //...Remove used segments...
-      removeUsedSegments(trackCandidates);
-      _2DTracks.append(trackCandidates);
+	//...Remove used segments...
+	removeUsedSegments(trackCandidates);
+	_2DTracks.append(trackCandidates);
     }
 
     resolveHits(_2DTracks);
@@ -1920,7 +1932,7 @@ refine:
 #ifdef TRASAN_DEBUG_DETAIL
     LeaveStage(stage);
 #endif
-  }
+}
 
   const Belle2::TRGCDCWire*
   TConformalFinder::conformal2Wire(const HepGeom::Point3D<double> & p)
@@ -2501,10 +2513,9 @@ refine:
     return outList;
   }
 
-  void
+void
+TConformalFinder::slowFinding2D(unsigned level) {
 
-  TConformalFinder::slowFinding2D(unsigned level)
-  {
 #ifdef TRASAN_DEBUG_DETAIL
     const std::string stage = "ConformalSlowFinding2D level"
                               + itostring(level);
@@ -3091,9 +3102,9 @@ refine:
     return output;
   }
 
-  void
-  TConformalFinder::findSegmentsPerfect(void)
-  {
+void
+TConformalFinder::findSegmentsPerfect(void) {
+
     // no_superlyr
     const Belle2::TRGCDC& cdc(*Belle2::TRGCDC::getTRGCDC());
     unsigned nSuperLayers = cdc.nSuperLayers();
@@ -3102,8 +3113,8 @@ refine:
     AList<TLink> *links = new AList<TLink>[nSuperLayers];
     unsigned nHits = _hits[2].length();
     for (unsigned i = 0; i < nHits; i++) {
-      TLink& l = * _hits[2][i];
-      links[l.wire()->superLayerId()].append(l);
+	TLink& l = * _hits[2][i];
+	links[l.wire()->superLayerId()].append(l);
     }
 
     //...MC tracks...
@@ -3111,65 +3122,65 @@ refine:
 
     //...Loop over each super layer...
     for (unsigned i = 0; i < nSuperLayers; i++) {
-      unsigned superLayerId = i / 2;
-      unsigned id = i % 2;
+	unsigned superLayerId = i / 2;
+	unsigned id = i % 2;
 
-      //...Counters...
-      AList<TLink> ** seeds;
-      if (NULL == (seeds =
+	//...Counters...
+	AList<TLink> ** seeds;
+	if (NULL == (seeds =
                      (AList<TLink> **) malloc(nHep * sizeof(AList<TLink> *)))) {
 //    perror("$Id: TConformalFinder.cc 11152 2010-04-28 01:24:38Z yiwasaki $:seeds:malloc");
-        exit(1);
-      }
-      for (unsigned j = 0; j < nHep; j++)
-        seeds[j] = NULL;
+	    exit(1);
+	}
+	for (unsigned j = 0; j < nHep; j++)
+	    seeds[j] = NULL;
 
-      //...Hit loop...
-      unsigned n = links[i].length();
-      for (unsigned j = 0; j < n; j++) {
-        TLink& l = * links[i][j];
-        const Belle2::TRGCDCWireHitMC* mc = l.hit()->mc();
-        if (! l.hit()->mc()) {
-          std::cout << "TConformalFinder::findSegmentsPerfect !!! "
-                    << "no MC info. found ... aborted" << std::endl;
-          return;
-        }
-        const unsigned id = mc->hep()->id();
+	//...Hit loop...
+	unsigned n = links[i].length();
+	for (unsigned j = 0; j < n; j++) {
+	    TLink& l = * links[i][j];
+	    const Belle2::TRGCDCWireHitMC* mc = l.hit()->mc();
+	    if (! l.hit()->mc()) {
+		std::cout << "TConformalFinder::findSegmentsPerfect !!! "
+			  << "no MC info. found ... aborted" << std::endl;
+		return;
+	    }
+	    const unsigned id = mc->hep()->id();
 
-        if (! seeds[id])
-          seeds[id] = new AList<TLink>();
-        seeds[id]->append(l);
-      }
+	    if (! seeds[id])
+		seeds[id] = new AList<TLink>();
+	    seeds[id]->append(l);
+	}
 
-      //...Create segments...
-      AList<TSegment> segments;
-      for (unsigned j = 0; j < nHep; j++) {
-        if (! seeds[j]) continue;
+	//...Create segments...
+	AList<TSegment> segments;
+	for (unsigned j = 0; j < nHep; j++) {
+	    if (! seeds[j]) continue;
 
-        const unsigned length = seeds[j]->length();
-        if (length < _minNLinksForSegment) continue;
-        if (length > _maxNLinksForSegment) continue;
-        if (TLink::width(* seeds[j]) > _maxWidthForSegment) continue;
+	    const unsigned length = seeds[j]->length();
+	    if (length < _minNLinksForSegment[i]) continue;
+	    if (length > _maxNLinksForSegment[i]) continue;
+	    if (TLink::width(* seeds[j]) > _maxWidthForSegment) continue;
 
-        TSegment& s = * new TSegment();
-        s.append(* seeds[j]);
-        segments.append(s);
-      }
-      _allSegments[id][superLayerId].append(segments);
-      _allUnused[id][superLayerId] = _allSegments[id][superLayerId];
+	    TSegment& s = * new TSegment();
+	    s.append(* seeds[j]);
+	    segments.append(s);
+	}
+	_allSegments[id][superLayerId].append(segments);
+	_allUnused[id][superLayerId] = _allSegments[id][superLayerId];
 
-      //...Clear...
-      for (unsigned j = 0; j < nHep; j++) {
-        if (seeds[j])
-          delete seeds[j];
-      }
-      free(seeds);
+	//...Clear...
+	for (unsigned j = 0; j < nHep; j++) {
+	    if (seeds[j])
+		delete seeds[j];
+	}
+	free(seeds);
     }
     delete [] links;
 
 #ifdef TRASAN_DEBUG_DETAIL
     std::cout << "... segment finding(perfect) finished" << std::endl;
 #endif
-  }
+}
 
 } // namespace Belle

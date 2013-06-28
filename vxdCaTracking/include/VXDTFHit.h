@@ -53,15 +53,15 @@ namespace Belle2 {
     //      * @param timeStamp time of birth (only set when SVD hit, else 0).
     //      */
     VXDTFHit(Tracking::PositionInfo hitPos, int passIndex, int clusterIndexU, int clusterIndexV, int clusterIndexUV, int detectorType, unsigned int papaSector, VxdID aVxdID, float timeStamp):
-			m_hit(hitPos),
-			m_passIndex(passIndex),
-			m_clusterIndexU(clusterIndexU), // SVD only
-			m_clusterIndexV(clusterIndexV), // SVD only
-			m_clusterIndexUV(clusterIndexUV),
-			m_detectorType(detectorType),
-			m_papaSector(papaSector),
-			m_VxdID(aVxdID),
-			m_timeStamp(timeStamp) { m_attachedTrackCandidates = 0; /*m_attachedCells = 0;*/ }
+      m_hit(hitPos),
+      m_passIndex(passIndex),
+      m_clusterIndexU(clusterIndexU), // SVD only
+      m_clusterIndexV(clusterIndexV), // SVD only
+      m_clusterIndexUV(clusterIndexUV),
+      m_detectorType(detectorType),
+      m_papaSector(papaSector),
+      m_VxdID(aVxdID),
+      m_timeStamp(timeStamp) { m_attachedTrackCandidates = 0; /*m_attachedCells = 0;*/ }
 
     bool operator==(const VXDTFHit& b) const; /**< overloaded '=='-operator for sorting algorithms */
     bool operator<(const VXDTFHit& b) const; /**< overloaded '<'-operator for sorting algorithms */

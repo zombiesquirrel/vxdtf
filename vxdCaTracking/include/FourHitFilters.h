@@ -66,13 +66,13 @@ namespace Belle2 {
 
     /** calculates an estimation of circleCenter position including an estimation for the circle radius */
     void calcCircle() {
-			m_threeHitFilter.calcCircleCenter(m_hitA, m_hitB, m_hitC, m_centerABC);
-			m_radiusABC = m_threeHitFilter.calcRadius(m_hitA, m_hitB, m_hitC, m_centerABC);
-			m_threeHitFilter.calcCircleCenter(m_hitB, m_hitC, m_hitD, m_centerBCD);
-			m_radiusBCD = m_threeHitFilter.calcRadius(m_hitB, m_hitC, m_hitD, m_centerBCD);
+      m_threeHitFilter.calcCircleCenter(m_hitA, m_hitB, m_hitC, m_centerABC);
+      m_radiusABC = m_threeHitFilter.calcRadius(m_hitA, m_hitB, m_hitC, m_centerABC);
+      m_threeHitFilter.calcCircleCenter(m_hitB, m_hitC, m_hitD, m_centerBCD);
+      m_radiusBCD = m_threeHitFilter.calcRadius(m_hitB, m_hitC, m_hitD, m_centerBCD);
 
-			m_circleCalculated = true;
-		}
+      m_circleCalculated = true;
+    }
 
     TVector3 m_hitA; /**< outer hit (position relevant for useful filter calculation) used for the filter calculation */
     TVector3 m_hitB; /**< outerCenter hit (position relevant for useful filter calculation) used for the filter calculation */

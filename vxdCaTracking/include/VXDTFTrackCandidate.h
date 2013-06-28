@@ -48,7 +48,7 @@ namespace Belle2 {
 
     /** getter **/
     std::vector<Belle2::VXDSegmentCell*> getSegments() { return m_attachedCells; } /**< returns segments forming current TC */
-    std::vector<Belle2::VXDTFHit*> getHits() { return m_attachedHits; } /**< returns hits forming current TC */
+    const std::vector<Belle2::VXDTFHit*>& getHits() { return m_attachedHits; } /**< returns hits forming current TC */
     std::vector<TVector3*> getHitCoordinates(); /**< returns hits forming current TC */
     std::vector<int> getSVDHitIndices(); /**< returns indices of svdClusters forming current TC */
     std::vector<int> getPXDHitIndices(); /**< returns indices of pxdClusters forming current TC */
@@ -78,10 +78,10 @@ namespace Belle2 {
     void addHopfieldClusterIndex(int anIndex) { m_hopfieldHitIndices.push_back(anIndex); } /**< add index number of Cluster attached to current TC (SVD and PXD), index is unique but does not point to real clusters */
     void addSegments(VXDSegmentCell* pCell) { m_attachedCells.push_back(pCell); } /**< add segment attached to current TC */
     void addHits(VXDTFHit* pHit) {
-			pHit->addTrackCandidate();
-			m_attachedHits.push_back(pHit);
-		} /**< add hit attached to current TC */
-		
+      pHit->addTrackCandidate();
+      m_attachedHits.push_back(pHit);
+    } /**< add hit attached to current TC */
+
     void setOverlappingState(bool newState) { m_overlapping = newState; } /**< set whether current TC is overlapped or not */
     void setTrackNumber(unsigned int newNumber) { m_trackNumber = newNumber; } /**< tells the TC which position in the tcList it has got. Allows some faster overlap-procedures */
     void setTrackQuality(double newVal) { m_qualityIndex = newVal; } /**< set estimated quality of TC */

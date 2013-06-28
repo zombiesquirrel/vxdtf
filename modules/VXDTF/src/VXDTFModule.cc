@@ -1122,7 +1122,7 @@ void VXDTFModule::event()
   thisInfoPackage.numPXDCluster = numOfPxdClusters;
   thisInfoPackage.numSVDCluster = numOfSvdClusters;
 
-  vector<ClusterInfo> clustersOfEvent; /// contains info which tc uses which clusters
+  vector<ClusterInfo> clustersOfEvent(numOfPxdClusters+numOfSvdClusters); /// contains info which tc uses which clusters
   for (int i = 0; i < numOfPxdClusters; ++i) {
     ClusterInfo newCluster(i, true);
     clustersOfEvent.push_back(newCluster);
@@ -1202,12 +1202,11 @@ void VXDTFModule::event()
       if (aSecID == numeric_limits<unsigned int>::max()) {
         B2DEBUG(10, "VXDTF - event " << m_eventCounter << ": pxdhit out of sector range (setup " << currentPass->sectorSetup << ", type  " << currentPass->chosenDetectorType << "). (" << FullSecID(activatedSector.first).getFullSecString() << " does not exist) Discarding hit...");
         badSectorRangeCtr++;
-        m_TESTERbadSensors.push_back(FullSecID(activatedSector.first).getFullSecString());
+        m_TESTERbadSensors.push_back(FullSecID(aSecID).getFullSecString());
         continue;
       }
 
-      B2DEBUG(50, " PXDCluster: with posOfHit in StoreArray: " << iPart << " is found again within secID " << aSecID << " using sectorSetup " << currentPass->sectorSetup);
-      B2DEBUG(150, " PXDCluster: with posOfHit in StoreArray: " << iPart << " is found again within secID " << FullSecID(activatedSector.first).getFullSecString() << " using sectorSetup " << currentPass->sectorSetup);
+      B2DEBUG(50, " PXDCluster: with posOfHit in StoreArray: " << iPart << " is found again within FullsecID (int/string)" << aSecID << "/" <<FullSecID(aSecID).getFullSecString()<< " using sectorSetup " << currentPass->sectorSetup);
 
       VXDTFHit* pTFHit = new VXDTFHit(hitInfo, passNumber, 0, 0, iPart, Const::PXD, aSecID, aVxdID, 0.0); // no timeInfo for PXDHits
 
@@ -1365,14 +1364,13 @@ void VXDTFModule::event()
         MapOfSectors::iterator secMapIter =  activatedSector.second;
 
         if (aSecID == numeric_limits<unsigned int>::max())  {
-          B2DEBUG(10, "VXDTF - event " << m_eventCounter << ": svdhit out of sector range(setup " << currentPass->sectorSetup << ", type  " << currentPass->chosenDetectorType << "). (" << FullSecID(activatedSector.first).getFullSecString() << " does not exist) Discarding hit...");
+          B2DEBUG(10, "VXDTF - event " << m_eventCounter << ": svdhit out of sector range(setup " << currentPass->sectorSetup << ", type  " << currentPass->chosenDetectorType << "). (SecID (int/string) " << aSecID<<"/"<<FullSecID(aSecID).getFullSecString() << " does not exist) Discarding hit...");
           badSectorRangeCtr++;
-          m_TESTERbadSensors.push_back(FullSecID(activatedSector.first).getFullSecString());
+          m_TESTERbadSensors.push_back(FullSecID(aSecID).getFullSecString());
           continue;
         }
 
-        B2DEBUG(50, "A SVDCluster is found again within secID " << aSecID << " using sectorSetup " << currentPass->sectorSetup);
-        B2DEBUG(150, "A SVDCluster is found again within secID " << FullSecID(activatedSector.first).getFullSecString() << " using sectorSetup " << currentPass->sectorSetup);
+        B2DEBUG(50, "A SVDCluster is found again within secID (int/string) " << aSecID<<"/"<<FullSecID(aSecID).getFullSecString() << " using sectorSetup " << currentPass->sectorSetup);
 
         VXDTFHit* pTFHit = new VXDTFHit(hitInfo, passNumber, clusterIndexU + numOfPxdClusters, clusterIndexV + numOfPxdClusters, 0, Const::SVD, aSecID, aVxdID,  0.5 * (timeStampU + timeStampV));
 
@@ -2218,7 +2216,6 @@ void VXDTFModule::hopfield(TCsOfEvent& tcVector, double omega)
 
   B2DEBUG(1, "Hopfield network - found subset of TCs within " << nNcounter << " iterations... with c=" << c);
   list<VXDTFHit*> allHits;
-  vector<VXDTFHit*> currentHits;
   int survivorCtr = 0;
   for (int i = 0; i < numOfTCs; i++) {
     B2DEBUG(10, "tc " << i << " - got final neuron value: " << xMatrix(0, i) << " while having " << int((tcVector[i]->getHits()).size()) << " hits and quality indicator " << tcVector[i]->getTrackQuality())
@@ -2233,7 +2230,7 @@ void VXDTFModule::hopfield(TCsOfEvent& tcVector, double omega)
 
     bool condi = tcVector[i]->getCondition();
     if (condi == true) {
-      currentHits = tcVector[i]->getHits();
+      const vector<VXDTFHit*>& currentHits = tcVector[i]->getHits();
       for (int j = 0; j < int(currentHits.size()); ++j) { allHits.push_back(currentHits[j]); }
     }
   }
@@ -2414,33 +2411,37 @@ int VXDTFModule::segFinder(CurrentPassData* currentPass)
   bool accepted = false; // recycled return value of the filters
   int simpleSegmentQI; // considers only min and max cutoff values, but could be weighed by order of relevance
   int discardedSegmentsCounter = 0;
-  OperationSequenceOfActivatedSectors::const_iterator secSequenceIter;
+//   OperationSequenceOfActivatedSectors::const_iterator secSequenceIter;
   MapOfSectors::iterator mainSecIter;
   MapOfSectors::iterator currentFriendSecIter;
-  for (secSequenceIter = currentPass->sectorSequence.begin(); secSequenceIter != currentPass->sectorSequence.end(); ++secSequenceIter) {
-    B2DEBUG(200, "SectorSequence is called " << secSequenceIter->first);
-    mainSecIter = secSequenceIter->second;
-    B2DEBUG(200, " checking " << mainSecIter->second->getSecID())
+	BOOST_FOREACH(SectorNameAndPointerPair& aSecPair, currentPass->sectorSequence) {
+//   for (secSequenceIter = currentPass->sectorSequence.begin(); secSequenceIter != currentPass->sectorSequence.end(); ++secSequenceIter) {
+//     B2DEBUG(200, "SectorSequence is called " << secSequenceIter->first);
+//     mainSecIter = secSequenceIter->second;
+		B2DEBUG(150, "SectorSequence is called " << aSecPair.first);
+    mainSecIter = aSecPair.second;
+    B2DEBUG(150, " checking " << mainSecIter->second->getSecID())
     const vector<unsigned int> hisFriends = mainSecIter->second->getFriends(); // loading friends of sector
     int nFriends = hisFriends.size();
 
     vector<VXDTFHit*> allFriendHits;
-    for (int i = 0; i < nFriends; ++i) {
-      int thisFriendSector = hisFriends[i];
-      B2DEBUG(1000, " > friendSector is called: " << thisFriendSector);
-      currentFriendSecIter = currentPass->sectorMap.find(thisFriendSector);
+		BOOST_FOREACH(unsigned int friendSector, hisFriends) {
+//     for (int i = 0; i < nFriends; ++i) {
+//       int friendSector = hisFriends[i];
+      B2DEBUG(1000, " > friendSector is called: " << friendSector);
+      currentFriendSecIter = currentPass->sectorMap.find(friendSector);
       if (currentFriendSecIter == currentPass->sectorMap.end()) {
-        B2DEBUG(1, "event " << m_eventCounter << ": friendSector " << thisFriendSector << " not found. No friendHits imported...");
+        B2DEBUG(1, "event " << m_eventCounter << ": friendSector " << friendSector << " not found. No friendHits imported...");
         m_badFriendCounter++;
         continue;
       } else {
-        vector<VXDTFHit*> friendHits = currentFriendSecIter->second->getHits();
+        const vector<VXDTFHit*>& friendHits = currentFriendSecIter->second->getHits();
         allFriendHits.insert(allFriendHits.end(), friendHits.begin(), friendHits.end());
       }
     } // iterating through friendsectors and importing their containing hits
 
     currentFriendSecIter = currentPass->sectorMap.begin(); // reset after first usage
-    vector<VXDTFHit*> ownHits = mainSecIter->second->getHits(); // loading own hits of sector
+    const vector<VXDTFHit*>& ownHits = mainSecIter->second->getHits(); // loading own hits of sector
 
     int numOfCurrentHits = ownHits.size();
     for (int currentHit = 0; currentHit < numOfCurrentHits; currentHit++) {
@@ -3036,7 +3037,7 @@ int VXDTFModule::tcFilter(CurrentPassData* currentPass, int passNumber, vector<C
   int tcCtr = 0;
   B2DEBUG(10, "TC-filter: pass " << passNumber << " has got " << currentPass->tcVector.size() << " tcs")
   for (currentTC = currentPass->tcVector.begin(); currentTC != currentPass->tcVector.end(); ++currentTC) { // need iterators for later use
-    vector<VXDTFHit*> currentHits = (*currentTC)->getHits(); /// IMPORTANT: currentHits[0] is outermost hit!
+    const vector<VXDTFHit*>& currentHits = (*currentTC)->getHits(); /// IMPORTANT: currentHits[0] is outermost hit!
     int numOfCurrentHits = currentHits.size();
 
     if (numOfCurrentHits == 3) {  /// in this case, dPt and zigzag filtering does not make sense
@@ -3171,7 +3172,7 @@ int VXDTFModule::tcFilter(CurrentPassData* currentPass, int passNumber, vector<C
 
     if (currentPass->zigzagRZ.first == true and numOfCurrentHits > 4) {
       // in this case we have still got enough hits for this test after removing virtual hit
-      vector<VXDTFHit*> currentHits = (*currentTC)->getHits();
+      const vector<VXDTFHit*>& currentHits = (*currentTC)->getHits();
 
       vector<PositionInfo*> currentHitPositions;
       BOOST_FOREACH(VXDTFHit * currentHit, currentHits) {
@@ -3206,7 +3207,7 @@ int VXDTFModule::tcFilter(CurrentPassData* currentPass, int passNumber, vector<C
 
   int numTC = 0;
   BOOST_FOREACH(VXDTFTrackCandidate * currentTC, currentPass->tcVector) {
-    vector<VXDTFHit*> currentHits = currentTC->getHits();
+    const vector<VXDTFHit*>& currentHits = currentTC->getHits();
     int numOfHits = currentHits.size();
     stringstream secNameOutput;
     secNameOutput << endl << "after filtering virtual entries: tc " << numTC << " got " << numOfHits << " hits and the following secIDs: ";
@@ -3236,7 +3237,6 @@ int VXDTFModule::tcFilter(CurrentPassData* currentPass, int passNumber, vector<C
 
 void VXDTFModule::calcInitialValues4TCs(TCsOfEvent& tcVector) /// TODO: use vxdCaTracking-classes to reduce code errors
 {
-  vector<VXDTFHit*> currentHits;
   TVector3* hitA, *hitB, *hitC;
   TVector3 hitA_T, hitB_T, hitC_T; // those with _T are the hits of the transverlal plane
   TVector3 intersection, radialVector, pTVector, pVector; //coords of center of projected circle of trajectory & vector pointing from center to innermost hit
@@ -3246,7 +3246,7 @@ void VXDTFModule::calcInitialValues4TCs(TCsOfEvent& tcVector) /// TODO: use vxdC
   BOOST_FOREACH(VXDTFTrackCandidate * aTC, tcVector) {
 
     if (aTC->getCondition() == false) { continue; }
-    currentHits = aTC->getHits();
+    const vector<VXDTFHit*>& currentHits = aTC->getHits();
     numOfCurrentHits = currentHits.size();
 
 /// method A: 3 neighbouring inner hits:

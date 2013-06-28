@@ -408,14 +408,14 @@ void TFAnalizerModule::printInfo(int recoveryState, VXDTrackCandidate& mcTC, VXD
 
   if (recoveryState > 0 and m_PARAMwriteToRoot == true) { // store caValues only if track has been sufficiently good reconstructed
 
-		if ( std::find(m_forRootCountFoundIDs.begin(), m_forRootCountFoundIDs.end(), caTC.finalAssignedID) == m_forRootCountFoundIDs.end() and 						caTC.finalAssignedID != -1 ) {
-			m_forRootCountFoundIDs.push_back(caTC.finalAssignedID);
-			
-			rootVariables.totalCAMomValues.push_back(mcTC.pValue);
-			rootVariables.totalCApTValues.push_back(mcTC.pTValue);
-			rootVariables.totalCAThetaValues.push_back(theta);
-			rootVariables.cAreconstructedTrackLength.push_back(caTC.coordinates.size());
-		}
+    if (std::find(m_forRootCountFoundIDs.begin(), m_forRootCountFoundIDs.end(), caTC.finalAssignedID) == m_forRootCountFoundIDs.end() and             caTC.finalAssignedID != -1) {
+      m_forRootCountFoundIDs.push_back(caTC.finalAssignedID);
+
+      rootVariables.totalCAMomValues.push_back(mcTC.pValue);
+      rootVariables.totalCApTValues.push_back(mcTC.pTValue);
+      rootVariables.totalCAThetaValues.push_back(theta);
+      rootVariables.cAreconstructedTrackLength.push_back(caTC.coordinates.size());
+    }
   }
 
   if (m_PARAMprintExtentialAnalysisData == true) {

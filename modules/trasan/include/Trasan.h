@@ -357,9 +357,6 @@ namespace Belle {
     void selectUnusedHits(const CAList<Belle2::TRGCDCWireHit> & hits,
                           CAList<Belle2::TRGCDCWireHit> & unusedHits) const;
 
-    /// Cathode
-    void cathode(float);
-
     /// standard main loop.
     void main0(const CAList<Belle2::TRGCDCWireHit> & axialHits,
                const CAList<Belle2::TRGCDCWireHit> & stereoHits,
@@ -380,7 +377,7 @@ namespace Belle {
     float b_cdcVersion;           // 0:automatic, 1:normal cell, 2:small cell
     std::string _cdcVersion;
     float b_fudgeFactor;
-
+ 
     //...Trasan...
     int b_debugLevel;
     int b_useAllHits;
@@ -388,8 +385,9 @@ namespace Belle {
     int b_nT0ResetMax;
     int b_doMCAnalysis;
     int b_mode;
+    int b_nEventsToSkip;
     float b_helixFitterChisqMax;
-    int   b_helixFitterNtrialMax;
+    int b_helixFitterNtrialMax;
 
     //...Perfect Finder...
     int b_doPerfectFinder;
@@ -489,12 +487,6 @@ namespace Belle {
 
     //...SVD Associator for Low Pt Tracks...
     int b_doSvdAssociator;
-
-    //...Clust finder...
-    int b_doClustFinder;
-    float b_cathodeWindow;
-    int b_cathodeSystematics;
-    int b_cathodeCosmic;
 
     //...Hough Finder...
     int b_doHoughFinder;

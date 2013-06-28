@@ -58,10 +58,10 @@ namespace Belle2 {
     //      */
 #ifndef __CINT__
     VXDSegmentCell(VXDTFHit* pOuterHit, VXDTFHit* pInnerHit, MapOfSectors::iterator pOuterSector, MapOfSectors::iterator pInnerSector):
-			m_pOuterHit(pOuterHit),
-			m_pInnerHit(pInnerHit),
-			m_pOuterSector(pOuterSector),
-			m_pInnerSector(pInnerSector) { m_state = 0; m_activated = true; m_seed = true; m_stateUpgrade = false; }
+      m_pOuterHit(pOuterHit),
+      m_pInnerHit(pInnerHit),
+      m_pOuterSector(pOuterSector),
+      m_pInnerSector(pInnerSector) { m_state = 0; m_activated = true; m_seed = true; m_stateUpgrade = false; }
 #endif
 
     int getState() const { return m_state; } /**< returns state of Cell (CA-feature) */
@@ -74,12 +74,12 @@ namespace Belle2 {
     std::list<Belle2::VXDSegmentCell*>& getInnerNeighbours() { return m_innerNeighbours; } /**< returns list of inner Neighbours (CA-feature and needed by TC-Collector), does deliver different results depending on when you call that function */
     const std::list<Belle2::VXDSegmentCell*>& getAllInnerNeighbours() const { return m_allInnerNeighbours; } /**< returns list of all inner neighbours (does not change during event) */
     std::list<Belle2::VXDSegmentCell*>& getOuterNeighbours() { return m_outerNeighbours; } /**< returns list of outer Neighbours */
-	
-		/** incompatible neighbours get kicked when new information about the situation recommends that step */
+
+    /** incompatible neighbours get kicked when new information about the situation recommends that step */
     std::list<Belle2::VXDSegmentCell*>::iterator eraseInnerNeighbour(std::list<VXDSegmentCell*>::iterator it) {
-			it = m_innerNeighbours.erase(it);
-			return it;
-		} //items.erase(i++);  or  i = items.erase(i); 
+      it = m_innerNeighbours.erase(it);
+      return it;
+    } //items.erase(i++);  or  i = items.erase(i);
 
     void kickFalseFriends(TVector3 primaryVertex); /**<  checks state of inner neighbours and removes incompatible and virtual ones */
     void copyNeighbourList() { m_allInnerNeighbours = m_innerNeighbours; } /**<   makes a copy of m_innerNeighbours (to be used before CA!) */

@@ -66,8 +66,9 @@ double ThreeHitFilters::fullAngle2D(TVector3& vecA, TVector3& vecB)
   return m_twoHitFilter.filterNan(angle);
 }
 
-double ThreeHitFilters::calcRadius(TVector3& a, TVector3& b, TVector3& c, TVector3& circleCenter) {
-	return (sqrt((circleCenter - a).Perp2() + (circleCenter - b).Perp2() + (circleCenter - c).Perp2())) * (1. / 3.); // = radius in [cm], sign here not needed. normally: signKappaAB/normAB1
+double ThreeHitFilters::calcRadius(TVector3& a, TVector3& b, TVector3& c, TVector3& circleCenter)
+{
+  return (sqrt((circleCenter - a).Perp2() + (circleCenter - b).Perp2() + (circleCenter - c).Perp2())) * (1. / 3.); // = radius in [cm], sign here not needed. normally: signKappaAB/normAB1
 } // used by calcPt() and calcCircleDist2IP()
 
 int ThreeHitFilters::calcSign(TVector3& a, TVector3& b, TVector3& c)

@@ -12,8 +12,6 @@
 // $Log$
 //-----------------------------------------------------------------------------
 
-
-
 #ifdef TRASAN_WINDOW_GTK
 
 #include <iostream>
@@ -95,14 +93,13 @@ namespace Belle {
     return true;
   }
 
-  bool
-  TWindowHoughDrawingArea::on_button_press_event(GdkEventButton* e)
-  {
+bool
+TWindowHoughDrawingArea::on_button_press_event(GdkEventButton *) {
 //     _x = xR(e->x);
 //     _y = yR(- e->y);
     on_expose_event((GdkEventExpose*) NULL);
     return true;
-  }
+}
 
   void
   TWindowHoughDrawingArea::resetPosition(void)
@@ -120,6 +117,8 @@ namespace Belle {
   TWindowHoughDrawingArea::draw(void)
   {
     if (! _hp) return;
+
+    std::cout << "HP name=" << _hp->name() << std::endl;
 
     Glib::RefPtr<Gdk::Colormap> colormap = get_default_colormap();
     _gc->set_line_attributes(1,

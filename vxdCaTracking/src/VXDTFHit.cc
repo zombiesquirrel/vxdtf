@@ -46,3 +46,5 @@ bool VXDTFHit::operator>(const VXDTFHit& b) const
 
 
 std::string VXDTFHit::getSectorString() { return FullSecID(m_papaSector).getFullSecString(); }
+
+// isReserved

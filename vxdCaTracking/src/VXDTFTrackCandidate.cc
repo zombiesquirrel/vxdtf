@@ -21,17 +21,18 @@ using namespace Belle2;
 
 
 VXDTFTrackCandidate::VXDTFTrackCandidate(VXDTFTrackCandidate*& other):
-			m_attachedHits((*other).m_attachedHits),
-			m_attachedCells((*other).m_attachedCells),
-			m_svdHitIndices((*other).m_svdHitIndices),
-			m_pxdHitIndices((*other).m_pxdHitIndices),
-			m_hopfieldHitIndices((*other).m_hopfieldHitIndices),
-			m_overlapping((*other).m_overlapping),
-			m_alive((*other).m_alive),
-			m_qualityIndex((*other).m_qualityIndex) {
-				if (m_alive == true) { BOOST_FOREACH(VXDTFHit * aHit, m_attachedHits) { aHit->addTrackCandidate(); } }   // each time it gets copied, its hits have to be informed about that step
-				/*m_neuronValue = 0; m_overlapping = false; m_alive = true; m_qualityIndex = 1.0;*/
-			}
+  m_attachedHits((*other).m_attachedHits),
+  m_attachedCells((*other).m_attachedCells),
+  m_svdHitIndices((*other).m_svdHitIndices),
+  m_pxdHitIndices((*other).m_pxdHitIndices),
+  m_hopfieldHitIndices((*other).m_hopfieldHitIndices),
+  m_overlapping((*other).m_overlapping),
+  m_alive((*other).m_alive),
+  m_qualityIndex((*other).m_qualityIndex)
+{
+  if (m_alive == true) { BOOST_FOREACH(VXDTFHit * aHit, m_attachedHits) { aHit->addTrackCandidate(); } }   // each time it gets copied, its hits have to be informed about that step
+  /*m_neuronValue = 0; m_overlapping = false; m_alive = true; m_qualityIndex = 1.0;*/
+}
 
 
 /** getter **/
