@@ -2448,6 +2448,7 @@ int VXDTFModule::segFinder(CurrentPassData* currentPass)
     int numOfCurrentHits = ownHits.size();
     for (int currentHit = 0; currentHit < numOfCurrentHits; currentHit++) {
 
+			if ( ownHits[currentHit]->isReserved() == true ) { continue; }
       currentCoords = ownHits[currentHit]->getHitCoordinates();
 
       int numOfFriendHits = allFriendHits.size();
@@ -2458,6 +2459,8 @@ int VXDTFModule::segFinder(CurrentPassData* currentPass)
       for (int friendHit = 0; friendHit < numOfFriendHits; ++friendHit) {
         simpleSegmentQI = 0;
 
+				if ( allFriendHits[friendHit]->isReserved() == true ) { continue; }
+				
         currentFriendID = allFriendHits[friendHit]->getSectorName();
         if (currentFriendID != oldFriendID) {
           currentFriendSecIter = currentPass->sectorMap.find(currentFriendID);
