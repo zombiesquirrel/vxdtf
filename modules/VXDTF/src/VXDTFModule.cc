@@ -1124,14 +1124,16 @@ void VXDTFModule::event()
 
   vector<ClusterInfo> clustersOfEvent(numOfPxdClusters+numOfSvdClusters); /// contains info which tc uses which clusters
   for (int i = 0; i < numOfPxdClusters; ++i) {
-    ClusterInfo newCluster(i, true);
-    clustersOfEvent.push_back(newCluster);
-    B2DEBUG(100, " PXDcluster " << i << " stores real Cluster " << clustersOfEvent[i].getIndex())
+    ClusterInfo newCluster(i, i, true);
+		B2DEBUG(50," clusterInfo: realIndex " << newCluster.getRealIndex() << ", ownIndex " << newCluster.getOwnIndex())
+    clustersOfEvent[i] = newCluster;
+    B2DEBUG(50, " PXDcluster " << i << " in position " << i << " stores real Cluster " << clustersOfEvent[i].getRealIndex() << " at indexPosition of own list (clustersOfEvent): " << clustersOfEvent[i].getOwnIndex() << " withClustersOfeventSize: " << clustersOfEvent.size())
   }
   for (int i = 0; i < numOfSvdClusters; ++i) {
-    ClusterInfo newCluster(i, false);
-    clustersOfEvent.push_back(newCluster);
-    B2DEBUG(100, " SVDcluster " << i << " in position " << i + numOfPxdClusters << " stores real Cluster " << clustersOfEvent[i + numOfPxdClusters].getIndex())
+    ClusterInfo newCluster(i, i+numOfPxdClusters, false);
+		B2DEBUG(50," clusterInfo: realIndex " << newCluster.getRealIndex() << ", ownIndex " << newCluster.getOwnIndex())
+    clustersOfEvent[i+numOfPxdClusters] = newCluster;
+    B2DEBUG(50, " SVDcluster " << i << " in position " << i + numOfPxdClusters << " stores real Cluster " << clustersOfEvent[i + numOfPxdClusters].getRealIndex() << " at indexPosition of own list (clustersOfEvent): " << clustersOfEvent[i+numOfPxdClusters].getOwnIndex() << " withClustersOfeventSize: " << clustersOfEvent.size())
   } // the position in the vector is NOT the index it has stored (except if there are no PXDClusters)
 
   // preparing storearray for trackCandidates and fitted tracks
@@ -1208,7 +1210,7 @@ void VXDTFModule::event()
 
       B2DEBUG(50, " PXDCluster: with posOfHit in StoreArray: " << iPart << " is found again within FullsecID (int/string)" << aSecID << "/" <<FullSecID(aSecID).getFullSecString()<< " using sectorSetup " << currentPass->sectorSetup);
 
-      VXDTFHit* pTFHit = new VXDTFHit(hitInfo, passNumber, 0, 0, iPart, Const::PXD, aSecID, aVxdID, 0.0); // no timeInfo for PXDHits
+      VXDTFHit* pTFHit = new VXDTFHit(hitInfo, passNumber, NULL, NULL, &clustersOfEvent[iPart], Const::PXD, aSecID, aVxdID, 0.0); // no timeInfo for PXDHits
 
       currentPass->hitVector.push_back(pTFHit);
       secMapIter->second->addHit(pTFHit);
@@ -1302,7 +1304,7 @@ void VXDTFModule::event()
       float timeStampU = uClusterPtr->getClsTime();
       float timeStampV = vClusterPtr->getClsTime();
 
-      B2DEBUG(100, " svdClusterCombi has clusterIndexU/clusterIndexV: " << clusterIndexU << "/" << clusterIndexV << " with collected charge u/v: " << uClusterPtr->getCharge() << "/" << vClusterPtr->getCharge() << " and their infoClasses are at u/v: " << clusterIndexU + numOfPxdClusters << "/" << clusterIndexV + numOfPxdClusters << " with collected charge u/v: " << aSvdClusterArray[ clustersOfEvent[numOfPxdClusters + clusterIndexU].getIndex() ]->getCharge() << "/" << aSvdClusterArray[ clustersOfEvent[numOfPxdClusters + clusterIndexV].getIndex() ]->getCharge())
+      B2DEBUG(100, " svdClusterCombi has clusterIndexU/clusterIndexV: " << clusterIndexU << "/" << clusterIndexV << " with collected charge u/v: " << uClusterPtr->getCharge() << "/" << vClusterPtr->getCharge() << " and their infoClasses are at u/v: " << clusterIndexU + numOfPxdClusters << "/" << clusterIndexV + numOfPxdClusters << " with collected charge u/v: " << aSvdClusterArray[ clustersOfEvent[numOfPxdClusters + clusterIndexU].getRealIndex() ]->getCharge() << "/" << aSvdClusterArray[ clustersOfEvent[numOfPxdClusters + clusterIndexV].getRealIndex() ]->getCharge())
 
       aVxdID = uClusterPtr->getSensorID();
       aLayerID = aVxdID.getLayerNumber();
@@ -1372,7 +1374,7 @@ void VXDTFModule::event()
 
         B2DEBUG(50, "A SVDCluster is found again within secID (int/string) " << aSecID<<"/"<<FullSecID(aSecID).getFullSecString() << " using sectorSetup " << currentPass->sectorSetup);
 
-        VXDTFHit* pTFHit = new VXDTFHit(hitInfo, passNumber, clusterIndexU + numOfPxdClusters, clusterIndexV + numOfPxdClusters, 0, Const::SVD, aSecID, aVxdID,  0.5 * (timeStampU + timeStampV));
+        VXDTFHit* pTFHit = new VXDTFHit(hitInfo, passNumber, &clustersOfEvent[clusterIndexU + numOfPxdClusters], &clustersOfEvent[clusterIndexV + numOfPxdClusters], NULL, Const::SVD, aSecID, aVxdID,  0.5 * (timeStampU + timeStampV));
 
         currentPass->hitVector.push_back(pTFHit);
         secMapIter->second->addHit(pTFHit);
@@ -1597,7 +1599,7 @@ void VXDTFModule::event()
 // // // // //    if ( aTC->getCondition() == false ) { continue; }
 // // // // //    vector<int> svdHits = aTC->getSVDHitIndices();
 // // // // //    BOOST_FOREACH(int index, svdHits) {
-// // // // //      int clusterIndex = clustersOfEvent[index].getIndex();
+// // // // //      int clusterIndex = clustersOfEvent[index].getRealIndex();
 // // // // //      svdClusters.push_back(clusterIndex);
 // // // // //    }
 // // // // //  }
@@ -1780,7 +1782,7 @@ void VXDTFModule::event()
     infoIndices << "PXD: ";
     printIndices << "PXD: ";
     BOOST_FOREACH(int index, pxdHits) {
-      int clusterIndex = clustersOfEvent[index].getIndex();
+      int clusterIndex = clustersOfEvent[index].getRealIndex();
       printIndices << clusterIndex << " ";
       infoIndices << index << " ";
     }
@@ -1788,7 +1790,7 @@ void VXDTFModule::event()
     infoIndices << ", SVD: ";
     printIndices << ", SVD: ";
     BOOST_FOREACH(int index, svdHits) {
-      int clusterIndex = clustersOfEvent[index].getIndex();
+      int clusterIndex = clustersOfEvent[index].getRealIndex();
       printIndices << clusterIndex << " ";
       infoIndices << index << " ";
     }
@@ -2286,7 +2288,7 @@ void VXDTFModule::greedy(TCsOfEvent& tcVector)
 
 /** ***** greedyRecursive ***** **/
 /// used by VXDTFModule::greedy, recursive function which takes tc with highest QI and kills all its rivals. After that, TC gets removed and process is repeated with shrinking list of TCs until no TCs alive has got rivals alive
-void VXDTFModule::greedyRecursive(std::list< std::pair<double, Belle2::VXDTFTrackCandidate*> >& overlappingTCs,
+void VXDTFModule::greedyRecursive(std::list< std::pair<double, VXDTFTrackCandidate*> >& overlappingTCs,
                                   double& totalSurvivingQI,
                                   int& countSurvivors,
                                   int& countKills)
@@ -2422,7 +2424,7 @@ int VXDTFModule::segFinder(CurrentPassData* currentPass)
     mainSecIter = aSecPair.second;
     B2DEBUG(150, " checking " << mainSecIter->second->getSecID())
     const vector<unsigned int> hisFriends = mainSecIter->second->getFriends(); // loading friends of sector
-    int nFriends = hisFriends.size();
+//     int nFriends = hisFriends.size();
 
     vector<VXDTFHit*> allFriendHits;
 		BOOST_FOREACH(unsigned int friendSector, hisFriends) {
@@ -3213,12 +3215,15 @@ int VXDTFModule::tcFilter(CurrentPassData* currentPass, int passNumber, vector<C
     secNameOutput << endl << "after filtering virtual entries: tc " << numTC << " got " << numOfHits << " hits and the following secIDs: ";
     BOOST_FOREACH(VXDTFHit * currentHit, currentHits) { // now we are informing each cluster which TC is using it
       unsigned int aSecName = currentHit->getSectorName();
-      secNameOutput << aSecName << " ";
+      secNameOutput << aSecName << "/" << FullSecID(aSecName).getFullSecString() << " ";
       if (currentHit->getDetectorType() == Const::PXD) {   // PXD
-        clustersOfEvent[currentHit->getClusterIndexUV()].addTrackCandidate(currentTC);
+				currentHit->getClusterInfoUV()->addTrackCandidate(currentTC);
+//         clustersOfEvent[currentHit->getClusterIndexUV()].addTrackCandidate(currentTC);
       } else {
-        clustersOfEvent[currentHit->getClusterIndexU()].addTrackCandidate(currentTC);
-        clustersOfEvent[currentHit->getClusterIndexV()].addTrackCandidate(currentTC);
+				currentHit->getClusterInfoU()->addTrackCandidate(currentTC);
+				currentHit->getClusterInfoV()->addTrackCandidate(currentTC);
+//         clustersOfEvent[currentHit->getClusterIndexU()].addTrackCandidate(currentTC);
+//         clustersOfEvent[currentHit->getClusterIndexV()].addTrackCandidate(currentTC);
       }
     } // used for output and informing each cluster which TC is using it
     B2DEBUG(20, " " << secNameOutput.str() << " and " << numOfHits << " hits");
@@ -3416,7 +3421,7 @@ void VXDTFModule::calcQIbyKalman(TCsOfEvent& tcVector, StoreArray<PXDCluster>& p
 
     BOOST_FOREACH(VXDTFHit * tfHit, currentTC->getHits()) {
       if (tfHit->getDetectorType() == Const::PXD) {
-        PXDRecoHit* newRecoHit = new PXDRecoHit(pxdClusters[clusters[tfHit->getClusterIndexUV()].getIndex()]);
+        PXDRecoHit* newRecoHit = new PXDRecoHit(pxdClusters[clusters[tfHit->getClusterIndexUV()].getRealIndex()]);
         track.addHit(newRecoHit);
       } else if (tfHit->getDetectorType() == Const::SVD) {
         TVector3 pos = *(tfHit->getHitCoordinates());
@@ -3499,7 +3504,7 @@ GFTrackCand VXDTFModule::generateGFTrackCand(VXDTFTrackCandidate* currentTC, vec
   stringstream printIndices;
   printIndices << "PXD: ";
   BOOST_FOREACH(int index, pxdHits) {
-    int clusterIndex = clusters[index].getIndex();
+    int clusterIndex = clusters[index].getRealIndex();
     printIndices << clusterIndex << " ";
     pxdClusters.push_back(clusterIndex);
   }
@@ -3507,7 +3512,7 @@ GFTrackCand VXDTFModule::generateGFTrackCand(VXDTFTrackCandidate* currentTC, vec
   vector<int> svdClusters;
   printIndices << ", SVD: ";
   BOOST_FOREACH(int index, svdHits) {
-    int clusterIndex = clusters[index].getIndex();
+    int clusterIndex = clusters[index].getRealIndex();
     printIndices << clusterIndex << " ";
     svdClusters.push_back(clusterIndex);
   }

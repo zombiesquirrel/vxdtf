@@ -50,6 +50,7 @@
 
 using namespace std;
 using namespace Belle2;
+using namespace Belle2::Tracking;
 using boost::tuple;
 using boost::math::sign;
 
@@ -238,12 +239,16 @@ void TFAnalizerModule::event()
       B2DEBUG(10, "	Partner: " << boost::get<0>(thisEntry) << ", shares " << boost::get<1>(thisEntry) << " hits, thisTC has got " << boost::get<2>(thisEntry) << " dirty hits, " << boost::get<3>(thisEntry) << " hits are only in partner and they have a qualityRelation of " << boost::get<4>(thisEntry))
     }
     B2DEBUG(10, "-------------------------------------------------------------------------------")
-    if (caTC.finalAssignedID == -1) {  continue; }  // in this case, absolutely no hit of caTC is of any mcTC
+    if (caTC.finalAssignedID == -1) {  caTrackCandidates[caTC.indexNumber]->setMcTrackId(-1); continue; }  // in this case, absolutely no hit of caTC is of any mcTC
     if (caTC.numOfCorrectlyAssignedHits < m_PARAMminNumOfHitsThreshold) {
+			caTrackCandidates[caTC.indexNumber]->setMcTrackId(-1);
       printInfo(0, mcTcVector[caTC.finalAssignedID], caTC, rootVariables);
       continue;
     }
-
+		
+		// adding MCiD-information to GFTrackCand (needed for trackFitChecker):
+		caTrackCandidates[caTC.indexNumber]->setMcTrackId(mcTrackCandidates[mcTcVector[caTC.finalAssignedID].indexNumber]->getMcTrackId());
+		
     int totalHits = caTC.numOfCorrectlyAssignedHits + caTC.numOfBadAssignedHits;
     double trackQuality = double(caTC.numOfCorrectlyAssignedHits) / double(totalHits);
     if (trackQuality < m_PARAMqiThreshold) {

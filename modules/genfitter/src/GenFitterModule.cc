@@ -109,7 +109,7 @@ GenFitterModule::GenFitterModule() :
   addParam("energyLossBrems", m_energyLossBrems, "activate the material effect: EnergyLossBrems", true);
   addParam("noiseBrems", m_noiseBrems, "activate the material effect: NoiseBrems", true);
   addParam("noEffects", m_noEffects, "switch off all material effects in Genfit. This overwrites all individual material effects switches", false);
-
+  addParam("resolveWireHitAmbi", m_resolveWireHitAmbi, "If true, DAF will resolve the left right ambiguity of wire hits. If false, closest to prediction will be chosen", false);
 }
 
 GenFitterModule::~GenFitterModule()
@@ -178,6 +178,7 @@ void GenFitterModule::initialize()
   //set parameters for the fitter algorithm objects
   m_kalmanFilter.setNumIterations(m_nIter);
   m_daf.setProbCut(m_probCut);
+  m_daf.resolveWireHitAmbi(m_resolveWireHitAmbi);
   int nDafTemps = m_dafTemperatures.size();
   if (nDafTemps == 1 && m_dafTemperatures[0] < 0.0) { // user did not set an annealing scheme. Set the default one.
     m_daf.setBetas(81, 8, 4, 1, 1, 1);
@@ -427,7 +428,7 @@ void GenFitterModule::event()
           //gfTrack.getTrackRep(0)->getCov().Print();
 
           if (genfitStatusFlag != 0) {    //if fit failed
-            B2WARNING("Genfit returned an error (with status flag " << genfitStatusFlag << ") during the fit!");
+            B2WARNING("Genfit returned an error (with status flag " << genfitStatusFlag << ") during the fit of a track in event " << eventCounter);
             ++m_failedFitCounter;
             if (m_storeFailed == true) {
               ++trackCounter;
@@ -465,7 +466,7 @@ void GenFitterModule::event()
               //Create relations
               if (aTrackCandPointer->getMcTrackId() != -999) {
                 mcParticlesToTracks.add(aTrackCandPointer->getMcTrackId(), trackCounter);
-              } else B2WARNING("No MCParticle contributed to theis track! No MCParticle<->Track relation will be created!");
+              } else B2WARNING("No MCParticle contributed to this track! No MCParticle<->Track relation will be created!");
             }
           } else {            //fit successful
             ++m_successfulFitCounter;
@@ -614,6 +615,10 @@ void GenFitterModule::event()
 
             catch (...) {
               B2WARNING("Something went wrong during the extrapolation of fit results!");
+              //Create relations
+              if (aTrackCandPointer->getMcTrackId() != -999) {
+                mcParticlesToTracks.add(aTrackCandPointer->getMcTrackId(), trackCounter);
+              } else B2WARNING("No MCParticle contributed to this track! No MCParticle<->Track relation will be created!");
 //              tracks[trackCounter]->setExtrapFailed(true);
             }
 

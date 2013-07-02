@@ -15,10 +15,11 @@
 
 using namespace std;
 using namespace Belle2;
+using namespace Belle2::Tracking;
 
 
 
-void ClusterInfo::addTrackCandidate(VXDTFTrackCandidate* aTC)
+void Belle2::Tracking::ClusterInfo::addTrackCandidate(VXDTFTrackCandidate* aTC)
 {
   int ctr = 0;
   BOOST_FOREACH(VXDTFTrackCandidate * anotherTC, m_attachedTCs) {
@@ -28,7 +29,7 @@ void ClusterInfo::addTrackCandidate(VXDTFTrackCandidate* aTC)
 }
 
 
-bool ClusterInfo::isOverbooked()
+bool Belle2::Tracking::ClusterInfo::isOverbooked()
 {
   int ctr = 0;
   vector<VXDTFTrackCandidate*> overbookedOnes;
@@ -49,7 +50,7 @@ bool ClusterInfo::isOverbooked()
 }
 
 
-void ClusterInfo::setReserved(VXDTFTrackCandidate * newBossTC)
+void Belle2::Tracking::ClusterInfo::setReserved(VXDTFTrackCandidate * newBossTC)
 {
 	BOOST_FOREACH(VXDTFTrackCandidate * aTC, m_attachedTCs) {
     if (aTC->getCondition() == false) { continue; }
