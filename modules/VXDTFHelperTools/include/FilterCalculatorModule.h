@@ -18,6 +18,7 @@
 #include <pxd/dataobjects/PXDTrueHit.h>
 #include <svd/dataobjects/SVDTrueHit.h>
 #include <framework/gearbox/Const.h>
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -25,7 +26,11 @@
 #include <list>
 #include <map>
 #include <utility> // pair
+
 #include <TVector3.h>
+#include <TTree.h>
+#include <TFile.h>
+
 #include <boost/format.hpp>
 #include <boost/math/special_functions/sign.hpp>
 #include <boost/foreach.hpp>
@@ -365,7 +370,18 @@ namespace Belle2 {
 			bool m_PARAMuseEvtgen; /**< set true if evtGen is used for filtergeneration, set false for pGun  */
 			double m_PARAMmaxXYvertexDistance; /**< allows to abort particles having their production vertex too far away from the origin (XY-plane) */
 			double m_PARAMmaxZvertexDistance; /**< allows to abort particles having their production vertex too far away from the origin (z-dist) */
-
+			std::vector<double> m_PARAMsetOrigin; /**< allows to reset orign (e.g. usefull for special cases like testbeams), only valid if 3 entries are found */
+			bool m_PARAMtestBeam; /**< some things which are important for the real detector are a problem for testbeams, if you want to use the filterCalculator and the testBeam = false does not work, then try setting the parameter to true */
+			double m_PARAMmagneticFieldStrength; /**< strength of magnetic field in Tesla, standard is 1.5T */
+			
+			// rootStuff:
+			bool m_PARAMwriteToRoot; /**< if true, analysis data is stored to root file with file name chosen by 'rootFileName' */
+			std::vector<std::string> m_PARAMrootFileName; /**< only two entries accepted, first one is the root filename, second one is 'RECREATE' or 'UPDATE' which is the write mode for the root file, parameter is used only if 'writeToRoot' = true */
+			TFile* m_rootFilePtr; /**< pointer at root file used for p-value-output */
+			TTree* m_treePtr; /**< pointer at root tree used for p-value-output */
+			std::vector<double> m_rootpTValuesInLayer1; /**< used to store all pT values of tracks passing layer 1 */
+			std::vector<double> m_rootmomValuesInLayer1; /**< used to store all momentum values of tracks passing layer 1 */
+			
 			bool m_PARAMtrackErrorTracks; /**< track tracks which cause strange results */
 			bool m_PARAMlogDistanceXY; /**< set 'true' if you want to log distances (XY) between trackHits */
 			bool m_PARAMlogDistanceZ; /**< set 'true' if you want to log distances (Z) between trackHits */
@@ -408,7 +424,8 @@ namespace Belle2 {
 			std::vector<double> m_PARAMsectorConfigV; /**< allows defining the the config of the sectors in V direction value is valid for each sensor of chosen detector setup, minimum 2 values between 0.0 and 1.0 */
 			std::vector<int> m_trackletLengthCounter; /**< counts the number of tracklets of each possible tracklet-length occured during process */
 			std::vector<int> m_trackLengthCounter; /**< counts the number of tracklets of each possible track-length occured during process */
-
+			int m_pxdHitCounter; /**< counts total number of pxd true hits */
+			int m_svdHitCounter; /**< counts total number of svd true hits */
 			std::vector<int> m_trackletMomentumCounter;  /**< counts the number of tracklets for each sectorSetup */
 		private:
 		};

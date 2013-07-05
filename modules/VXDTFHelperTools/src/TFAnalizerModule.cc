@@ -66,7 +66,7 @@ REG_MODULE(TFAnalizer)
 TFAnalizerModule::TFAnalizerModule() : Module()
 {
   vector<string> rootFileNameVals;
-  rootFileNameVals.push_back("TFAnalizerResults");
+  rootFileNameVals.push_back("FilterCalculatorResults");
   rootFileNameVals.push_back("RECREATE");
 
   //Set module properties

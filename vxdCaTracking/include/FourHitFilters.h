@@ -31,15 +31,15 @@ namespace Belle2 {
 				m_radiusBCD(0.),
 				m_circleCalculated(false) {}
 
-			/** Constructor. expects 4 hits in TVector3 format, first parameter is outer hit, second is outerCenter hit, third is innercenter hit, last one is the innermost hit */
-			FourHitFilters(TVector3& outer, TVector3& outerCenter, TVector3& innerCenter, TVector3& inner):
+			/** Constructor. expects 4 hits in TVector3 format, first parameter is outer hit, second is outerCenter hit, third is innercenter hit, last one is the innermost hit, optional parameter sets strength of magnetic field (standard is 1.5T)*/
+			FourHitFilters(TVector3& outer, TVector3& outerCenter, TVector3& innerCenter, TVector3& inner, double magneticFieldStrength = 1.5):
 				m_hitA(outer),
 				m_hitB(outerCenter),
 				m_hitC(innerCenter),
 				m_hitD(inner),
 				m_radiusABC(0.),
 				m_radiusBCD(0.),
-				m_circleCalculated(false) {}
+				m_circleCalculated(false) { m_threeHitFilter.resetMagneticField(magneticFieldStrength); }
 
 
 			/** Destructor. */
@@ -55,9 +55,12 @@ namespace Belle2 {
 				m_radiusBCD = 0.;
 				m_circleCalculated = false;
 			}
+			
+			/** Overrides Constructor-Setup for magnetic field. if no value is given, magnetic field is assumed to be Belle2-Detector standard of 1.5T */
+			void resetMagneticField(double magneticFieldStrength = 1.5) { m_threeHitFilter.resetMagneticField(magneticFieldStrength); }
 
 			/** calculates dpt-value (dpt= difference in transverse momentum of 2 subsets of the hits), returning unit: GeV/c */
-			double deltapT(); // TODO umbenennen! ->calcDeltapT
+			double deltapT(); // TODO rename! ->calcDeltapT
 
 			/** calculates ddist2IP-value directly (ddist2IP= difference in magnitude of the points of closest approach of two circles calculated using 2 subsets of the hits) */
 			double deltaDistCircleCenter();

@@ -36,9 +36,9 @@ namespace Belle2 {
 				m_deltaPtCtr(std::make_pair(0, 0)),
 				m_deltaDistCircleCenterCtr(std::make_pair(0, 0)) {}
 
-			/** Constructor. use this one, when having a sectormap (e.g. during track finding), use ThreeHitFilters when no sectormap is available */
-			TcFourHitFilters(TVector3& outer, TVector3& outerCenter, TVector3& innerCenter, TVector3& inner, VXDSector* thisSector, unsigned int friendID):
-				FourHitFilters(outer, outerCenter, innerCenter, inner),  // calls constructor of base class. Needed since base class does not use standard constructor, therefore we have to carry the hits manually into the base class
+			/** Constructor. use this one, when having a sectormap (e.g. during track finding), use ThreeHitFilters when no sectormap is available, optional parameter sets strength of magnetic field (standard is 1.5T) */
+			TcFourHitFilters(TVector3& outer, TVector3& outerCenter, TVector3& innerCenter, TVector3& inner, VXDSector* thisSector, unsigned int friendID, double magneticFieldStrength = 1.5):
+				FourHitFilters(outer, outerCenter, innerCenter, inner, magneticFieldStrength),  // calls constructor of base class. Needed since base class does not use standard constructor, therefore we have to carry the hits manually into the base class
 				m_thisSector(thisSector),
 				m_friendID(friendID),
 				m_deltaPtCtr(std::make_pair(0, 0)),
@@ -54,6 +54,9 @@ namespace Belle2 {
 				m_thisSector = thisSector;
 				m_friendID = friendID;
 			}
+			
+			/** Overrides Constructor-Setup for magnetic field. if no value is given, magnetic field is assumed to be Belle2-Detector standard of 1.5T */
+			void resetMagneticField(double magneticFieldStrength = 1.5) { FourHitFilters::resetMagneticField(magneticFieldStrength); }
 
 			/** simply check whether dpt-value is accepted by the given cutoffs (dpt= difference in transverse momentum of 2 subsets of the hits) */
 			bool checkDeltapT(int nameDeltapT);

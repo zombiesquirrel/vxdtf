@@ -14,7 +14,7 @@
 
 #include <TVector3.h>
 #include "TwoHitFilters.h"
-
+#include <framework/logging/Logger.h>
 
 
 namespace Belle2 {
@@ -31,7 +31,8 @@ namespace Belle2 {
 				m_radius(0.),
 				m_x2(0.),
 				m_y2(0.),
-				m_z2(0.) {
+				m_z2(0.),
+				m_magneticFieldFactor(1.5) {
 				m_hitA.SetXYZ(0., 0., 0.);
 				m_hitB.SetXYZ(0., 0., 0.);
 				m_hitC.SetXYZ(0., 0., 0.);
@@ -39,8 +40,8 @@ namespace Belle2 {
 				m_vecBC.SetXYZ(0., 0., 0.);
 			}
 
-			/** Constructor. needs the first parameter is outer hit, second is center hit, third is inner hit. Parameters in TVector3-format*/
-			ThreeHitFilters(TVector3& outerHit, TVector3& centerHit, TVector3& innerHit):
+			/** Constructor. needs the first parameter is outer hit, second is center hit, third is inner hit. Parameters in TVector3-format, Optional parameter is the strength of the magnetic field in Tesla*/
+			ThreeHitFilters(TVector3& outerHit, TVector3& centerHit, TVector3& innerHit, double magneticFieldStrength = 1.5):
 				m_circleCenterCalculated(false),
 				m_radiusCalculated(false),
 				m_radius(0.),
@@ -52,6 +53,7 @@ namespace Belle2 {
 				m_x2 = m_vecAB[0] * m_vecBC[0]; /// x-part of m_vecAB.Dot(m_vecBC)
 				m_y2 = m_vecAB[1] * m_vecBC[1]; /// y-part of m_vecAB.Dot(m_vecBC)
 				m_z2 = m_vecAB[2] * m_vecBC[2]; /// z-part of m_vecAB.Dot(m_vecBC)
+				resetMagneticField(magneticFieldStrength);
 			}
 
 
@@ -73,6 +75,9 @@ namespace Belle2 {
 				m_y2 = m_vecAB[1] * m_vecBC[1]; /// y-part of m_vecAB.Dot(m_vecBC)
 				m_z2 = m_vecAB[2] * m_vecBC[2]; /// z-part of m_vecAB.Dot(m_vecBC)
 			}
+			
+			/** Overrides Constructor-Setup for magnetic field. if no value is given, magnetic field is assumed to be Belle2-Detector standard of 1.5T */
+			void resetMagneticField(double magneticFieldStrength = 1.5) { m_magneticFieldFactor = magneticFieldStrength*0.00299710; } // pT[GeV/c] = 0.299710*B[T]*r[m] = 0.299710*B[T]*r[cm]/100 = 0.00299710B[T]*r[cm]
 
 			/** calculates the angle between the hits/vectors (3D), returning unit: none (calculation for degrees is incomplete, if you want readable numbers, use fullAngle3D instead) */
 			double calcAngle3D() {
@@ -118,7 +123,8 @@ namespace Belle2 {
 					m_radius = calcRadius(m_hitA, m_hitB, m_hitC, m_centerABC);
 					m_radiusCalculated = true;
 				}
-				return (0.00449565 * m_radius); // pT[GeV/c] = 0.299710*B[T]*r[m] = 0.449565*r[cm]/100 = 0.00449565*r[cm]
+// 				return (0.00449565 * m_radius); // pT[GeV/c] = 0.299710*B[T]*r[m] = 0.449565*r[cm]/100 = 0.00449565*r[cm]
+				return (m_magneticFieldFactor * m_radius);
 			} // return unit: GeV/c
 
 			/** calculates deviations in the slope of the inner segment and the outer segment, returning unit: none */
@@ -155,8 +161,8 @@ namespace Belle2 {
 			/** calculates an estimation of the radius of given hits and existing estimation of circleCenter, returning unit: radius in [cm] (positive value)*/
 			double calcRadius(TVector3& a, TVector3& b, TVector3& c, TVector3& circleCenter); // used by calcPt() and calcCircleDist2IP()
 
-			/** calculates an estimation of circleCenter position, result is written into the 4th input-parameter */
-			void calcCircleCenter(TVector3& a, TVector3& b, TVector3& c, TVector3& circleCenter) {
+			/** calculates an estimation of circleCenter position, result is written into the 4th input-parameter, is an alternative/old version to calcCircleCenter which is less robust than calcCircleCenter. Therefore please use calcCircleCenterV2 only for testing purposes! */
+			void calcCircleCenterV2(TVector3& a, TVector3& b, TVector3& c, TVector3& circleCenter) {
 				TVector3 b2c = b - c;
 				TVector3 a2b = a - b;
 				TVector3 cAB = 0.5 * a2b + b; //([kx ky]  -[jx jy])/2 + [jx jy] = central point of outer segment (k-j)/2+j
@@ -164,9 +170,25 @@ namespace Belle2 {
 				TVector3 nAB(-a2b(1), a2b(0), 0.); //normal vector of m_vecAB
 				TVector3 nBC(-b2c(1), b2c(0), 0.); //normal vector of m_vecBC
 				double muVal = (((cAB(1) - cBC(1)) / nBC(1)) + (((cBC(0) - cAB(0)) / nAB(0)) * nAB(1) / nBC(1))) / (1. - ((nBC(0) / nAB(0)) * (nAB(1) / nBC(1))));
-				circleCenter.SetX(cBC(0) + muVal * nBC(0)); // x-coord of intersection point
-				circleCenter.SetY(cBC(1) + muVal * nBC(1)); // y-coord of intersection point
-				circleCenter.SetZ(0.);
+				circleCenter.SetXYZ(cBC(0) + muVal * nBC(0), cBC(1) + muVal * nBC(1), 0.); // coords of intersection point
+			}
+			
+			/** calculates an estimation of circleCenter position, result is written into the 4th input-parameter */
+			void calcCircleCenter(TVector3& a, TVector3& b, TVector3& c, TVector3& circleCenter) {
+				// using normal equation for the lines and calculate the intersection point using Cramer's rule. Is producing valid values as long as these 3 hits are along a straight line
+				TVector3 b2c = b - c; // normal vector of the line 2
+				TVector3 a2b = a - b; // normal vector of the line 1
+				double constLine1 = (0.5*a2b+b)*a2b; // constant of the normal equation of line 1 (first part of the scalar product is the central point between hit a and b)
+				double constLine2 = (0.5*b2c+c)*b2c;
+				double det1 = constLine1*b2c(1) - a2b(1)*constLine2; // first determinant
+				double det2 = a2b(0)*constLine2 - constLine1*b2c(0);
+				double det3 = a2b(0)*b2c(1) - a2b(1)*b2c(0);
+				
+				if(det3 == 0) {
+					circleCenter.SetXYZ(0., 0., 0.); // this is of course wrong, TODO: shall this produce a warning?
+				} else {
+					circleCenter.SetXYZ(det1/det3, det2/det3, 0.);
+				}
 			}
 
 			/** calculates calculates the sign of the curvature of given 3-hit-tracklet. a positive value represents a left-oriented curvature, a negative value means having a right-oriented curvature. first vector should be outer hit, second = center hit, third is inner hit*/
@@ -182,6 +204,7 @@ namespace Belle2 {
 			double m_x2; /**< internal intermediate value storing x^2, no enduser-relevance */
 			double m_y2; /**< internal intermediate value storing y^2, no enduser-relevance */
 			double m_z2; /**< internal intermediate value storing z^2, no enduser-relevance */
+			double m_magneticFieldFactor; /**< is factor containing speed of light (c), the magnetic field (b) and the scaling factor s for conversion of meter in cm : c*b/100 = c*b*s */
 			TVector3 m_centerABC;  /**< center position of a circle in r-phi-plane formed by the 3 hits */
 			TVector3 m_hitA; /**< outer hit (position relevant for useful filter calculation) used for the filter calculation */
 			TVector3 m_hitB; /**< center hit (position relevant for useful filter calculation) used for the filter calculation */

@@ -41,9 +41,9 @@ namespace Belle2 {
 				m_pTCtr(std::make_pair(0, 0)),
 				m_helixFitCtr(std::make_pair(0, 0)) {}
 
-			/** Constructor. use this one, when having a sectormap (e.g. during track finding), use ThreeHitFilters when no sectormap is available */
-			NbFinderFilters(TVector3 outerHit, TVector3 centerHit, TVector3 innerHit, VXDSector* thisSector, unsigned int friendID):
-				ThreeHitFilters(outerHit, centerHit, innerHit),  // calls constructor of base class. Needed since base class does not use standard constructor, therefore we have to carry the hits manually into the base class
+			/** Constructor. use this one, when having a sectormap (e.g. during track finding), use ThreeHitFilters when no sectormap is available, optional parameter sets strength of magnetic field (standard is 1.5T) */
+			NbFinderFilters(TVector3 outerHit, TVector3 centerHit, TVector3 innerHit, VXDSector* thisSector, unsigned int friendID, double magneticFieldStrength = 1.5):
+				ThreeHitFilters(outerHit, centerHit, innerHit, magneticFieldStrength),  // calls constructor of base class. Needed since base class does not use standard constructor, therefore we have to carry the hits manually into the base class
 				m_thisSector(thisSector),
 				m_friendID(friendID),
 				m_angle3DCtr(std::make_pair(0, 0)),
@@ -64,6 +64,9 @@ namespace Belle2 {
 				m_thisSector = thisSector;
 				m_friendID = friendID;
 			}
+			
+			/** Overrides Constructor-Setup for magnetic field. if no value is given, magnetic field is assumed to be Belle2-Detector standard of 1.5T */
+			void resetMagneticField(double magneticFieldStrength = 1.5) { ThreeHitFilters::resetMagneticField(magneticFieldStrength); }
 
 			/** simply checks whether angle3D-value is accepted by the given cutoffs */
 			bool checkAngle3D(int nameAngle3D);
