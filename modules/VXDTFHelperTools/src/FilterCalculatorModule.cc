@@ -767,7 +767,7 @@ void FilterCalculatorModule::event()
 
             if (m_PARAMlogDeltaPt == true) {
               deltapT = m_fourHitFilterBox.deltapT();
-              if (isnan(deltapT) == false) {
+              if (std::isnan(deltapT) == false) {
                 B2DEBUG(50, "4-hit-filter in event " << m_eventCounter << ": calculated deltapT-Value: " << deltapT << " gets stored ")
                 thisSectorPos->second.addValue(friendSector, FilterID::nameDeltapT, deltapT);
               } else {
@@ -778,7 +778,7 @@ void FilterCalculatorModule::event()
 
             if (m_PARAMlogDeltaDistCircleCenter == true) {
               deltaDistCircleCenter =  m_fourHitFilterBox.deltaDistCircleCenter();
-              if (isnan(deltaDistCircleCenter) == false) {
+              if (std::isnan(deltaDistCircleCenter) == false) {
                 B2DEBUG(50, "4-hit-filter in event " << m_eventCounter << ": calculated deltaDistCircleCenter-Value: " << deltaDistCircleCenter << " gets stored ")
                 thisSectorPos->second.addValue(friendSector, FilterID::nameDeltaDistance2IP, deltaDistCircleCenter);
               } else {
@@ -803,7 +803,7 @@ void FilterCalculatorModule::event()
           B2DEBUG(50, "3-hit and hioc 3+1: outer -> innerHit Perp and SecID \n" << hitGlobal.Perp() << "/" << currentSector << " " << motherHitGlobal.Perp() << "/" << friendSector << " " << grandMotherHitGlobal.Perp() << "/" << iter->getSectorID() << " " << origin.Perp())
           if (m_PARAMlogDeltaPtHighOccupancy == true && lastRun == false) {
             deltapT = m_fourHitFilterBox.deltapT();
-            if (isnan(deltapT) == false) {
+            if (std::isnan(deltapT) == false) {
               B2DEBUG(50, "4-hit-filter in event " << m_eventCounter << ": calculated deltapTHighOccupancy-Value: " << deltapT << " gets stored ")
               thisSectorPos->second.addValue(friendSector, FilterID::nameDeltapTHighOccupancy, deltapT);
             } else {
@@ -813,7 +813,7 @@ void FilterCalculatorModule::event()
           }
           if (m_PARAMlogDeltaDistCircleCenterHighOccupancy == true && lastRun == false) {
             deltaDistCircleCenter =  m_fourHitFilterBox.deltaDistCircleCenter();
-            if (isnan(deltaDistCircleCenter) == false) {
+            if (std::isnan(deltaDistCircleCenter) == false) {
               B2DEBUG(50, "4-hit-filter in event " << m_eventCounter << ": calculated deltaDistCircleCenterHighOccupancy-Value: " << deltaDistCircleCenter << " gets stored ")
               thisSectorPos->second.addValue(friendSector, FilterID::nameDeltaDistanceHighOccupancy2IP, deltaDistCircleCenter);
             } else {
@@ -827,7 +827,7 @@ void FilterCalculatorModule::event()
 
           if (m_PARAMlogTRadiustoIPDistance == true) {
             dist2IP = m_threeHitFilterBox.calcCircleDist2IP();
-            if (isnan(dist2IP) == false) {
+            if (std::isnan(dist2IP) == false) {
               B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated dist2IP-Value: " << dist2IP << " gets stored ")
               thisSectorPos->second.addValue(friendSector, FilterID::nameDistance2IP, dist2IP);
             } else {
@@ -839,7 +839,7 @@ void FilterCalculatorModule::event()
 
           if (m_PARAMlogPt == true) {
             pT = m_threeHitFilterBox.calcPt();
-            if (isnan(pT) == false) {
+            if (std::isnan(pT) == false) {
               B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated pT-Value: " << pT << " gets stored ")
               thisSectorPos->second.addValue(friendSector, FilterID::namePT, pT);
             } else {
@@ -856,7 +856,7 @@ void FilterCalculatorModule::event()
 
           if (m_PARAMlogDeltaSlopeRZ == true) {
             deltaSlopeRZ = m_threeHitFilterBox.calcDeltaSlopeRZ();
-            if (isnan(deltaSlopeRZ) == false) {
+            if (std::isnan(deltaSlopeRZ) == false) {
               B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated deltaSlopeRZ-Value: " << deltaSlopeRZ << " gets stored ")
               thisSectorPos->second.addValue(friendSector, FilterID::nameDeltaSlopeRZ, deltaSlopeRZ);
             } else {
@@ -868,7 +868,7 @@ void FilterCalculatorModule::event()
 
           if (m_PARAMlogAngles3D == true) {
             angles3D = m_threeHitFilterBox.calcAngle3D();
-            if (isnan(angles3D) == false) {
+            if (std::isnan(angles3D) == false) {
               B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated angles3D-Value: " << angles3D << " gets stored ")
               thisSectorPos->second.addValue(friendSector, FilterID::nameAngles3D, angles3D);
             } else {
@@ -880,7 +880,7 @@ void FilterCalculatorModule::event()
 
           if (m_PARAMlogAnglesXY == true) {
             anglesXY = m_threeHitFilterBox.calcAngleXY();
-            if (isnan(anglesXY) == false) {
+            if (std::isnan(anglesXY) == false) {
               B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated anglesXY-Value: " << anglesXY << " gets stored ")
               thisSectorPos->second.addValue(friendSector, FilterID::nameAnglesXY, anglesXY);
             }  else {
@@ -892,7 +892,7 @@ void FilterCalculatorModule::event()
 
           if (m_PARAMlogAnglesRZ == true) {
             anglesRZ = m_threeHitFilterBox.calcAngleRZ();
-            if (isnan(anglesRZ) == false) {
+            if (std::isnan(anglesRZ) == false) {
               B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated anglesRZ-Value: " << anglesRZ << " gets stored ")
               thisSectorPos->second.addValue(friendSector, FilterID::nameAnglesRZ, anglesRZ);
             } else {
@@ -904,7 +904,7 @@ void FilterCalculatorModule::event()
 
           if (m_PARAMlogHelixFit == true) {
             helixFit = m_threeHitFilterBox.calcHelixFit();
-            if (isnan(helixFit) == false) {
+            if (std::isnan(helixFit) == false) {
               B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated helixFit-Value: " << helixFit << " gets stored ")
               thisSectorPos->second.addValue(friendSector, FilterID::nameHelixFit, helixFit);
             } else {
@@ -934,7 +934,7 @@ void FilterCalculatorModule::event()
         m_threeHitFilterBox.resetValues(hitGlobal, motherHitGlobal, origin); // outerhit, centerhit, innerhit
         if (m_PARAMlogTRadiusHighOccupancytoIPDistance == true && lastRun == false) {
           dist2IP = m_threeHitFilterBox.calcCircleDist2IP();
-          if (isnan(dist2IP) == false) {
+          if (std::isnan(dist2IP) == false) {
             B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated distHighOccupancy2IP-Value: " << dist2IP << " gets stored ")
             thisSectorPos->second.addValue(friendSector, FilterID::nameDistanceHighOccupancy2IP, dist2IP);
           } else {
@@ -944,7 +944,7 @@ void FilterCalculatorModule::event()
         }
         if (m_PARAMlogPtHighOccupancy == true && lastRun == false) {
           pT = m_threeHitFilterBox.calcPt();
-          if (isnan(pT) == false) {
+          if (std::isnan(pT) == false) {
             B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated pTHighOccupancy-Value: " << pT << " gets stored ")
             thisSectorPos->second.addValue(friendSector, FilterID::namePTHighOccupancy, pT);
           } else {
@@ -954,7 +954,7 @@ void FilterCalculatorModule::event()
         }
         if (m_PARAMlogDeltaSlopeHighOccupancyRZ == true && lastRun == false) {
           deltaSlopeRZ = m_threeHitFilterBox.calcDeltaSlopeRZ();
-          if (isnan(deltaSlopeRZ) == false) {
+          if (std::isnan(deltaSlopeRZ) == false) {
             B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated deltaSlopeHighOccupancyRZ-Value: " << deltaSlopeRZ << " gets stored ")
             thisSectorPos->second.addValue(friendSector, FilterID::nameDeltaSlopeHighOccupancyRZ, deltaSlopeRZ);
           } else {
@@ -964,7 +964,7 @@ void FilterCalculatorModule::event()
         }
         if (m_PARAMlogAnglesHighOccupancy3D == true && lastRun == false) {
           angles3D = m_threeHitFilterBox.calcAngle3D();
-          if (isnan(angles3D) == false) {
+          if (std::isnan(angles3D) == false) {
             B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated anglesHighOccupancy3D-Value: " << angles3D << " gets stored ")
             thisSectorPos->second.addValue(friendSector, FilterID::nameAnglesHighOccupancy3D, angles3D);
           } else {
@@ -974,7 +974,7 @@ void FilterCalculatorModule::event()
         }
         if (m_PARAMlogAnglesHighOccupancyXY == true && lastRun == false) {
           anglesXY = m_threeHitFilterBox.calcAngleXY();
-          if (isnan(anglesXY) == false) {
+          if (std::isnan(anglesXY) == false) {
             B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated anglesHighOccupancyXY-Value: " << anglesXY << " gets stored ")
             thisSectorPos->second.addValue(friendSector, FilterID::nameAnglesHighOccupancyXY, anglesXY);
           }  else {
@@ -984,7 +984,7 @@ void FilterCalculatorModule::event()
         }
         if (m_PARAMlogAnglesHighOccupancyRZ == true && lastRun == false) {
           anglesRZ = m_threeHitFilterBox.calcAngleRZ();
-          if (isnan(anglesRZ) == false) {
+          if (std::isnan(anglesRZ) == false) {
             B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated anglesHighOccupancyRZ-Value: " << anglesRZ << " gets stored ")
             thisSectorPos->second.addValue(friendSector, FilterID::nameAnglesHighOccupancyRZ, anglesRZ);
           } else {
@@ -994,7 +994,7 @@ void FilterCalculatorModule::event()
         }
         if (m_PARAMlogHelixHighOccupancyFit == true && lastRun == false) {
           helixFit = m_threeHitFilterBox.calcHelixFit();
-          if (isnan(helixFit) == false) {
+          if (std::isnan(helixFit) == false) {
             B2DEBUG(50, "3-hit-filter in event " << m_eventCounter << ": calculated helixHighOccupancyFit-Value: " << helixFit << " gets stored ")
             thisSectorPos->second.addValue(friendSector, FilterID::nameHelixHighOccupancyFit, helixFit);
           } else {
@@ -1008,7 +1008,7 @@ void FilterCalculatorModule::event()
 
         if (m_PARAMlogDistanceXY == true) {
           distanceXY = m_twoHitFilterBox.calcDistXY();
-          if (isnan(distanceXY) == false) {
+          if (std::isnan(distanceXY) == false) {
             B2DEBUG(50, "2-hit-filter in event " << m_eventCounter << ": calculated distanceXY-Value: " << distanceXY << " gets stored ")
             thisSectorPos->second.addValue(friendSector, FilterID::nameDistanceXY, distanceXY);
           } else {
@@ -1019,7 +1019,7 @@ void FilterCalculatorModule::event()
 
         if (m_PARAMlogDistanceZ == true) {
           distanceZ = m_twoHitFilterBox.calcDistZ();
-          if (isnan(distanceZ) == false) {
+          if (std::isnan(distanceZ) == false) {
             B2DEBUG(50, "2-hit-filter in event " << m_eventCounter << ": calculated distanceZ-Value: " << distanceZ << " gets stored ")
             thisSectorPos->second.addValue(friendSector, FilterID::nameDistanceZ, distanceZ);
           } else {
@@ -1030,7 +1030,7 @@ void FilterCalculatorModule::event()
 
         if (m_PARAMlogDistance3D == true) {
           distance3D = m_twoHitFilterBox.calcDist3D();
-          if (isnan(distance3D) == false) {
+          if (std::isnan(distance3D) == false) {
             B2DEBUG(50, "2-hit-filter in event " << m_eventCounter << ": calculated distance3D-Value: " << distance3D << " gets stored ")
             thisSectorPos->second.addValue(friendSector, FilterID::nameDistance3D, distance3D);
           } else {
@@ -1041,7 +1041,7 @@ void FilterCalculatorModule::event()
 
         if (m_PARAMlogNormedDistance3D == true) {
           normedDistance3D = m_twoHitFilterBox.calcNormedDist3D();
-          if (isnan(normedDistance3D) == false) {
+          if (std::isnan(normedDistance3D) == false) {
             B2DEBUG(50, "2-hit-filter in event " << m_eventCounter << ": calculated normedDistance3D-Value: " << normedDistance3D << " gets stored ")
             thisSectorPos->second.addValue(friendSector, FilterID::nameNormedDistance3D, normedDistance3D);
           } else {
@@ -1052,7 +1052,7 @@ void FilterCalculatorModule::event()
 
         if (m_PARAMlogSlopeRZ == true) {
           slopeRZ = m_twoHitFilterBox.calcSlopeRZ();
-          if (isnan(slopeRZ) == false) {
+          if (std::isnan(slopeRZ) == false) {
             B2DEBUG(50, "2-hit-filter in event " << m_eventCounter << ": calculated slopeRZ-Value: " << slopeRZ << " gets stored ")
             thisSectorPos->second.addValue(friendSector, FilterID::nameSlopeRZ, slopeRZ);
           } else {
