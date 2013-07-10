@@ -63,12 +63,12 @@ FilterCalculatorModule::FilterCalculatorModule() : Module()
   defaultpTcuts.push_back(0.035);
   std::vector<std::string> defaultSecNames;
   defaultSecNames.push_back("fullRange");
-	std::vector<double> originVec;
-	originVec.push_back(0);
-	originVec.push_back(0);
-	originVec.push_back(0);
-	
-	std::vector<std::string> rootFileNameVals;
+  std::vector<double> originVec;
+  originVec.push_back(0);
+  originVec.push_back(0);
+  originVec.push_back(0);
+
+  std::vector<std::string> rootFileNameVals;
   rootFileNameVals.push_back("FilterCalculatorResults");
   rootFileNameVals.push_back("RECREATE");
 
@@ -81,10 +81,10 @@ FilterCalculatorModule::FilterCalculatorModule() : Module()
 //  addParam("percentageOfFMSectorFriends", m_percentageOfFMSectorFriends, "allows filtering extreme rare sector combinations by setting the value between 0.0 and 1.0", float(0.999));
   addParam("maxXYvertexDistance", m_PARAMmaxXYvertexDistance, "allows to abort particles having their production vertex too far away from the origin (xy-plane)", double(0.5));
   addParam("maxZvertexDistance", m_PARAMmaxZvertexDistance, "allows to abort particles having their production vertex too far away from the origin (z-dist)", double(2.0));
-	addParam("setOrigin", m_PARAMsetOrigin, "standard origin is (0,0,0). If you want to have the map calculated for another origin, set here(x,y,z)", originVec);
-	addParam("testBeam", m_PARAMtestBeam, "if normal mode does not produce a full sectormap, try setting it to testBeam-mode = true", bool(false));
-	addParam("magneticFieldStrength", m_PARAMmagneticFieldStrength, "set strength of magnetic field in Tesla, standard is 1.5T", double(1.5));
-	addParam("writeToRoot", m_PARAMwriteToRoot, " if true, analysis data is stored to root file with file name chosen by 'rootFileName'", bool(false));
+  addParam("setOrigin", m_PARAMsetOrigin, "standard origin is (0,0,0). If you want to have the map calculated for another origin, set here(x,y,z)", originVec);
+  addParam("testBeam", m_PARAMtestBeam, "if normal mode does not produce a full sectormap, try setting it to testBeam-mode = true", bool(false));
+  addParam("magneticFieldStrength", m_PARAMmagneticFieldStrength, "set strength of magnetic field in Tesla, standard is 1.5T", double(1.5));
+  addParam("writeToRoot", m_PARAMwriteToRoot, " if true, analysis data is stored to root file with file name chosen by 'rootFileName'", bool(false));
   addParam("rootFileName", m_PARAMrootFileName, " only two entries accepted, first one is the root filename, second one is 'RECREATE' or 'UPDATE' which is the write mode for the root file, parameter is used only if 'writeToRoot'=true  ", rootFileNameVals);
 
   addParam("sectorConfigU", m_PARAMsectorConfigU, "allows defining the the config of the sectors in U direction value is valid for each sensor of chosen detector setup, minimum 2 values between 0.0 and 1.0", defaultConfigU);
@@ -140,12 +140,17 @@ FilterCalculatorModule::~FilterCalculatorModule()
 /// /// /// /// /// /// /// /// INITIALIZE /// /// /// /// /// /// /// ///
 void FilterCalculatorModule::initialize()
 {
-	if (int(m_PARAMsetOrigin.size()) != 3) {
-		B2WARNING("FilterCalculator::initialize: origin is set wrong, please set only 3 values (x,y,z). Rejecting user defined value and reset to (0,0,0)!")
-		m_PARAMsetOrigin.clear();
-		m_PARAMsetOrigin.push_back(0);
-		m_PARAMsetOrigin.push_back(0);
-		m_PARAMsetOrigin.push_back(0);
+  if (int(m_PARAMsetOrigin.size()) != 3) {
+    B2WARNING("FilterCalculator::initialize: origin is set wrong, please set only 3 values (x,y,z). Rejecting user defined value and reset to (0,0,0)!")
+    m_PARAMsetOrigin.clear();
+    m_PARAMsetOrigin.push_back(0);
+    m_PARAMsetOrigin.push_back(0);
+    m_PARAMsetOrigin.push_back(0);
+  }
+  
+  if ( m_PARAMminTrackletLength < 2) {
+		B2ERROR("FilterCalculatorModule::initialize: minTrackletLength is set to " << m_PARAMminTrackletLength << " which can't produce any usefull results, setting value to 2, but consider setting the parameter to 3 which is the recommended minimal length")
+		m_PARAMminTrackletLength = 2;
 	}
 
   int numCuts = m_PARAMpTcuts.size();
@@ -184,7 +189,7 @@ void FilterCalculatorModule::initialize()
     m_sectorMaps.push_back(secMap);
     ++i;
   }
-  
+
   if (m_PARAMwriteToRoot == true) {
     if ((m_PARAMrootFileName.size()) != 2) {
       string output;
@@ -198,20 +203,20 @@ void FilterCalculatorModule::initialize()
     m_treePtr = new TTree("m_treePtr", "aTree");
 
     m_treePtr->Branch("pTValuesInLayer1", &m_rootpTValuesInLayer1);
-		m_treePtr->Branch("momValuesInLayer1", &m_rootmomValuesInLayer1);
-		
+    m_treePtr->Branch("momValuesInLayer1", &m_rootmomValuesInLayer1);
+
   } else {
     m_rootFilePtr = NULL;
     m_treePtr = NULL;
   }
 
   m_threeHitFilterBox.resetMagneticField(m_PARAMmagneticFieldStrength);
-	m_fourHitFilterBox.resetMagneticField(m_PARAMmagneticFieldStrength);
-  
+  m_fourHitFilterBox.resetMagneticField(m_PARAMmagneticFieldStrength);
+
   m_sectorMap.clear();
   B2INFO("~~~~~~~~~~~FilterCalculator - initialize ~~~~~~~~~~")
   B2INFO("chosen detectorType: " << m_PARAMdetectorType << ", highestAllowedLayer: " << m_PARAMhighestAllowedLayer << ", smearHits: " << m_PARAMsmearHits << ", noCurler: " << m_PARAMnoCurler << ", uniSigma: " << m_PARAMuniSigma)
-	B2INFO("origin is set to: (x,y,z) ("<<m_PARAMsetOrigin[0]<<","<<m_PARAMsetOrigin[1]<<","<<m_PARAMsetOrigin[2]<<"), testBeam-mode is " << m_PARAMtestBeam << ", magnetic field set to " << m_PARAMmagneticFieldStrength <<"T")
+  B2INFO("origin is set to: (x,y,z) (" << m_PARAMsetOrigin[0] << "," << m_PARAMsetOrigin[1] << "," << m_PARAMsetOrigin[2] << "), testBeam-mode is " << m_PARAMtestBeam << ", magnetic field set to " << m_PARAMmagneticFieldStrength << "T")
 
   StoreArray<MCParticle>::required();
   StoreArray<PXDTrueHit>::required();
@@ -229,8 +234,8 @@ void FilterCalculatorModule::beginRun()
   m_totalHitCounter = 0;
   m_longTrackCounter = 0;
   m_numOfLayers = 0;
-	m_pxdHitCounter = 0;
-	m_svdHitCounter = 0;
+  m_pxdHitCounter = 0;
+  m_svdHitCounter = 0;
   m_badFilterValueCtr = 0;
   if (m_PARAMdetectorType == -1) {
     m_numOfLayers = 6;
@@ -241,16 +246,16 @@ void FilterCalculatorModule::beginRun()
   for (int i = 0; i < m_numOfLayers * 2; i++) {
     m_trackletLengthCounter.push_back(0);
   }
-  bool bleh = false;
-  if (m_PARAMdetectorType == Const::SVD) { bleh = true; }
-  B2INFO("chosen detectorType: " << m_PARAMdetectorType << ", Const::PXD: " << Const::PXD << ", Const::SVD: " << Const::SVD << ", detectorType = SVD: " << bleh << ", uniSigma: " << m_PARAMuniSigma)
+  bool useSVDonly = false;
+  if (m_PARAMdetectorType == Const::SVD) { useSVDonly = true; }
+  B2INFO("chosen detectorType: " << m_PARAMdetectorType << ", Const::PXD: " << Const::PXD << ", Const::SVD: " << Const::SVD << ", detectorType = SVD: " << useSVDonly << ", uniSigma: " << m_PARAMuniSigma)
 }
 
 /// /// /// /// /// /// /// /// EVENT /// /// /// /// /// /// /// ///
 void FilterCalculatorModule::event()
 {
   double pMaxInMeV = 10000., pMinInMeV = 10.;
-	TVector3 origin(m_PARAMsetOrigin[0], m_PARAMsetOrigin[1], m_PARAMsetOrigin[2]);
+  TVector3 origin(m_PARAMsetOrigin[0], m_PARAMsetOrigin[1], m_PARAMsetOrigin[2]);
 
   VXD::GeoCache& geometry = VXD::GeoCache::getInstance();
 
@@ -442,13 +447,13 @@ void FilterCalculatorModule::event()
         } //sector-searching loop
 
         if (aLayerID <= m_PARAMhighestAllowedLayer) {
-					m_pxdHitCounter++;
+          m_pxdHitCounter++;
           B2DEBUG(10, "adding new PXD hit of track " << iPart)
           VXDHit newHit(Const::PXD, aSectorName, aUniID, hitGlobal, pGlobal, pdg); // (0 = PXD hit)
-          if (aLayerID == 1 && m_PARAMwriteToRoot == true ) {
-						m_rootmomValuesInLayer1.push_back(pGlobal.Mag());
-						m_rootpTValuesInLayer1.push_back(pGlobal.Perp());
-					}
+          if (aLayerID == 1 && m_PARAMwriteToRoot == true) {
+            m_rootmomValuesInLayer1.push_back(pGlobal.Mag());
+            m_rootpTValuesInLayer1.push_back(pGlobal.Perp());
+          }
           newHit.setPXDHit(aSiTrueHitPtr);
           newTrack.addHit(newHit);
         }
@@ -547,7 +552,7 @@ void FilterCalculatorModule::event()
         } //sector-searching loop
 
         if (aLayerID <= m_PARAMhighestAllowedLayer) {
-					m_svdHitCounter++;
+          m_svdHitCounter++;
           B2DEBUG(10, "adding new SVD hit of track " << iPart)
           VXDHit newHit(Const::SVD, aSectorName, aUniID, hitGlobal, pGlobal, pdg); // (1 = SVD hit)
           newHit.setSVDHit(aSiTrueHitPtr);
@@ -576,9 +581,9 @@ void FilterCalculatorModule::event()
     list<VXDHit> thisTrack = newTrack.getTrack();
     if (thisTrack.size() > 30) { B2WARNING("event: " << m_eventCounter << " beware, tracklength is " << thisTrack.size()) }
     if (int (thisTrack.size()) > m_numOfLayers * 2) { m_longTrackCounter++; }
-    for (list<VXDHit>::iterator it = thisTrack.begin() ; it != thisTrack.end(); ++it) {
-      B2DEBUG(10, "track has a hit in the following sector: " << it->getSectorID())
-    }
+    BOOST_FOREACH(VXDHit& hit, thisTrack) {
+			B2DEBUG(10, "track has a hit in the following sector: " << hit.getSectorID())
+		}
     int thisUniID, friendUniID;
     list<VXDHit>::reverse_iterator riter, oldRiter;
     for (riter = thisTrack.rbegin(); riter != thisTrack.rend();) {
@@ -593,7 +598,7 @@ void FilterCalculatorModule::event()
 
       B2DEBUG(10, "copying track-segment into tracklet")
       ++riter;
-			if (m_PARAMtestBeam == true ) {
+      if (m_PARAMtestBeam == true) {
         while (riter != thisTrack.rend()) {
           friendUniID = riter->getUniID();
           if (thisUniID != friendUniID) {
@@ -606,51 +611,93 @@ void FilterCalculatorModule::event()
           }
           oldRiter = riter; ++riter; thisUniID = friendUniID;
         }
-			} else {
-				if (riter != thisTrack.rend()) {   //
-					if (direction != riter->getParticleMovement()) { continue; }
-					while (direction == riter->getParticleMovement()) {
-						if (riter != thisTrack.rend()) {
-							friendUniID = riter->getUniID();
-							if (thisUniID != friendUniID) {
-								newTracklet.addHit(*riter);
-							} else {
-								string thisSecName = riter->getSectorID();
-								B2WARNING("at event " << m_eventCounter << ": track " << newTrack.getParticleID() << " with momentum of " << newTrack.getPt() << "GeV/c has got two trueHits with same direction of flight, distance of " << (oldRiter->getHitPosition() - riter->getHitPosition()).Mag() << " of each other and deltatimestamp " << (oldRiter->getTimeStamp() - riter->getTimeStamp()) << " in the same sensor :" << thisSecName << ". Hit discarded!")
-								thisSecMap->find(thisSecName)->second.decreaseCounter();
-								m_badHitsCounter++;
-							}
-							oldRiter = riter; ++riter; thisUniID = friendUniID;
-						} else { break; }
-					}
-				}
-			}
+      } else {
+        if (riter != thisTrack.rend()) {   //
+          if (direction != riter->getParticleMovement()) { continue; }
+          while (direction == riter->getParticleMovement()) {
+            if (riter != thisTrack.rend()) {
+              friendUniID = riter->getUniID();
+              if (thisUniID != friendUniID) {
+                newTracklet.addHit(*riter);
+              } else {
+                string thisSecName = riter->getSectorID();
+                B2WARNING("at event " << m_eventCounter << ": track " << newTrack.getParticleID() << " with momentum of " << newTrack.getPt() << "GeV/c has got two trueHits with same direction of flight, distance of " << (oldRiter->getHitPosition() - riter->getHitPosition()).Mag() << " of each other and deltatimestamp " << (oldRiter->getTimeStamp() - riter->getTimeStamp()) << " in the same sensor :" << thisSecName << ". Hit discarded!")
+                thisSecMap->find(thisSecName)->second.decreaseCounter();
+                m_badHitsCounter++;
+              }
+              oldRiter = riter; ++riter; thisUniID = friendUniID;
+            } else { break; }
+          }
+        }
+      }
 
 
       m_trackletLengthCounter[newTracklet.size() - 1] ++;
 
       if (newTracklet.size() >= m_PARAMminTrackletLength) {
 
-        int chosenSecMap = -1;
-        BOOST_FOREACH(double ptCutoff, m_PARAMpTcuts) {
-          if (mcMomValue > ptCutoff) {
-            chosenSecMap++;
-          } else { break; }
-        }
-        m_trackletMomentumCounter[chosenSecMap]++;
         if (direction == true) { // in that case the momentum vector of the tracklet points away from the IP -> outward movement
           newTracklet.reverse(); // ->inward "movement" of the hits, needed for the filtering, no presorting needed, the hits were in the right order.
           B2DEBUG(10, " change direction of tracklet...")
         }
-
-//          newTracklet.addHit(newHit); /// adding virtual hit to tracklet!
-
-        B2DEBUG(10, "adding tracklet to list")
-        trackletsOfEvent.push_back(newTracklet);
-
-        if (newTracklet.size() > m_numOfLayers * 2 + 1) {
-          m_longTrackletCounter++;
-        }
+				
+        B2DEBUG(10, " now checking for bad tracklets...")
+				// what happens now: at this point, every tracklet has its outermost hits at the lowest position, therefore: hit[i].layer >= hit[i+1].layer
+				string currentSector, friendSector;
+				list<VXDHit> hitList = newTracklet.getTrack();
+				list<VXDHit>::iterator currentIt = hitList.begin();
+				list<VXDHit>::iterator friendIt = hitList.begin(); ++friendIt;
+				int countedFails = 0;
+				while ( friendIt != hitList.end() ) {
+					currentSector = currentIt->getSectorID();
+					friendSector = friendIt->getSectorID();
+					if (currentSector[0] < friendSector[0]) {
+						B2ERROR("FilterCalculatorModule event "<<m_eventCounter<<": tracklet has invalid sector-combination (outer/inner sector): " << currentSector <<"/"<< friendSector << "pID: " << newTracklet.getParticleID() <<", pT: " << newTracklet.getPt() << ", deleting friendHit")
+						friendIt = hitList.erase(friendIt);
+						++countedFails;
+					} else {
+						++currentIt; ++friendIt;
+					}
+				} // filtering bad hits at different layers
+				
+				list<int> uniIDs;
+				BOOST_FOREACH(VXDHit& hit, hitList) {
+					uniIDs.push_back(hit.getUniID());
+				}
+				int numUniIDsBeforeClean = uniIDs.size(), numUniIDsAfterClean;
+				uniIDs.sort();
+				uniIDs.unique();
+				numUniIDsAfterClean = uniIDs.size();
+				if ( numUniIDsAfterClean != numUniIDsBeforeClean) { // in this case, the same track passed the same sensor twice. extremely unlikely and an indicator for nasty tracks destroying the lookup table
+					B2ERROR("FilterCalculatorModule event "<<m_eventCounter<<": tracklet with pID: " << newTracklet.getParticleID() <<", has got multiple hits on the same sensor, discarding tracklet!")
+					++countedFails;
+				} // filtering bad hits at the same sensor
+				
+				
+				if ( countedFails > 0 ) { // such strange tracks are extremely uncommon and wont be able to be reconstructed anyway, therefore they will be neglected anyway
+					B2ERROR("FilterCalculatorModule event "<<m_eventCounter<<": tracklet with pID: " << newTracklet.getParticleID() <<", has now following entries:")
+					string values;
+					BOOST_FOREACH(VXDHit& hit, hitList) {
+						values+= hit.getSectorID() + " ";
+					}
+					B2ERROR(values << "\n tracklet will be discarded!")
+					riter = thisTrack.rend();
+				} else {
+					B2DEBUG(10, " tracklet passed bad-tracklet-filters")
+					int chosenSecMap = -1;
+					BOOST_FOREACH(double ptCutoff, m_PARAMpTcuts) {
+						if (mcMomValue > ptCutoff) {
+							chosenSecMap++;
+						} else { break; }
+					}
+					m_trackletMomentumCounter[chosenSecMap]++;
+// 				Tracklet.addHit(newHit); /// adding virtual hit to tracklet! WARNING: this line does not add any hits to an existing tracklet!
+					int numHits = newTracklet.size();
+					if (numHits > m_numOfLayers * 2 + 1) { m_longTrackletCounter++; }
+					B2DEBUG(10, "adding tracklet to list")
+					trackletsOfEvent.push_back(newTracklet);
+				}
+				
       } else { B2DEBUG(10, "tracklet too small -> discarded") }
 
       if (m_PARAMnoCurler == true) {  // do not store following tracklets, when no curlers shall be recorded...
@@ -715,7 +762,7 @@ void FilterCalculatorModule::event()
 //             graMoHitG.SetZ(0.);
             greGraMoHitG = iter->getHitPosition();
 //             greGraMoHitG.SetZ(0.);
-						B2DEBUG(50,"4-hit: outer -> innerHit Perp and SecID \n"<<hitG.Perp()<<"/"<<currentSector<<" "<<moHitG.Perp()<<"/"<<friendSector<<" "<<graMoHitG.Perp()<<"/"<<it2HitsFilter->getSectorID()<<" "<<greGraMoHitG.Perp()<<"/"<<iter->getSectorID())
+            B2DEBUG(50, "4-hit: outer -> innerHit Perp and SecID \n" << hitG.Perp() << "/" << currentSector << " " << moHitG.Perp() << "/" << friendSector << " " << graMoHitG.Perp() << "/" << it2HitsFilter->getSectorID() << " " << greGraMoHitG.Perp() << "/" << iter->getSectorID())
             m_fourHitFilterBox.resetValues(hitG, moHitG, graMoHitG, greGraMoHitG); // outerhit, centerhit, innerhit
 
             if (m_PARAMlogDeltaPt == true) {
@@ -753,7 +800,7 @@ void FilterCalculatorModule::event()
 
           /// high occupancy mode for 3+1 hits
           m_fourHitFilterBox.resetValues(hitGlobal, motherHitGlobal, grandMotherHitGlobal, origin); // outerhit, centerhit, innerhit
-					B2DEBUG(50,"3-hit and hioc 3+1: outer -> innerHit Perp and SecID \n"<<hitGlobal.Perp()<<"/"<<currentSector<<" "<<motherHitGlobal.Perp()<<"/"<<friendSector<<" "<<grandMotherHitGlobal.Perp()<<"/"<<iter->getSectorID()<<" "<<origin.Perp())
+          B2DEBUG(50, "3-hit and hioc 3+1: outer -> innerHit Perp and SecID \n" << hitGlobal.Perp() << "/" << currentSector << " " << motherHitGlobal.Perp() << "/" << friendSector << " " << grandMotherHitGlobal.Perp() << "/" << iter->getSectorID() << " " << origin.Perp())
           if (m_PARAMlogDeltaPtHighOccupancy == true && lastRun == false) {
             deltapT = m_fourHitFilterBox.deltapT();
             if (isnan(deltapT) == false) {
@@ -881,7 +928,7 @@ void FilterCalculatorModule::event()
 
         hitGlobal = it2HitsFilter->getHitPosition();
         motherHitGlobal = iter->getHitPosition();
-				B2DEBUG(50,"2-hit and hioc 2+1: outer -> innerHit Perp and SecID \n"<<hitGlobal.Perp()<<"/"<<currentSector<<" "<<motherHitGlobal.Perp()<<"/"<<friendSector<<" "<<origin.Perp())
+        B2DEBUG(50, "2-hit and hioc 2+1: outer -> innerHit Perp and SecID \n" << hitGlobal.Perp() << "/" << currentSector << " " << motherHitGlobal.Perp() << "/" << friendSector << " " << origin.Perp())
 
         /// high occupancy mode for 2+1 hits
         m_threeHitFilterBox.resetValues(hitGlobal, motherHitGlobal, origin); // outerhit, centerhit, innerhit
@@ -1019,10 +1066,10 @@ void FilterCalculatorModule::event()
       } else { firstrun = false; }
     } // looping through current tracklet
   } // looping through all tracklets
-  
-  if (m_PARAMwriteToRoot == true ) {
-		m_treePtr->Fill();
-	}
+
+  if (m_PARAMwriteToRoot == true) {
+    m_treePtr->Fill();
+  }
   B2DEBUG(1, "FilterCalculator - event " << m_eventCounter << ", calculations done!")
 }
 
@@ -1043,7 +1090,7 @@ void FilterCalculatorModule::endRun()
     totalHitCounter += m_trackletLengthCounter[i] * (i + 1);
   }
   B2INFO(m_badHitsCounter << " hits had to be discarded because of double impact in same sensor having same direction of flight")
-  B2INFO(" there were " << float(totalTrackletCounter) / float(m_eventCounter) << "/"<< float(m_pxdHitCounter) / float(m_eventCounter) << "/" << float(m_svdHitCounter) / float(m_eventCounter) << " tracklets/pxdHits/svdHits per event...")
+  B2INFO(" there were " << float(totalTrackletCounter) / float(m_eventCounter) << "/" << float(m_pxdHitCounter) / float(m_eventCounter) << "/" << float(m_svdHitCounter) / float(m_eventCounter) << " tracklets/pxdHits/svdHits per event...")
   B2INFO(" there were " << m_longTrackCounter << " Tracks having more than " << m_numOfLayers * 2 << " hits...")
   B2INFO(" there were " << m_longTrackletCounter << " Tracklets having more than " << m_numOfLayers * 2 << " hits!!!")
   B2INFO(" totalGlobalCoordValue: " << m_totalGlobalCoordValue << ", totalLocalCoordValue: " << m_totalLocalCoordValue << ", of " << totalHitCounter << " hits total (" << m_totalHitCounter << " counted manually) ")
@@ -1066,11 +1113,11 @@ void FilterCalculatorModule::terminate()
   }
   m_sectorMaps.clear();
 
-	if (m_treePtr != NULL) {
+  if (m_treePtr != NULL) {
     m_rootFilePtr->cd(); //important! without this the famework root I/O (SimpleOutput etc) could mix with the root I/O of this module
     m_treePtr->Write();
     m_rootFilePtr->Close();
   }
-  
+
   B2INFO(" FilterCalculatorModule, everything is done. Terminating.")
 }

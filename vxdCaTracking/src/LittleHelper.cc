@@ -10,7 +10,7 @@
 
 #include "../include/LittleHelper.h"
 #include <framework/logging/Logger.h>
-
+#include <math.h>       /* floor */
 #include <TRandom.h>
 
 using namespace std;
@@ -20,7 +20,7 @@ using namespace Belle2::Tracking;
 
 bool LittleHelper::checkSanity(double low, double high, double mean, double sigma)
 {
-  if ((mean + 2 * sigma) < low or(mean - 2 * sigma) > high) {
+  if ((mean + 2 * sigma) < low or (mean - 2 * sigma) > high) {
     B2ERROR("checkSanity failed (LittleHelper), low: " << low << ", high: " << high << ", mean: " << mean << ", sigma: " << sigma);
     return false;
   } // mean is safe to use
@@ -53,4 +53,13 @@ double LittleHelper::smearValueUniform(double low, double high, double mean, dou
     rngValue = gRandom->Uniform(mean - sigma, mean + sigma);
   }
   return rngValue;
+}
+
+
+int LittleHelper::getRandomIntegerUniform(int low, int high) {
+	return floor(gRandom->Uniform(low, high));
+}
+
+int LittleHelper::getRandomIntegerGauss(int mean, int sigma) {
+	return floor(gRandom->Gaus(mean, sigma));
 }

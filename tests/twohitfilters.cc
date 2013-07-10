@@ -33,4 +33,4 @@ namespace Belle2 {
 
   }
 
-	}  // namespace
+}  // namespace

@@ -50,9 +50,9 @@ bool Belle2::Tracking::ClusterInfo::isOverbooked()
 }
 
 
-void Belle2::Tracking::ClusterInfo::setReserved(VXDTFTrackCandidate * newBossTC)
+void Belle2::Tracking::ClusterInfo::setReserved(VXDTFTrackCandidate* newBossTC)
 {
-	BOOST_FOREACH(VXDTFTrackCandidate * aTC, m_attachedTCs) {
+  BOOST_FOREACH(VXDTFTrackCandidate * aTC, m_attachedTCs) {
     if (aTC->getCondition() == false) { continue; }
     if (isSameTC(aTC, newBossTC) == false) { aTC->setCondition(false); }
   }

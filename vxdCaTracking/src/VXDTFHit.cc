@@ -49,30 +49,34 @@ bool VXDTFHit::operator>(const VXDTFHit& b) const
 std::string VXDTFHit::getSectorString() { return FullSecID(m_papaSector).getFullSecString(); }
 
 
-int VXDTFHit::getClusterIndexU() const {
-	if (m_clusterIndexU != NULL ) { return m_clusterIndexU->getOwnIndex(); }
-	return -1;
+int VXDTFHit::getClusterIndexU() const
+{
+  if (m_clusterIndexU != NULL) { return m_clusterIndexU->getOwnIndex(); }
+  return -1;
 } /**< returns index position of clusterInfo in container, only set for SVDHits */
 
 ClusterInfo* VXDTFHit::getClusterInfoU() { return m_clusterIndexU; } /**< returns pointer to ClusterInfo U, is NULL if value is not set */
 
-int VXDTFHit::getClusterIndexV() const {
-	if (m_clusterIndexV != NULL ) { return m_clusterIndexV->getOwnIndex(); }
-	return -1;
+int VXDTFHit::getClusterIndexV() const
+{
+  if (m_clusterIndexV != NULL) { return m_clusterIndexV->getOwnIndex(); }
+  return -1;
 } /**< returns index position of clusterInfo in container,  only set for SVDHits */
 
 ClusterInfo* VXDTFHit::getClusterInfoV() { return m_clusterIndexV; } /**< returns pointer to ClusterInfo V, is NULL if value is not set */
 
-int VXDTFHit::getClusterIndexUV() const {
-	if (m_clusterIndexUV != NULL ) { return m_clusterIndexUV->getOwnIndex(); }
-	return -1;
+int VXDTFHit::getClusterIndexUV() const
+{
+  if (m_clusterIndexUV != NULL) { return m_clusterIndexUV->getOwnIndex(); }
+  return -1;
 } /**< returns index position of clusterInfo in container,  only set for PXDHits */
 
 ClusterInfo* VXDTFHit::getClusterInfoUV() { return m_clusterIndexUV; }
 
-bool VXDTFHit::isReserved() {
-	if (m_clusterIndexU != NULL) { if (m_clusterIndexU->isReserved() == true) { return true; } }
-	if (m_clusterIndexV != NULL) { if (m_clusterIndexV->isReserved() == true) { return true; } }
-	if (m_clusterIndexUV != NULL) { if (m_clusterIndexUV->isReserved() == true) { return true; } }
-	return false;
+bool VXDTFHit::isReserved()
+{
+  if (m_clusterIndexU != NULL) { if (m_clusterIndexU->isReserved() == true) { return true; } }
+  if (m_clusterIndexV != NULL) { if (m_clusterIndexV->isReserved() == true) { return true; } }
+  if (m_clusterIndexUV != NULL) { if (m_clusterIndexUV->isReserved() == true) { return true; } }
+  return false;
 }
