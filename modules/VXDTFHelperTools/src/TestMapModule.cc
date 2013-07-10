@@ -14,8 +14,8 @@
 #include <framework/logging/Logger.h>
 #include <boost/foreach.hpp>
 #include <algorithm>
-#include <functional>
-#include <utility>
+// #include <functional>
+// #include <utility>
 #include <iterator>     // std::distance
 
 
@@ -77,7 +77,7 @@ void TestMapModule::event()
 	int rndAccess = littleHelperBox.getRandomIntegerGauss(50,10);
 	int numSectors = m_sectorAdresses.size();
 	if (rndAccess < 0 ) { rndAccess = -rndAccess; }
-	int rndSector, aFriend;
+	int rndSector;
 	
 	vector<int> accessVariables;
 	for (int i = 0; i < rndAccess; ++i ) {
@@ -87,33 +87,30 @@ void TestMapModule::event()
 	
 	boostClock::time_point beginEvent = boostClock::now();
 	BOOST_FOREACH(int sectorValue, accessVariables) {
-		const vector<unsigned int>& friends = m_testMap.find(m_sectorAdresses[sectorValue])->second.getFriends();
+// 		const vector<unsigned int>& friends = m_testMap.find(m_sectorAdresses[sectorValue])->second.getFriends();
+		unsigned int secID = m_testMap.find(m_sectorAdresses[sectorValue])->second.getSecID();
+		++secID;
 	}
 	boostClock::time_point stopTimer = boostClock::now();
 	m_eventMapStuff += boost::chrono::duration_cast<boostNsec>(stopTimer - beginEvent);
 	
 	/*boostClock::time_point */beginEvent = boostClock::now();
 	BOOST_FOREACH(int sectorValue, accessVariables) {
-		const vector<unsigned int>& friends = m_testFlatMap.find(m_sectorAdresses[sectorValue])->second.getFriends();
+// 		const vector<unsigned int>& friends = m_testFlatMap.find(m_sectorAdresses[sectorValue])->second.getFriends();
+		unsigned int secID = m_testFlatMap.find(m_sectorAdresses[sectorValue])->second.getSecID();
+		++secID;
 	}
 	/*boostClock::time_point */stopTimer = boostClock::now();
 	m_eventFlatMapStuff += boost::chrono::duration_cast<boostNsec>(stopTimer - beginEvent);
 	
 	/*boostClock::time_point */beginEvent = boostClock::now();
 	BOOST_FOREACH(int sectorValue, accessVariables) {
-		const vector<unsigned int>& friends = m_testUnorderedMap.find(m_sectorAdresses[sectorValue])->second.getFriends();
+		unsigned int secID = m_testUnorderedMap.find(m_sectorAdresses[sectorValue])->second.getSecID();
+		++secID;
 	}
 	/*boostClock::time_point */stopTimer = boostClock::now();
 	m_eventUnorderedMapStuff += boost::chrono::duration_cast<boostNsec>(stopTimer - beginEvent);
-// 	for (int i = 0; i < rndAccess; ++i ) {
-// 		rndSector = littleHelperBox.getRandomIntegerUniform(0, numSectors);
-// 		boostClock::time_point beginEvent = boostClock::now();
-// 		const vector<unsigned int>& friends = m_testMap.find(m_sectorAdresses[rndSector])->second.getFriends();
-// 		boostClock::time_point stopTimer = boostClock::now();
-// 		m_eventStuff += boost::chrono::duration_cast<boostNsec>(stopTimer - beginEvent);
-// 		aFriend = friends[0];
-// 		aFriend++;
-// 	}
+
 }
 
 
@@ -150,7 +147,8 @@ void TestMapModule::FillMaps() {
 	std::sort(seccopy.begin(), seccopy.end());
 	vector<VXDSector>::iterator newEndOfVector;
 	newEndOfVector= std::unique(seccopy.begin(), seccopy.end()); /// WARNING: std:unique does delete double entries but does NOT resize the vector! This means that for every removed element, at the end of the vector remains one random value stored
-  seccopy.resize(std::distance(seccopy.begin(), newEndOfVector));
+	int vSize = std::distance(seccopy.begin(), newEndOfVector);
+  seccopy.resize(vSize);
 	B2INFO("TestMapModule::FillMaps: m_sectorAdresses has " << m_sectorAdresses.size() << ", sectors has " << sectors.size() << ", seccopy has " << seccopy.size() << " entries...")
 	// stl-map
 	vector<VXDSector>::iterator secIt = sectors.begin();
@@ -201,14 +199,26 @@ void TestMapModule::FillMaps() {
 }*/
 
 void TestMapModule::FillVector(vector<unsigned int>& vec) {
-	for (int lay = 0; lay < m_PARAMnumLayers; ++lay) {
-		for (int slay = 0; slay < 2; ++slay) {
-			for (int sen = 0; sen < m_PARAMnumSensors/2; ++sen) {
-				for (int sec = 0; sec < m_PARAMnumSectors; ++sec) {
-					vec.push_back(FullSecID(lay, bool(slay), sen, sec).getFullSecID());
-				}
+	for (int lay = 1; lay <= m_PARAMnumLayers; ++lay) {
+		bool slay = true;
+		for (int sen = 0; sen < m_PARAMnumSensors/2; ++sen) {
+			for (int sec = 0; sec < m_PARAMnumSectors; ++sec) {
+				vec.push_back(FullSecID(lay, slay, sen, sec).getFullSecID());
 			}
 		}
+		slay = false;
+		for (int sen = 0; sen < m_PARAMnumSensors/2; ++sen) {
+			for (int sec = 0; sec < m_PARAMnumSectors; ++sec) {
+				vec.push_back(FullSecID(lay, slay, sen, sec).getFullSecID());
+			}
+		}
+// 		for (int slay = 0; slay < 2; ++slay) { // subLayer 
+// 			for (int sen = 0; sen < m_PARAMnumSensors/2; ++sen) {
+// 				for (int sec = 0; sec < m_PARAMnumSectors; ++sec) {
+// 					vec.push_back(FullSecID(lay, bool(slay), sen, sec).getFullSecID());
+// 				}
+// 			}
+// 		}
 	}
 	B2INFO("TestMapModule::FillVector: vector has " << vec.size() << " entries...")
 }

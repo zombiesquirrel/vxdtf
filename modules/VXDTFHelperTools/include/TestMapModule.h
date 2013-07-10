@@ -40,7 +40,6 @@ namespace Belle2 {
 			typedef boost::chrono::high_resolution_clock boostClock; /**< used for measuring time comsumption */ // high_resolution_clock, process_cpu_clock
 //       typedef boost::chrono::microseconds boostNsec; /**< defines time resolution (currently mictroseconds) */ // microseconds, milliseconds
       typedef boost::chrono::nanoseconds boostNsec; /**< defines time resolution (currently nanoseconds) */ // microseconds, milliseconds
-//       typedef boost::chrono::duration_cast/*<boostNsec>*/ durationCast;
 			typedef std::map<unsigned int, VXDSector> MapOfSectors;
 			typedef boost::container::flat_map<unsigned int, VXDSector> FlatMapOfSectors;
 			typedef boost::unordered_map<unsigned int, VXDSector> UnorderedMapOfSectors;

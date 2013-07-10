@@ -570,6 +570,7 @@ namespace Belle2 {
       int m_calcQiType; /**< is set by m_PARAMcalcQIType and defines which qi type shall be calculated */
       std::string m_PARAMgfTrackCandsColName;     /**< TrackCandidates collection name */
       std::string m_PARAMinfoBoardName;           /**< InfoContainer collection name */
+      std::string m_PARAMnameOfInstance;           /**< Name of trackFinder, usefull, if there is more than one VXDTF running at the same time. Note: please choose short names */
 
       /// the following variables are nimimal testing routines within the TF
       int m_TESTERtriggeredZigZagXY;/**< counts how many times zigZagXY filter found bad TCs */
