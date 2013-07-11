@@ -70,9 +70,9 @@ namespace Belle2 {
       * @param sectorNumber    number of sector at current sensor/vxdID.
       */
       FullSecID(VxdID vxdID, bool subLayerID, unsigned int sectorNumber);
-			
-			/** Another contstructor which does not need a VxdID nor another coded valid FullSecID (for testing purposes) */
-			FullSecID(unsigned int layerID, bool subLayerID, unsigned int sensorID, unsigned int sectorNumber);
+
+      /** Another contstructor which does not need a VxdID nor another coded valid FullSecID (for testing purposes) */
+      FullSecID(unsigned int layerID, bool subLayerID, unsigned int sensorID, unsigned int sectorNumber);
 
       /** Destructor. */
       ~FullSecID() {}

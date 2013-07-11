@@ -85,8 +85,8 @@ namespace Belle2 {
       /** use this member if you want a uniformly distributed integer value between first and second variable */
       int getRandomIntegerUniform(int low, int high);
 
-			/** use this member if you want a gaussian distributed integer value between first and second variable */
-			int getRandomIntegerGauss(int low, int high);
+      /** use this member if you want a gaussian distributed integer value between first and second variable */
+      int getRandomIntegerGauss(int low, int high);
     protected:
       /** safety check whether incoming values make sense for smearing */
       bool checkSanity(double low, double high, double mean, double sigma);

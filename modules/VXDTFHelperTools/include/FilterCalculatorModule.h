@@ -159,27 +159,27 @@ namespace Belle2 {
 
       /** adds hit to Track (rejects track if hit is invalid, in that case returns false, else true) */
 //       bool addHit(VXDHit hit) {
-// 				std::string newSecID = hit.getSectorID();
-// 				std::string lastSecID = getLastHit()->getSectorID();
-// 				if (newSecID[0] < lastSecID[0] )
-// 				m_hitList.push_back(hit);
-// 			}
+//        std::string newSecID = hit.getSectorID();
+//        std::string lastSecID = getLastHit()->getSectorID();
+//        if (newSecID[0] < lastSecID[0] )
+//        m_hitList.push_back(hit);
+//      }
 
-			/** adds hit to Track */
+      /** adds hit to Track */
       void addHit(VXDHit hit) { m_hitList.push_back(hit); }
 
       /** returns hits of track */
       const std::list<VXDHit> getTrack() { return m_hitList; }
-      
+
       /** returns pointer to last hit added, is NULL if no hit added so far */
-			const VXDHit* getLastHit() {
-				int hitPos = m_hitList.size();
-				if (hitPos != 0) {
-					std::list<VXDHit>::iterator thisPos = m_hitList.end(); --thisPos;
-					return &(*thisPos);
-				}
-				return NULL;
-			}
+      const VXDHit* getLastHit() {
+        int hitPos = m_hitList.size();
+        if (hitPos != 0) {
+          std::list<VXDHit>::iterator thisPos = m_hitList.end(); --thisPos;
+          return &(*thisPos);
+        }
+        return NULL;
+      }
 
       /** returns indexNumber of current track */
       int getParticleID() { return m_index; }
@@ -233,9 +233,18 @@ namespace Belle2 {
       void exportValues(std::string aFileName) {
         m_fileName = aFileName;
         m_valuePack.sort();
-        m_exportValues.open(m_fileName.c_str(), std::ios_base::app); //
+				m_exportValues.open(m_fileName.c_str(), std::ios_base::app); //
+// // // 				std::cerr <<"fileName: " <<aFileName << " with filter " << m_filterName <<  " includes " << m_valuePack.size() << " entries" << ", value 0 : " << (*m_valuePack.begin()) << std::endl;
+// // // 				
+// // // 				try{
+// // // 					m_exportValues.open(m_fileName.c_str(), std::ios_base::app); //
+// // // 					if (m_exportValues.is_open() == false ) { std::cerr << "could not open file!";}
+// // // 				}catch(...){
+// // // 					std::cerr << "could not open file!";
+// // // 				}
+// // // 				if (m_exportValues.is_open() == false ) { std::cerr << "could not open file!";}
+// // // 				std::cerr << " after opening File: ";
         m_exportValues << m_filterName << "_";
-        //      std::cout << m_filterName <<  " includes " << m_valuePack.size() << " entries" << std::endl;
         BOOST_FOREACH(double value, m_valuePack) {
           m_exportValues << value << "|";
         }
@@ -379,6 +388,7 @@ namespace Belle2 {
       int m_longTrackCounter; /**< counts number of tracks having more than 30 hits */
       int m_longTrackletCounter; /**< counts tracklets having more than the theoretically possible number of hits (should therefore always be 0 )*/
       int m_badHitsCounter; /**< counts number of times, when when two hits with same direction of flight lie in the same sensor */
+      int m_badTrackletCounter; /**< counts number of times, when Tracklet went postal */
       int m_badFilterValueCtr; /**< counts number of times, when calculation of filters produced "nan" */
       int m_numOfLayers; /**< knows number of layers used in chosen detector type */
       int m_totalHitCounter; /**< counts total number of hits occured */

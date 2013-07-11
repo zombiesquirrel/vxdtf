@@ -38,7 +38,7 @@ namespace Belle2 {
 
       /** minimalconstructor (produces useless sectors)*/
       VXDSector(): m_sectorID(0) { m_friends.clear(); }
-      
+
       /** useful constructor */
       VXDSector(unsigned int secID): m_sectorID(secID) { m_friends.clear(); } // default values
 

@@ -56,10 +56,12 @@ double LittleHelper::smearValueUniform(double low, double high, double mean, dou
 }
 
 
-int LittleHelper::getRandomIntegerUniform(int low, int high) {
-	return floor(gRandom->Uniform(low, high));
+int LittleHelper::getRandomIntegerUniform(int low, int high)
+{
+  return floor(gRandom->Uniform(low, high));
 }
 
-int LittleHelper::getRandomIntegerGauss(int mean, int sigma) {
-	return floor(gRandom->Gaus(mean, sigma));
+int LittleHelper::getRandomIntegerGauss(int mean, int sigma)
+{
+  return floor(gRandom->Gaus(mean, sigma));
 }
