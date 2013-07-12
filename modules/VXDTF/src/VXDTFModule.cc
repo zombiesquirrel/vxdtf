@@ -280,6 +280,8 @@ VXDTFModule::VXDTFModule() : Module()
   addParam("tccMinLayer", m_PARAMminLayer, "determines lowest layer considered by track candidate collector", minLayer);
   addParam("tccMinState", m_PARAMminState, "determines lowest state of cells considered by track candidate collector", minState);
   addParam("omega", m_PARAMomega, "tuning parameter for the hopfield network", double(0.5));
+	addParam("reserveHitsThreshold", m_PARAMreserveHitsThreshold, "tuning parameter for multi-pass-setup, valid values are 0-1 ( = 0-100%). It defines how many percent of the TCs (sorted by QI) are allowed to reserve their hits (which disallows further passes to use these hits). This does not mean that TCs which were not allowed to reserve their hits will be deleted, this only means that they have to compete with TCs of other passes for their hits again. Setting the values to 100% = 1 means, no hits used by tcs surviving that pass are reused, 0% = 0 means every tc has to compete with all tcs of other passes (quite similar to former behavior)", double(0.5));
+	
 
   //for testing purposes:
   addParam("highestAllowedLayer", m_PARAMhighestAllowedLayer, "set value below 6 if you want to exclude outer layers (standard is 6)", highestAllowedLayer);
@@ -313,6 +315,7 @@ VXDTFModule::~VXDTFModule()
 
 void VXDTFModule::initialize()
 {
+	B2INFO("-----------------------------------------------\n       entering VXD CA track finder (" << m_PARAMnameOfInstance << ") - initialize:");
   m_littleHelperBox.resetValues(m_PARAMsmearMean, m_PARAMsmearSigma);
   /// constants:
   m_CONSTaThird = 1. / 3.;
@@ -328,6 +331,10 @@ void VXDTFModule::initialize()
     m_PARAMtuneCutoffs = 0.;
   } else {
     m_PARAMtuneCutoffs = m_PARAMtuneCutoffs * 0.01; // reformatting to faster calculation
+  }
+  if (m_PARAMreserveHitsThreshold < 0. or m_PARAMreserveHitsThreshold > 1.0) {
+    B2WARNING(m_PARAMnameOfInstance << ": chosen value for parameter 'reserveHitsThreshold' is invalid, reseting value to standard (=0.5)...")
+    m_PARAMreserveHitsThreshold = 0.5;
   }
 
   /// GFTrackCandidate
@@ -354,6 +361,7 @@ void VXDTFModule::initialize()
   m_TESTERtriggeredZigZagXY = 0;
   m_TESTERtriggeredZigZagRZ = 0;
   m_TESTERtriggeredDpT = 0;
+	m_TESTERtriggeredCircleFit = 0;
   m_TESTERapprovedByTCC = 0;
   m_TESTERcountTotalTCsAfterTCC = 0;
   m_TESTERcountTotalTCsAfterTCCFilter = 0;
@@ -428,6 +436,20 @@ void VXDTFModule::initialize()
     m_rootFilePtr = NULL;
     m_treeTrackWisePtr = NULL;
   }
+  
+  if ( LogSystem::Instance().isLevelEnabled(LogConfig::c_Debug, 1, PACKAGENAME()) == true ) {
+		B2WARNING("DebugLevel 1 is enabled!")
+	}
+	if ( LogSystem::Instance().isLevelEnabled(LogConfig::c_Debug, 2, PACKAGENAME()) == true ) {
+		B2WARNING("DebugLevel 2 is enabled!")
+	}
+	if ( LogSystem::Instance().isLevelEnabled(LogConfig::c_Debug, 3, PACKAGENAME()) == true ) {
+		B2WARNING("DebugLevel 3 is enabled!")
+	}
+	if ( LogSystem::Instance().isLevelEnabled(LogConfig::c_Debug, 4, PACKAGENAME()) == true ) {
+		B2WARNING("DebugLevel 4 is enabled!")
+	}
+	B2INFO("       leaving VXD CA track finder (" << m_PARAMnameOfInstance << ") - initialize\n-----------------------------------------------");
 }
 
 /** *************************************+************************************* **/
@@ -1841,8 +1863,10 @@ void VXDTFModule::the_real_event()
     totalIndices.insert(totalIndices.end(), tempIndices.begin(), tempIndices.end());
 
     B2DEBUG(10, "before starting generateGFTrackCand: tempIndices: " << tempIndices.size() << ", totalIndices: " << totalIndices.size());
-#if 0
-		GFTrackCand gfTC = generateGFTrackCand(currentTC, clustersOfEvent);                          /// generateGFTrackCand
+		
+		/// REACTIVATE the following code snippet if you want to test callgrind-stuff
+// #if 0
+    GFTrackCand gfTC = generateGFTrackCand(currentTC, clustersOfEvent);                          /// generateGFTrackCand
 
     if (m_TESTERexpandedTestingRoutines == true) {
       VXDTFInfoBoard newBoard;
@@ -1857,9 +1881,9 @@ void VXDTFModule::the_real_event()
       extraInfo4GFTCs.appendNew(newBoard);
     }
     finalTrackCandidates.appendNew(gfTC);
-#endif
-		
-	}
+// #endif
+
+  }
 
   int nTotalIndices = totalIndices.size();
   vector<int>::iterator newEndOfVector;
@@ -1954,7 +1978,7 @@ void VXDTFModule::endRun()
   B2INFO(m_PARAMnameOfInstance << " total number of PXDHits: " << m_totalPXDClusters << ", SVDClusters/Hits: " << m_totalSVDClusters << "/" << m_totalSVDClusters * 0.5 << ", SVDClusterCombinations: " << m_totalSVDClusterCombis << ", ghostHitRate: " << double(m_totalSVDClusterCombis) / (double(m_totalSVDClusters) * 0.5) << ". Discarded hits without sector: " << m_badSectorRangeCounter << ", without friends: " << m_badFriendCounter << ", distorted hits: " << m_TESTERdistortedHitCtr << " discarded Sensors bec. of missing second cluster: " << m_TESTERbadSectorRangeCounterForClusters << " mismathing number of u&vClusters per sensor: " << m_TESTERclustersPersSectorNotMatching << infoStuff2.str())
   B2INFO(m_PARAMnameOfInstance << " segfinder segments activated/discarded: " << m_TESTERtotalsegmentsSFCtr << "/" << m_TESTERdiscardedSegmentsSFCtr << ", nbFinder segments activated/discarded: " << m_TESTERtotalsegmentsNFCtr << "/" << m_TESTERdiscardedSegmentsNFCtr)
 
-  B2INFO(m_PARAMnameOfInstance << " after " << m_eventCounter + 1 << " events, ZigZagXY triggered " << m_TESTERtriggeredZigZagXY << " times, ZigZagRZ triggered " << m_TESTERtriggeredZigZagRZ << " times, and dpT triggered " << m_TESTERtriggeredDpT << " times, TCC approved " << m_TESTERapprovedByTCC << " TCs, "  << m_TESTERbadHopfieldCtr << "/" << m_TESTERHopfieldLetsOverbookedTCsAliveCtr << " times, the Hopfield network had no survivors/accepted ovrelapping TCs!")
+  B2INFO(m_PARAMnameOfInstance << " after " << m_eventCounter + 1 << " events, ZigZagXY triggered " << m_TESTERtriggeredZigZagXY << " times, ZigZagRZ triggered " << m_TESTERtriggeredZigZagRZ << " times, circleFit triggered " << m_TESTERtriggeredCircleFit << " times, and dpT triggered " << m_TESTERtriggeredDpT << " times, TCC approved " << m_TESTERapprovedByTCC << " TCs, "  << m_TESTERbadHopfieldCtr << "/" << m_TESTERHopfieldLetsOverbookedTCsAliveCtr << " times, the Hopfield network had no survivors/accepted ovrelapping TCs!")
   B2INFO(m_PARAMnameOfInstance << " total number of TCs after TCC: " << m_TESTERcountTotalTCsAfterTCC << ", after TCC-filter: " << m_TESTERcountTotalTCsAfterTCCFilter << ", final: " << m_TESTERcountTotalTCsFinal)
   B2INFO(m_PARAMnameOfInstance << " numOfTimes calcInitialValues4TCs filtered TCs: " << m_TESTERfilteredBadSeedTCs << ", cleanOverlappingSet got activated:" << m_TESTERcleanOverlappingSetStartedCtr << ", cleanOverlappingSet killed numTCs: " << m_TESTERfilteredOverlapsQI << ", cleanOverlappingSet did/didn't filter TCs: " << m_TESTERfilteredOverlapsQICtr << "/" << m_TESTERNotFilteredOverlapsQI << ", QIfilterMode: " << m_PARAMcalcQIType << ", filterOverlappingTCs: " << m_PARAMfilterOverlappingTCs)
   B2INFO(m_PARAMnameOfInstance << " numOfTimes, where a kalman fit was possible: " << m_TESTERgoodFitsCtr << ", where it failed: " << m_TESTERbadFitsCtr << ", where the TF had to be terminated (highOccupancy/kalman): " << m_TESTERbrokenEventsCtr << ", and " << m_TESTERbrokenCaRound << " CA rounds aborted, " << m_TESTERkalmanSkipped << " kalmanSkipped because of high occupancy, " << m_TESTERhighOccupancyCtr << "when highOccupancyMode was activated")
@@ -2224,7 +2248,7 @@ void VXDTFModule::hopfield(TCsOfEvent& tcVector, double omega)
     return; // leaving hopfield after chosing the last man standing
   }
 
-  if (m_PARAMDebugMode == true) {
+  if ((m_PARAMDebugMode == true) && (LogSystem::Instance().isLevelEnabled(LogConfig::c_Debug, 100, PACKAGENAME()) == true)) {
     stringstream printOut;
     printOut << " weight matrix W: " << endl << endl;
     for (int aussen = 0; aussen < numOfTCs; aussen++) {
@@ -2336,34 +2360,36 @@ void VXDTFModule::hopfield(TCsOfEvent& tcVector, double omega)
     B2WARNING(m_PARAMnameOfInstance << " smear:" << m_PARAMqiSmear << " event " << m_eventCounter << ": hopfield and greedy had no survivors! ")
 
     /** file output: */
-    stringstream noSurvivors, qiVec, xMatrixBegin, xMatrixEnd, weightMatrix, fileName;
-    noSurvivors << "event " << m_eventCounter << endl;
-    qiVec << "qiVector " << endl;
-    xMatrixBegin << "neurons at start: " << endl;
-    xMatrixEnd << "neurons at end: " << endl;
+		if (m_PARAMDebugMode == true ) {
+			stringstream noSurvivors, qiVec, xMatrixBegin, xMatrixEnd, weightMatrix, fileName;
+			noSurvivors << "event " << m_eventCounter << endl;
+			qiVec << "qiVector " << endl;
+			xMatrixBegin << "neurons at start: " << endl;
+			xMatrixEnd << "neurons at end: " << endl;
 
-    weightMatrix << " weight matrix W: " << endl;
-    for (int aussen = 0; aussen < numOfTCs; aussen++) {
-      for (int innen = 0; innen < numOfTCs; innen++) {
-        weightMatrix << W(aussen, innen) << "\t";
-      }
-      weightMatrix << endl;
-    }
+			weightMatrix << " weight matrix W: " << endl;
+			for (int aussen = 0; aussen < numOfTCs; aussen++) {
+				for (int innen = 0; innen < numOfTCs; innen++) {
+					weightMatrix << W(aussen, innen) << "\t";
+				}
+				weightMatrix << endl;
+			}
 
-    for (int i = 0; i < numOfTCs; i++) {
-      qiVec << tcVector[i]->getTrackQuality() << " ";
-      xMatrixBegin << xMatrixCopy(0, i) << " ";
-      xMatrixEnd << xMatrix(0, i) << " ";
+			for (int i = 0; i < numOfTCs; i++) {
+				qiVec << tcVector[i]->getTrackQuality() << " ";
+				xMatrixBegin << xMatrixCopy(0, i) << " ";
+				xMatrixEnd << xMatrix(0, i) << " ";
 
-      B2WARNING(m_PARAMnameOfInstance << " tc " << i << " - got final neuron value: " << xMatrix(0, i) << " while having " << int((tcVector[i]->getHits()).size()) << " hits and quality indicator " << tcVector[i]->getTrackQuality())
-    }
+				B2WARNING(m_PARAMnameOfInstance << " tc " << i << " - got final neuron value: " << xMatrix(0, i) << " while having " << int((tcVector[i]->getHits()).size()) << " hits and quality indicator " << tcVector[i]->getTrackQuality())
+			}
 
-    noSurvivors << xMatrixBegin.str() << endl << xMatrixEnd.str() << endl << qiVec.str() << endl << weightMatrix.str() << endl;
-    ofstream myfile;
-    fileName << "noSurvivors" << m_PARAMnameOfInstance << ".txt";
-    myfile.open((fileName.str()).c_str(), ios::out | ios::app);
-    myfile << noSurvivors.str();
-    myfile.close();
+			noSurvivors << xMatrixBegin.str() << endl << xMatrixEnd.str() << endl << qiVec.str() << endl << weightMatrix.str() << endl;
+			ofstream myfile;
+			fileName << "noSurvivors" << m_PARAMnameOfInstance << ".txt";
+			myfile.open((fileName.str()).c_str(), ios::out | ios::app);
+			myfile << noSurvivors.str();
+			myfile.close();
+		}
     /** file output-end */
   }
   int sizeOld = allHits.size();
@@ -3230,20 +3256,20 @@ int VXDTFModule::tcFilter(CurrentPassData* currentPass, int passNumber)
     }
 
     vector<PositionInfo*> currentHitPositions;
-    stringstream secNameOutput;
-    if (m_PARAMDebugMode == true) {
+    if ( LogSystem::Instance().isLevelEnabled(LogConfig::c_Debug, 20, PACKAGENAME()) == true ) {
+			stringstream secNameOutput;
       secNameOutput << endl << " tc " << tcCtr << " got " << numOfCurrentHits << " hits and the following secIDs: ";
-    }
-    BOOST_FOREACH(VXDTFHit * currentHit, currentHits) {
-      currentHitPositions.push_back(currentHit->getPositionInfo());
-      if (m_PARAMDebugMode == true) {
-        string aSecName = FullSecID(currentHit->getSectorName()).getFullSecString();
-        secNameOutput << aSecName << " ";
-      }
-    } // used for output
-    if (m_PARAMDebugMode == true) {
-      B2DEBUG(20, " " << secNameOutput.str() << " and " <<  numOfCurrentHits << " hits");
-    }
+			BOOST_FOREACH(VXDTFHit * currentHit, currentHits) {
+				currentHitPositions.push_back(currentHit->getPositionInfo());
+				string aSecName = FullSecID(currentHit->getSectorName()).getFullSecString();
+				secNameOutput << aSecName << " ";
+			} // used for output
+			B2DEBUG(20, " " << secNameOutput.str() << " and " <<  numOfCurrentHits << " hits");
+    } else {
+			BOOST_FOREACH(VXDTFHit * currentHit, currentHits) {
+				currentHitPositions.push_back(currentHit->getPositionInfo());
+			}
+		}
 
     // feeding trackletFilterbox with hits:
     m_trackletFilterBox.resetValues(&currentHitPositions);
@@ -3668,23 +3694,32 @@ GFTrackCand VXDTFModule::generateGFTrackCand(VXDTFTrackCandidate* currentTC, vec
   TMatrixDSym covSeed(6);
   int pdgCode = currentTC->getPDGCode();
   vector<int> pxdHits = currentTC->getPXDHitIndices();
-  vector<int> pxdClusters;
-  stringstream printIndices;
-  printIndices << "PXD: ";
-  BOOST_FOREACH(int index, pxdHits) {
-    int clusterIndex = clusters[index].getRealIndex();
-    printIndices << clusterIndex << " ";
-    pxdClusters.push_back(clusterIndex);
-  }
-  vector<int> svdHits = currentTC->getSVDHitIndices();
-  vector<int> svdClusters;
-  printIndices << ", SVD: ";
-  BOOST_FOREACH(int index, svdHits) {
-    int clusterIndex = clusters[index].getRealIndex();
-    printIndices << clusterIndex << " ";
-    svdClusters.push_back(clusterIndex);
-  }
-  B2DEBUG(10, "generated GFTC with following hits: " << printIndices.str());
+	vector<int> svdHits = currentTC->getSVDHitIndices();
+  vector<int> pxdClusters, svdClusters;
+	
+	if ( LogSystem::Instance().isLevelEnabled(LogConfig::c_Debug, 10, PACKAGENAME()) == true ) {
+		stringstream printIndices;
+		printIndices << "PXD: ";
+		BOOST_FOREACH(int index, pxdHits) {
+			int clusterIndex = clusters[index].getRealIndex();
+			printIndices << clusterIndex << " ";
+			pxdClusters.push_back(clusterIndex);
+		}
+		printIndices << ", SVD: ";
+		BOOST_FOREACH(int index, svdHits) {
+			int clusterIndex = clusters[index].getRealIndex();
+			printIndices << clusterIndex << " ";
+			svdClusters.push_back(clusterIndex);
+		}
+		B2DEBUG(10, "generated GFTC with following hits: " << printIndices.str());
+	} else { // no debugging output
+		BOOST_FOREACH(int index, pxdHits) {
+			pxdClusters.push_back(clusters[index].getRealIndex());
+		}
+		BOOST_FOREACH(int index, svdHits) {
+			svdClusters.push_back(clusters[index].getRealIndex());
+		}
+	}
 
   stateSeed(0) = posIn[0]; stateSeed(1) = posIn[1]; stateSeed(2) = posIn[2];
   stateSeed(3) = momIn[0]; stateSeed(4) = momIn[1]; stateSeed(5) = momIn[2];

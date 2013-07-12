@@ -87,7 +87,7 @@ FullSecID::FullSecID(VxdID vxdID, bool subLayerID, unsigned int sectorNumber):
 
 FullSecID::FullSecID(unsigned int layerID, bool subLayerID, unsigned int sensorID, unsigned int sectorNumber)
 {
-	unsigned int SubLayerID = subLayerID; // converting to int
+  unsigned int SubLayerID = subLayerID; // converting to int
   B2DEBUG(175, "FullSecID-constructor: LayerID " << layerID << ", MaxLayer " << MaxLayer << ", SubLayerID " << subLayerID << ", MaxSubLayer " << MaxSubLayer << ", UniID " << sensorID << ", MaxVxdID " << MaxVxdID << ", sectorNumber " << sectorNumber << ", MaxSector " << MaxSector);
   assert(layerID < MaxLayer + 1);
   assert(SubLayerID < MaxSubLayer + 1);
@@ -98,7 +98,7 @@ FullSecID::FullSecID(unsigned int layerID, bool subLayerID, unsigned int sensorI
   SubLayerID <<= SubLayerBitShift;
   sensorID <<= VxdIDBitShift;
   m_fullSecID = layerID | SubLayerID | sensorID | sectorNumber; // should be the same as below
-  B2DEBUG(175, " m_fullSecID/binary: " << m_fullSecID <<"/"<< std::bitset<32>(m_fullSecID) << "\n, secID/binary: " << sectorNumber << "/" << std::bitset<32>(sectorNumber) << ", layerID-binary: " << std::bitset<32>(layerID) << "\n, SubLayerID-binary: " << std::bitset<32>(SubLayerID)  << ", sensorID-binary: " << std::bitset<32>(sensorID) )
+  B2DEBUG(175, " m_fullSecID/binary: " << m_fullSecID << "/" << std::bitset<32>(m_fullSecID) << "\n, secID/binary: " << sectorNumber << "/" << std::bitset<32>(sectorNumber) << ", layerID-binary: " << std::bitset<32>(layerID) << "\n, SubLayerID-binary: " << std::bitset<32>(SubLayerID)  << ", sensorID-binary: " << std::bitset<32>(sensorID))
 }
 
 std::string FullSecID::getFullSecString()

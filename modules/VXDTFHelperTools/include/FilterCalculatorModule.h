@@ -233,17 +233,17 @@ namespace Belle2 {
       void exportValues(std::string aFileName) {
         m_fileName = aFileName;
         m_valuePack.sort();
-				m_exportValues.open(m_fileName.c_str(), std::ios_base::app); //
-// // // 				std::cerr <<"fileName: " <<aFileName << " with filter " << m_filterName <<  " includes " << m_valuePack.size() << " entries" << ", value 0 : " << (*m_valuePack.begin()) << std::endl;
-// // // 				
-// // // 				try{
-// // // 					m_exportValues.open(m_fileName.c_str(), std::ios_base::app); //
-// // // 					if (m_exportValues.is_open() == false ) { std::cerr << "could not open file!";}
-// // // 				}catch(...){
-// // // 					std::cerr << "could not open file!";
-// // // 				}
-// // // 				if (m_exportValues.is_open() == false ) { std::cerr << "could not open file!";}
-// // // 				std::cerr << " after opening File: ";
+        m_exportValues.open(m_fileName.c_str(), std::ios_base::app); //
+// // //        std::cerr <<"fileName: " <<aFileName << " with filter " << m_filterName <<  " includes " << m_valuePack.size() << " entries" << ", value 0 : " << (*m_valuePack.begin()) << std::endl;
+// // //
+// // //        try{
+// // //          m_exportValues.open(m_fileName.c_str(), std::ios_base::app); //
+// // //          if (m_exportValues.is_open() == false ) { std::cerr << "could not open file!";}
+// // //        }catch(...){
+// // //          std::cerr << "could not open file!";
+// // //        }
+// // //        if (m_exportValues.is_open() == false ) { std::cerr << "could not open file!";}
+// // //        std::cerr << " after opening File: ";
         m_exportValues << m_filterName << "_";
         BOOST_FOREACH(double value, m_valuePack) {
           m_exportValues << value << "|";

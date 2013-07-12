@@ -218,11 +218,11 @@ void TestMapModule::FillVector(vector<unsigned int>& vec)
   }
   std::sort(vec.begin(), vec.end());
   for (int pos = 1; pos < int(vec.size()); ++pos) {
-		if ( vec[pos] == vec[pos-1]) {
-			B2INFO(" vecPos " << pos << " double entry, FullSecID/string: " << vec[pos] << "/" << FullSecID(vec[pos]).getFullSecString())
-		}
-	}
-  
+    if (vec[pos] == vec[pos - 1]) {
+      B2INFO(" vecPos " << pos << " double entry, FullSecID/string: " << vec[pos] << "/" << FullSecID(vec[pos]).getFullSecString())
+    }
+  }
+
   B2INFO("TestMapModule::FillVector: vector has " << vec.size() << " entries...")
 }
 

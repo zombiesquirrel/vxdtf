@@ -275,7 +275,7 @@ namespace Belle2 {
       virtual void initialize();
 
       virtual void beginRun();
-			virtual void the_real_event();
+      virtual void the_real_event();
       virtual void event();
 
       virtual void endRun();
@@ -542,6 +542,7 @@ namespace Belle2 {
 
       double m_PARAMomega; /**< tuning parameter for hopfield network */
       double m_tcThreshold;   /**< defines threshold for hopfield network. neurons having values below threshold are discarded */
+      double m_PARAMreserveHitsThreshold; /**< tuning parameter for passes, valid values 0-1 ( = 0-100%). It defines how many percent of the TCs (sorted by QI) are allowed to reserve their hits (which disallows further passes to use these hits). This does not mean that TCs which were not allowed to reserve their hits will be deleted, this only means that they have to compete with TCs of other passes for their hits again. Setting the values to 100% = 1 means, no hits used by tcs surviving that pass are reused, 0% = 0 means every tc has to compete with all tcs of other passes (quite similar to former behavior) */
 
       bool m_PARAMqiSmear; /**<  allows to smear QIs via qqq-Interface, needed when having more than one TC with the same QI */
       bool m_PARAMcleanOverlappingSet; /**< when true, TCs which are found more than once (possible because of multipass) will get filtered */

@@ -78,10 +78,11 @@ double TrackletFilters::circleFit(double& clapPhi, double& clapR, double& radius
   double r2 = 0, x = 0, y = 0, x2 = 0, y2 = 0; // coords
   double weight;// weight of each hit, so far no difference in hit quality
   double sumWeights = 0, divisor; // sumWeights is sum of weights, divisor is 1/sumWeights;
+	double tuningParameter = 1.; //0.02; // this parameter is for internal tuning of the weights, since at the moment, the error seams highly overestimated at the moment. 1 means no influence of parameter.
 
   // looping over all hits and do the division afterwards
   BOOST_FOREACH(PositionInfo * hit, *m_hits) {
-    weight = 1. / ((hit->sigmaX) * (hit->sigmaX));
+    weight = 1. / ((hit->sigmaX) * (hit->sigmaX) *tuningParameter);
     B2DEBUG(100, " current hitSigma: " << hit->sigmaX << ", weight: " << weight)
     sumWeights += weight;
     if (hit->sigmaX < stopper) B2FATAL("TrackletFilters::circleFit, chosen sigma is too small (is/threshold: " << hit->sigmaX << "/" << stopper << ")")
