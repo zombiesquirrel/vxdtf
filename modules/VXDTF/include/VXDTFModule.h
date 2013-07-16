@@ -428,6 +428,11 @@ namespace Belle2 {
       /** general Function to write data into a root file*/
       void writeToRootFile(double pValue, double chi2, int ndf);
 
+			/** fast bypass for very simple events having not more than 2 easily distinguishable tracks and cosmic events */
+			bool simpleEventReco(std::vector<ClusterInfo>& clusters, const StoreArray<PXDCluster>& aPxdClusterArray, const StoreArray<SVDCluster>& aSvdClusterArray);
+
+			/** combines 1D clusters to all possible 2D combinations*/
+			void  find2DSVDHits(std::map<int, SensorStruct>& activatedSensors, std::vector<ClusterHit>& clusterHitList, const StoreArray<SVDCluster>& aSvdClusterArray);
       //    /** general Function to write data into a root file*/
       //    void VXDTFModule::writeToRootFile(const Tracking::T_type1& variable, const std::string& branchName, const std::string &treeName);
       /** random generator function */

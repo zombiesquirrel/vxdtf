@@ -72,8 +72,8 @@ bool TrackletFilters::ziggZaggRZ()
 // clap = closest approach of fitted circle to origin
 double TrackletFilters::circleFit(double& clapPhi, double& clapR, double& radius)
 {
-  if (m_hits == NULL) B2FATAL(" TrackletFilters::circleFit hits not set, therefore no calculation possible - please check that!")
-    double stopper = 0.000000001;
+  if (m_hits == NULL) { B2FATAL(" TrackletFilters::circleFit hits not set, therefore no calculation possible - please check that!") }
+  double stopper = 0.000000001;
   double meanX = 0, meanY = 0, meanX2 = 0, meanY2 = 0, meanR2 = 0, meanR4 = 0, meanXR2 = 0, meanYR2 = 0, meanXY = 0; //mean values
   double r2 = 0, x = 0, y = 0, x2 = 0, y2 = 0; // coords
   double weight;// weight of each hit, so far no difference in hit quality
@@ -86,7 +86,7 @@ double TrackletFilters::circleFit(double& clapPhi, double& clapR, double& radius
     B2DEBUG(100, " current hitSigma: " << hit->sigmaX << ", weight: " << weight)
     sumWeights += weight;
     if (hit->sigmaX < stopper) B2FATAL("TrackletFilters::circleFit, chosen sigma is too small (is/threshold: " << hit->sigmaX << "/" << stopper << ")")
-      x = hit->hitPosition.X();
+    x = hit->hitPosition.X();
     y = hit->hitPosition.Y();
     x2 = x * x;
     y2 = y * y;
