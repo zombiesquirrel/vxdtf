@@ -608,7 +608,7 @@ void FilterCalculatorModule::event()
             if (dynamic_cast<VXDHit*>(&(*riter)) != NULL) { newTracklet.addHit(*riter); }
           } else {
             string thisSecName = riter->getSectorID();
-            B2DEBUG(1,"at event " << m_eventCounter << ": track " << newTrack.getParticleID() << " with momentum of " << newTrack.getPt() << "GeV/c has got two trueHits with same direction of flight, distance of " << (oldRiter->getHitPosition() - riter->getHitPosition()).Mag() << " of each other and deltatimestamp " << (oldRiter->getTimeStamp() - riter->getTimeStamp()) << " in the same sensor :" << thisSecName << ". Hit discarded!")
+            B2DEBUG(1, "at event " << m_eventCounter << ": track " << newTrack.getParticleID() << " with momentum of " << newTrack.getPt() << "GeV/c has got two trueHits with same direction of flight, distance of " << (oldRiter->getHitPosition() - riter->getHitPosition()).Mag() << " of each other and deltatimestamp " << (oldRiter->getTimeStamp() - riter->getTimeStamp()) << " in the same sensor :" << thisSecName << ". Hit discarded!")
             thisSecMap->find(thisSecName)->second.decreaseCounter();
             m_badHitsCounter++;
           }
@@ -624,7 +624,7 @@ void FilterCalculatorModule::event()
                 if (dynamic_cast<VXDHit*>(&(*riter)) != NULL) { newTracklet.addHit(*riter); }
               } else {
                 string thisSecName = riter->getSectorID();
-                B2DEBUG(1,"at event " << m_eventCounter << ": track " << newTrack.getParticleID() << " with momentum of " << newTrack.getPt() << "GeV/c has got two trueHits with same direction of flight, distance of " << (oldRiter->getHitPosition() - riter->getHitPosition()).Mag() << " of each other and deltatimestamp " << (oldRiter->getTimeStamp() - riter->getTimeStamp()) << " in the same sensor :" << thisSecName << ". Hit discarded!")
+                B2DEBUG(1, "at event " << m_eventCounter << ": track " << newTrack.getParticleID() << " with momentum of " << newTrack.getPt() << "GeV/c has got two trueHits with same direction of flight, distance of " << (oldRiter->getHitPosition() - riter->getHitPosition()).Mag() << " of each other and deltatimestamp " << (oldRiter->getTimeStamp() - riter->getTimeStamp()) << " in the same sensor :" << thisSecName << ". Hit discarded!")
                 thisSecMap->find(thisSecName)->second.decreaseCounter();
                 m_badHitsCounter++;
               }
@@ -657,7 +657,7 @@ void FilterCalculatorModule::event()
           currentSector = currentIt->getSectorID();
           friendSector = friendIt->getSectorID();
           if (int(currentSector.size()) == 0 || int(friendSector.size()) == 0) {
-            B2DEBUG(1,"FilterCalculatorModule event " << m_eventCounter << ": CurrentSector/FriendSector " << currentSector << "/" << friendSector << " got size 0! ")
+            B2DEBUG(1, "FilterCalculatorModule event " << m_eventCounter << ": CurrentSector/FriendSector " << currentSector << "/" << friendSector << " got size 0! ")
             friendIt = hitList.end();
             ++countedFails;
           } else {
@@ -680,7 +680,7 @@ void FilterCalculatorModule::event()
         uniIDs.unique();
         numUniIDsAfterClean = uniIDs.size();
         if (numUniIDsAfterClean != numUniIDsBeforeClean) {  // in this case, the same track passed the same sensor twice. extremely unlikely and an indicator for nasty tracks destroying the lookup table
-          B2DEBUG(1,"FilterCalculatorModule event " << m_eventCounter << ": tracklet with pID: " << newTracklet.getParticleID() << ", has got multiple hits on the same sensor, discarding tracklet!")
+          B2DEBUG(1, "FilterCalculatorModule event " << m_eventCounter << ": tracklet with pID: " << newTracklet.getParticleID() << ", has got multiple hits on the same sensor, discarding tracklet!")
           ++countedFails;
         } // filtering bad hits at the same sensor
 

@@ -41,7 +41,7 @@ vector< vector< pair<double, double> > > Tracking::getGlobalizedHitErrors()
       TVector3 globalError = aSensorInfo.vectorToGlobal(localError);
 
       layerErrors.push_back(make_pair(globalError.X(), globalError.Y()));
-			B2DEBUG(1, " Tracking::getGlobalizedHitErrors at layer " << layer << ", ladder " << ladder << ", sigmaX/Y/Z" << globalError.X() <<"/"<< globalError.Y() <<"/"<< globalError.Z() <<  " [unit cm?]")
+      B2DEBUG(1, " Tracking::getGlobalizedHitErrors at layer " << layer << ", ladder " << ladder << ", sigmaX/Y/Z" << globalError.X() << "/" << globalError.Y() << "/" << globalError.Z() <<  " [unit cm?]")
     }
 
     errorContainer.push_back(layerErrors);
@@ -69,7 +69,7 @@ vector< pair<double, double> > Tracking::getHitErrors()
     double sigmaU = aSensorInfo.getUPitch(0.); // error at center of sensor
     double sigmaV = aSensorInfo.getVPitch(0.); // error at center of sensor
     errorContainer.push_back(make_pair(sigmaU, sigmaV));
-		B2DEBUG(1, " Tracking::getHitErrors at layer " << layer << ", sigmaU/V" << sigmaU <<"/"<< sigmaV << " [unit cm?]")
+    B2DEBUG(1, " Tracking::getHitErrors at layer " << layer << ", sigmaU/V" << sigmaU << "/" << sigmaV << " [unit cm?]")
   }
 
   B2INFO(" Tracking::getHitErrors, " << errorContainer.size() << " layers stored...")
