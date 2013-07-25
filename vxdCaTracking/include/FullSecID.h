@@ -84,10 +84,10 @@ namespace Belle2 {
       short int getLayerNumber() { return m_fullSecID >> LayerBitShift; }
 
       /** returns LadderID compatible with basf2 standards */
-			int getLadderID() { return getLadderNumber(); }
+      int getLadderID() { return getLadderNumber(); }
 
-			/** returns LadderID compatible with basf2 standards */
-			int getLadderNumber() { return getVxdID().getLadderNumber(); }
+      /** returns LadderID compatible with basf2 standards */
+      int getLadderNumber() { return getVxdID().getLadderNumber(); }
 
       /** returns SubLayerID which tells you whether it is useful to search for compatible sectors in the same layer as well. */
       bool getSubLayerID() { return (m_fullSecID bitand SubLayerMask) >> SubLayerBitShift; }

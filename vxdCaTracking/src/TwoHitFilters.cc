@@ -27,7 +27,8 @@ double TwoHitFilters::filterNan(double value)
 }
 
 
-double TwoHitFilters::fullSlopeRZ() {
-	double slope = sqrt(m_x2 + m_y2) / m_dz;
-	return filterNan(slope);
+double TwoHitFilters::fullSlopeRZ()
+{
+  double slope = sqrt(m_x2 + m_y2) / m_dz;
+  return filterNan(slope);
 }

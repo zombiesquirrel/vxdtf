@@ -18,20 +18,13 @@ using namespace std;
 using namespace Belle2;
 using namespace Belle2::Tracking;
 
-SectorFriends::SectorFriends(unsigned int myName, unsigned int secName):
-  m_friendName(myName),
-  m_sectorName(secName)
-{
-  m_filters.assign(FilterID::numFilters, NULL);
-}
 
 void SectorFriends::addValuePair(int aFilter, pair<double, double> values)
 {
   if (m_filters[aFilter] != NULL) {
     m_filters[aFilter]->addValuePair(values.first, values.second);
   } else {
-    Cutoff* aCutOffPtr =  new Cutoff(aFilter, values);
-    m_filters[aFilter] = aCutOffPtr;
+    m_filters[aFilter] =  new Cutoff(aFilter, values);
   }
 }
 
