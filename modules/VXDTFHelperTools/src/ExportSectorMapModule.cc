@@ -42,31 +42,31 @@ ExportSectorMapModule::ExportSectorMapModule() : Module()
   //Set module properties
   setDescription("imports xml-files of sectorMaps and exports RAM-friendly versions of it");
   setPropertyFlags(c_ParallelProcessingCertified | c_InitializeInProcess);
-	
-	/// setting standard values for steering parameters
+
+  /// setting standard values for steering parameters
   std::vector<double> defaultConfigU; // sector sizes
   defaultConfigU.push_back(0.0);
   defaultConfigU.push_back(0.5);
   defaultConfigU.push_back(1.0);
-	std::vector<double> defaultConfigV;
+  std::vector<double> defaultConfigV;
   defaultConfigV.push_back(0.0);
   defaultConfigV.push_back(0.33);
   defaultConfigV.push_back(0.67);
   defaultConfigV.push_back(1.0);
-	std::vector<double> originVec;
+  std::vector<double> originVec;
   originVec.push_back(0);
   originVec.push_back(0);
   originVec.push_back(0);
 
   addParam("detectorType", m_PARAMdetectorType, "defines which detector type has to be exported. Allowed values: 'VXD', 'PXD', 'SVD'", string("SVD"));
   addParam("sectorSetup", m_PARAMsectorSetup, "lets you chose the sectorSetup (compatibility of sensors, individual cutoffs,...) accepts 'std', 'low', 'high' and 'personal', please note that the chosen setup has to exist as a xml-file in ../tracking/data/friendList_XXX.xml. If you can not create your own xml files using e.g. the filterCalculatorModule, use params for  'tuneCutoffXXX' or 'setupWeigh' instead. multipass supported by setting setups in a row", string("std"));
-	 addParam("sectorConfigU", m_PARAMsectorConfigU, "allows defining the the config of the sectors in U direction value is valid for each sensor of chosen detector setup, minimum 2 values between 0.0 and 1.0", defaultConfigU);
+  addParam("sectorConfigU", m_PARAMsectorConfigU, "allows defining the the config of the sectors in U direction value is valid for each sensor of chosen detector setup, minimum 2 values between 0.0 and 1.0", defaultConfigU);
   addParam("sectorConfigV", m_PARAMsectorConfigV, "allows defining the the config of the sectors in V direction value is valid for each sensor of chosen detector setup, minimum 2 values between 0.0 and 1.0", defaultConfigV);
-	addParam("setOrigin", m_PARAMsetOrigin, "standard origin is (0,0,0). If you want to have the map calculated for another origin, set here(x,y,z)", originVec);
-	addParam("magneticFieldStrength", m_PARAMmagneticFieldStrength, "set strength of magnetic field in Tesla, standard is 1.5T", double(1.5));
+  addParam("setOrigin", m_PARAMsetOrigin, "standard origin is (0,0,0). If you want to have the map calculated for another origin, set here(x,y,z)", originVec);
+  addParam("magneticFieldStrength", m_PARAMmagneticFieldStrength, "set strength of magnetic field in Tesla, standard is 1.5T", double(1.5));
 
-	addParam("additionalInfo", m_PARAMadditionalInfo, "this variable is reserved for extra info which shall be stored in the container, e.g. date of production or other useful info for the user(it shall be formatted before storing it), this info will be displayed by the VXDTF on Info-level", string(""));
-	
+  addParam("additionalInfo", m_PARAMadditionalInfo, "this variable is reserved for extra info which shall be stored in the container, e.g. date of production or other useful info for the user(it shall be formatted before storing it), this info will be displayed by the VXDTF on Info-level", string(""));
+
 }
 
 
@@ -79,8 +79,8 @@ ExportSectorMapModule::~ExportSectorMapModule()
 void ExportSectorMapModule::initialize()
 {
   boostClock::time_point beginEvent = boostClock::now();
-	
-	if (int(m_PARAMsetOrigin.size()) != 3) {
+
+  if (int(m_PARAMsetOrigin.size()) != 3) {
     B2WARNING("ExportSectorMapModule::initialize: origin is set wrong, please set only 3 values (x,y,z). Rejecting user defined value and reset to (0,0,0)!")
     m_PARAMsetOrigin.clear();
     m_PARAMsetOrigin.push_back(0);
@@ -105,7 +105,7 @@ void ExportSectorMapModule::initialize()
     B2FATAL("Failed to import sector map " << chosenSetup << "! No track finding possible. Please check ../tracking/data/VXDTFindex.xml whether your chosen sector maps are uncommented (and files linked there are not zipped) and recompile if you change entries...")
   }
   double cutoffMinValue, cutoffMaxValue;
-	int countFriends = 0, countFilters = 0;
+  int countFriends = 0, countFilters = 0;
   string aSectorName, aFriendName, aFilterName, min = "Min", max = "Max";
 
   pair<double, double> cutoff;
@@ -232,13 +232,13 @@ void ExportSectorMapModule::initialize()
         }
 
         CutoffValue cutoffValue = make_pair(cutoffMinValue, cutoffMaxValue);
-				countFilters++;
+        countFilters++;
         Cutoff cutoff = make_pair(filterID, cutoffValue);
         friendValue.push_back(cutoff);
         B2DEBUG(50, " > > importing filter: " << aFilterName << " (named " << filterID << " as an int and " << FilterID().getFilterString(filterID) << " as a recoded string) with min/max: " << cutoffMinValue << "/" << cutoffMaxValue << " filters. ");
       }
       Friend thisFriend = make_pair(friendID.getFullSecID(), friendValue);
-			countFriends++;
+      countFriends++;
       B2DEBUG(10, " > > importing friend: " << friendID.getFullSecString() << " (named " << friendID.getFullSecID() << " as an int) including " << friendValue.size() << " filters. ");
       sectorValue.push_back(thisFriend);
     }
@@ -253,12 +253,12 @@ void ExportSectorMapModule::initialize()
   VXDTFSecMap newSecMap = VXDTFSecMap();
   newSecMap.setSectorMap(m_fullSectorMapCopy);
   newSecMap.setMapName(chosenSetup);
-	newSecMap.setSectorConfigU(m_PARAMsectorConfigU);
-	newSecMap.setSectorConfigV(m_PARAMsectorConfigV);
-	newSecMap.setOrigin(origin);
-	newSecMap.setDetectorType(m_PARAMdetectorType);
-	newSecMap.setMagneticFieldStrength(m_PARAMmagneticFieldStrength);
-	newSecMap.setAdditionalInfo(m_PARAMadditionalInfo);
+  newSecMap.setSectorConfigU(m_PARAMsectorConfigU);
+  newSecMap.setSectorConfigV(m_PARAMsectorConfigV);
+  newSecMap.setOrigin(origin);
+  newSecMap.setDetectorType(m_PARAMdetectorType);
+  newSecMap.setMagneticFieldStrength(m_PARAMmagneticFieldStrength);
+  newSecMap.setAdditionalInfo(m_PARAMadditionalInfo);
   string  tagName = "<" + chosenSetup + ">\n";
   string  endTagName = "\n</" + chosenSetup + ">\n";
   file << tagName << Stream::escapeXML(Stream::serialize(&newSecMap)) << endTagName;

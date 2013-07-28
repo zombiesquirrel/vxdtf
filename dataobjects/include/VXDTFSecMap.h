@@ -55,10 +55,10 @@ namespace Belle2 {
     /** getter - returns config of the sectors in U direction */
     std::vector<double> getSectorConfigU() const { return m_sectorConfigU; }
 
-		/** getter - returns config of the sectors in V direction */
+    /** getter - returns config of the sectors in V direction */
     std::vector<double> getSectorConfigV() const { return m_sectorConfigV; }
 
-		/** getter - returns the position of the assumed primary vertex */
+    /** getter - returns the position of the assumed primary vertex */
     TVector3 getOrigin() const { return m_origin; }
 
     /** getter - returns the strength of magnetic field in Tesla */
@@ -97,8 +97,8 @@ namespace Belle2 {
     SecMapCopy m_sectorMap; /**< contains full information of the sectorMap */
     std::string  m_nameOfSecMap; /**< Name of the sectorMap */
     std::string  m_detectorType; /**< Name of the detectorType (PXD, SVD, VXD) */
-		std::vector<double> m_sectorConfigU; /**< allows defining the the config of the sectors in U direction value is valid for each sensor of chosen detector setup, minimum 2 values between 0.0 and 1.0 */
-      std::vector<double> m_sectorConfigV; /**< allows defining the the config of the sectors in V direction value is valid for each sensor of chosen detector setup, minimum 2 values between 0.0 and 1.0 */
+    std::vector<double> m_sectorConfigU; /**< allows defining the the config of the sectors in U direction value is valid for each sensor of chosen detector setup, minimum 2 values between 0.0 and 1.0 */
+    std::vector<double> m_sectorConfigV; /**< allows defining the the config of the sectors in V direction value is valid for each sensor of chosen detector setup, minimum 2 values between 0.0 and 1.0 */
     TVector3 m_origin; /**< defines the position of the assumed primary vertex */
     double m_magneticFieldStrength; /**< strength of magnetic field in Tesla, standard is 1.5T */
     std::string m_additionalInfo; /**< this variable is reserved for extra info which shall be stored in the container, e.g. date of production or other useful info for the user(it shall be formatted before storing it), this info will be displayed by the VXDTF on Info-level */

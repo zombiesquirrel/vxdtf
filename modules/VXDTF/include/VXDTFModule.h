@@ -115,36 +115,36 @@ namespace Belle2 {
       //    typedef std::chrono::high_resolution_clock boostClock;
       //    typedef std::chrono::nanoseconds boostNsec;
       typedef boost::tuple<double, double, VXDTFHit*> HitExtraTuple; /**< get<0>: distance to origin, get<1>: distance to seedHit, get<2> pointer to hit. SeedHit is outermost hit of detector and will be used for cosmic search */
-      typedef boost::adjacency_list<
-																		boost::vecS, // defines the container used for the edges (vecS = std::vector)
-																		boost::vecS, // defines the container used for the vertices
-																		boost::directedS, // defines the behavior of the edges: directed graph
-																		Vertex, //  The type that describes a Vertex.
-																		Edge //  The type that describes an Edge
-																		> BoostUndirectedGraph; /**< used by simpleReco - is a mathematical graph storing info about Hits and their relations */
-			typedef boost::adjacency_list<
-																		boost::vecS, // defines the container used for the edges (vecS = std::vector)
-																		boost::vecS, // defines the container used for the vertices
-																		boost::undirectedS, // defines the behavior of the edges: undirected graph (edge u,v = edge v,u) != bidirectionalS (edge u,v != edge v,u)
-																		Vertex, //  The type that describes a Vertex.
-																		Edge //  The type that describes an Edge
-																		> BoostDirectedGraph; /**< used by simpleReco - is a mathematical graph storing info about Hits and their relations */
-			typedef BoostUndirectedGraph::vertex_descriptor undirectedVertexID; /**< used for adding vertices to BoostGraph */
-			typedef BoostUndirectedGraph::edge_descriptor undirectedEdgeID; /**< used for adding vertices to BoostGraph */
-			typedef BoostDirectedGraph::vertex_descriptor directedVertexID; /**< used for adding vertices to BoostGraph */
-			typedef BoostDirectedGraph::edge_descriptor directedEdgeID; /**< used for adding vertices to BoostGraph */
+      typedef boost::adjacency_list <
+      boost::vecS, // defines the container used for the edges (vecS = std::vector)
+            boost::vecS, // defines the container used for the vertices
+            boost::directedS, // defines the behavior of the edges: directed graph
+            Vertex, //  The type that describes a Vertex.
+            Edge //  The type that describes an Edge
+            > BoostUndirectedGraph; /**< used by simpleReco - is a mathematical graph storing info about Hits and their relations */
+      typedef boost::adjacency_list <
+      boost::vecS, // defines the container used for the edges (vecS = std::vector)
+            boost::vecS, // defines the container used for the vertices
+            boost::undirectedS, // defines the behavior of the edges: undirected graph (edge u,v = edge v,u) != bidirectionalS (edge u,v != edge v,u)
+            Vertex, //  The type that describes a Vertex.
+            Edge //  The type that describes an Edge
+            > BoostDirectedGraph; /**< used by simpleReco - is a mathematical graph storing info about Hits and their relations */
+      typedef BoostUndirectedGraph::vertex_descriptor undirectedVertexID; /**< used for adding vertices to BoostGraph */
+      typedef BoostUndirectedGraph::edge_descriptor undirectedEdgeID; /**< used for adding vertices to BoostGraph */
+      typedef BoostDirectedGraph::vertex_descriptor directedVertexID; /**< used for adding vertices to BoostGraph */
+      typedef BoostDirectedGraph::edge_descriptor directedEdgeID; /**< used for adding vertices to BoostGraph */
 
-			
-			
+
+
       /** structs for internal use **/
-			
-			struct Vertex{
-				// or whatever, maybe nothing
-			};
-			
-			struct Edge{
-    // nothing, probably. Or a weight, a distance, a direction, ...
-			};
+
+      struct Vertex {
+        // or whatever, maybe nothing
+      };
+
+      struct Edge {
+        // nothing, probably. Or a weight, a distance, a direction, ...
+      };
 
       /** SensorStruct needed for SVDCluster sorting, stores u and v clusters of Sensor  */
       struct SensorStruct {
@@ -163,9 +163,9 @@ namespace Belle2 {
 
       /** for testing purposes, storing time consumption */
       struct TimeInfo {
-				/** constructor */
-				TimeInfo() {}
-				boostNsec baselineTF; /**< time consumption of the baselineTF */
+        /** constructor */
+        TimeInfo() {}
+        boostNsec baselineTF; /**< time consumption of the baselineTF */
         boostNsec hitSorting; /**< time consumption of the hit sorting process */
         boostNsec segFinder; /**< time consumption of the segFinder */
         boostNsec nbFinder; /**< time consumption of the nbFinder */
@@ -285,9 +285,9 @@ namespace Belle2 {
         int activatedTccFilterTests; /**< counts number of tests activated for tcc filter */
 
         SegFinderFilters twoHitFilterBox; /**< contains all the two hit filters needed by the segFinder */
-				NbFinderFilters threeHitFilterBox; /**< contains all the three hit filters needed by the nbFinder */
-				TcFourHitFilters fourHitFilterBox; /**< contains all the four hit filters needed by the post-ca-Filter */
-				TrackletFilters trackletFilterBox; /**< contains all the four-or-more hit filters needed by the post-ca-Filter */
+        NbFinderFilters threeHitFilterBox; /**< contains all the three hit filters needed by the nbFinder */
+        TcFourHitFilters fourHitFilterBox; /**< contains all the four hit filters needed by the post-ca-Filter */
+        TrackletFilters trackletFilterBox; /**< contains all the four-or-more hit filters needed by the post-ca-Filter */
 
         /** filled and resetted each event **/
         OperationSequenceOfActivatedSectors sectorSequence; /**< carries pointers to sectors which are used in current event */
@@ -413,7 +413,7 @@ namespace Belle2 {
 
 
       /** name is program, needed for GFTrackCand export */
-      void calcInitialValues4TCs(TCsOfEvent& tcVector); // -> TODO auslagern!
+      void calcInitialValues4TCs(CurrentPassData* currentPass); // -> TODO auslagern!
 
 
       /** simplest way to determine QI of track candidates, calculating them by track length */
@@ -474,32 +474,32 @@ namespace Belle2 {
       BrokenSensorsOfEvent find2DSVDHits(ActiveSensorsOfEvent& activatedSensors, std::vector<ClusterHit>& clusterHitList);
 
 
-			/** checks for each strange sensor whether it makes sense to generate 1D-VXDTFHits or not. we therefore filter by threshold to keep us from stumbling over messy sensors. It returns a container full with 1D-Hits  */
-			std::vector<VXDTFHit> dealWithStrangeSensors(ActiveSensorsOfEvent& activatedSensors, BrokenSensorsOfEvent& strangeSensors);
+      /** checks for each strange sensor whether it makes sense to generate 1D-VXDTFHits or not. we therefore filter by threshold to keep us from stumbling over messy sensors. It returns a container full with 1D-Hits  */
+      std::vector<VXDTFHit> dealWithStrangeSensors(ActiveSensorsOfEvent& activatedSensors, BrokenSensorsOfEvent& strangeSensors);
 
 
-			/** produces VXDTFHits when getting at least one SVDCluster*, currently not compatible with normal svd-hit-cases (only for baseline-tf) */
-			VXDTFHit deliverVXDTFHitWrappedSVDHit(ClusterInfo* uClusterInfo, ClusterInfo* vClusterInfo);
+      /** produces VXDTFHits when getting at least one SVDCluster*, currently not compatible with normal svd-hit-cases (only for baseline-tf) */
+      VXDTFHit deliverVXDTFHitWrappedSVDHit(ClusterInfo* uClusterInfo, ClusterInfo* vClusterInfo);
 
 
-// 			/** creates a mathematical directed graph (check typedef for more info) which will be used by the simpleEventReco to find trackCandidates */
-// 			BoostDirectedGraph createDirectedGraph(std::vector<VXDTFHit>& hits);
-// 
-// 
-// 			/** creates a mathematical undirected graph (check typedef for more info) which will be used by the simpleEventReco to find trackCandidates */
-// 			BoostUndirectedGraph createUndirectedGraph(std::vector<VXDTFHit>& hits);
+//      /** creates a mathematical directed graph (check typedef for more info) which will be used by the simpleEventReco to find trackCandidates */
+//      BoostDirectedGraph createDirectedGraph(std::vector<VXDTFHit>& hits);
+//
+//
+//      /** creates a mathematical undirected graph (check typedef for more info) which will be used by the simpleEventReco to find trackCandidates */
+//      BoostUndirectedGraph createUndirectedGraph(std::vector<VXDTFHit>& hits);
 
 
-			/** sorts that specific tuple using position 1, not position 0 (which can be done by using standard sorting algorithm) */
-			bool sortHitExtraTupleAtPosition1(const HitExtraTuple& t1, const HitExtraTuple& t2);
+      /** sorts that specific tuple using position 1, not position 0 (which can be done by using standard sorting algorithm) */
+      bool sortHitExtraTupleAtPosition1(const HitExtraTuple& t1, const HitExtraTuple& t2);
 
 
-			/** executes the calculations needed for the circleFit */
-			bool doTheCircleFit(CurrentPassData* thisPass, VXDTFTrackCandidate* aTc, int nHits, int tcCtr, int addDegreesOfFreedom = 1);
+      /** executes the calculations needed for the circleFit */
+      bool doTheCircleFit(CurrentPassData* thisPass, VXDTFTrackCandidate* aTc, int nHits, int tcCtr, int addDegreesOfFreedom = 1);
 
 
-			/** reserves hits for the best TCs so far */
-			void reserveHits(TCsOfEvent& tcVector, CurrentPassData* currentPass);
+      /** reserves hits for the best TCs so far */
+      void reserveHits(TCsOfEvent& tcVector, CurrentPassData* currentPass);
       /** random generator function */
       //    ptrdiff_t rngWrapper(ptrdiff_t i);
 
@@ -581,6 +581,7 @@ namespace Belle2 {
 
       /// needed for pass handling:
       PassSetupVector m_passSetupVector; /**< contains information for each pass */
+      CurrentPassData m_baselinePass; /**< baselineTF gets his own pass, gets some settings from the first pass of the PassSetupVector */
 
 //       std::vector<double> m_PARAMsectorConfigU; /**< allows defining the the config of the sectors in U direction value is valid for each sensor of chosen detector setup, minimum 2 values between 0.0 and 1.0 */
 //       std::vector<double> m_PARAMsectorConfigV; /**< allows defining the the config of the sectors in V direction value is valid for each sensor of chosen detector setup, minimum 2 values between 0.0 and 1.0 */
@@ -649,7 +650,7 @@ namespace Belle2 {
       int m_TESTERstartedBaselineTF; /**< counts number of times, the baselineTF was started */
       int m_TESTERacceptedBrokenHitsTrack; /**< counts number of times, where a tc having at least 1 1D-SVD hit was accepted */
       int m_TESTERrejectedBrokenHitsTrack; /**< counts number of times, where a tc having at least 1 1D-SVD hit was rejected */
-			int m_TESTERsucceededBaselineTF; /**< counts number of times, the baselineTF found a track */
+      int m_TESTERsucceededBaselineTF; /**< counts number of times, the baselineTF found a track */
       int m_TESTERtriggeredZigZagXY;/**< counts how many times zigZagXY filter found bad TCs */
       int m_TESTERtriggeredZigZagRZ;/**< counts how many times zigZagRZ filter found bad TCs */
       int m_TESTERtriggeredDpT; /**< counts how many times deltaPt filter found bad TCs  */
@@ -684,10 +685,6 @@ namespace Belle2 {
       int m_TESTERclustersPersSectorNotMatching; /**< counts number of times when numofUclusters and numOfVclusters per sensor do not match */
       int m_TESTERhighOccupancyCtr; /**< counts number of times when high occupancy mode was activated */
       int m_TESTERovercrowdedStrangeSensors; /**< counts number of times when there was a strange sensor (svd-only: mismatching number of u/v clusters) but too many hits on it to be able to try to rescue Clusters by forming 1D-VXDTFHits */
-
-
-      /// frequently used constants:
-      double m_CONSTaThird; /**< simply 1/3, will be calculated once since it's needed very often */
 
     private:
 

@@ -28,8 +28,8 @@ namespace Belle2 {
     public:
       /** constructor */
       SectorFriends(unsigned int myName, unsigned int secName):
-										m_friendName(myName),
-										m_sectorName(secName) { m_filters.assign(FilterID::numFilters, NULL); }
+        m_friendName(myName),
+        m_sectorName(secName) { m_filters.assign(FilterID::numFilters, NULL); }
 
       /** setters */
       void addValuePair(int aFilter, std::pair<double, double> values); /**< adds a pair of cutoffs of defined type */

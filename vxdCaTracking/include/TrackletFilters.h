@@ -38,8 +38,8 @@ namespace Belle2 {
         m_hits(hits),
         m_radius(0),
         m_chi2(0) {
-					m_numHits = m_hits->size();
-				}
+        m_numHits = m_hits->size();
+      }
 
 
       /** Destructor. */
@@ -69,12 +69,12 @@ namespace Belle2 {
       /** using paper "Effective circle fitting for particle trajectories" from V. Karimäki (Nucl.Instr.and Meth. in Physics Research, A305 (1991), Elsevier) to calculate chi2-value of a circle including these hits. Return value is chi2, input parameters are the future r-phi-coordinates of clap (closest approach of fitted circle to origin), which will be calculated during process */
       double circleFit(double& clapPhi, double& clapR, double& radius);
 
-			/** producing a reasonable guess for the pT of the tracklet */
-			double calcPt() {
-				if (m_radius < 0.001 ) { m_chi2 = circleFit(); }
-				if (m_radius < 0.001 ) { return 0.; }
-				return m_3hitFilterBox.calcPt(m_radius);
-			}
+      /** producing a reasonable guess for the pT of the tracklet */
+      double calcPt() {
+        if (m_radius < 0.001) { m_chi2 = circleFit(); }
+        if (m_radius < 0.001) { return 0.; }
+        return m_3hitFilterBox.calcPt(m_radius);
+      }
 
     protected:
 

@@ -74,50 +74,50 @@ namespace Belle2 {
       bool operator>(const VXDTFHit& b) const; /**< overloaded '>'-operator for sorting algorithms */
 
       TVector3* getHitCoordinates() { return &(m_hit.hitPosition); } /**< returns global hit coordinates */
-      
+
       PositionInfo* getPositionInfo() { return &m_hit; } /**< returns global hit coordinates and errors for x and y coordinates */
-      
+
       const std::vector<int>& getAttachedInnerCell() const { return m_attachedInnerCells; } /**< returns all inner Cells attached to hit */
-      
+
       const std::vector<int>& getAttachedOuterCell() const { return m_attachedOuterCells; } /**< returns all outer Cells attached to hit */
-      
+
       int getNumberOfSegments() { return int(m_attachedInnerCells.size() + m_attachedOuterCells.size()); } /**< returns number of segments connected to this hit (hits without attached segments are ignored during TF process) */
-      
+
       int getNumberOfTrackCandidates() { return m_attachedTrackCandidates; } /**< returns number of TCs using this hit */
-      
+
       int getPassIndex() const { return m_passIndex; } /**< VXDTFHits are pass-dependent. Returns the index number of the pass containing current hit */
-      
+
       int getClusterIndexU() const; /*{
         if (m_clusterInfoU != NULL ) { return m_clusterInfoU->getOwnIndex(); }
         return -1;
       } *//**< returns index position of clusterInfo in container, only set for SVDHits */
-      
+
       ClusterInfo* getClusterInfoU() const; /*{ return m_clusterInfoU; }*/ /**< returns pointer to ClusterInfo U, is NULL if value is not set */
-      
+
       int getClusterIndexV() const; /*{
         if (m_clusterInfoV != NULL ) { return m_clusterInfoV->getOwnIndex(); }
         return -1;
       }*/ /**< returns index position of clusterInfo in container,  only set for SVDHits */
-      
+
       ClusterInfo* getClusterInfoV() const;/* { return m_clusterInfoUV; }*/ /**< returns pointer to ClusterInfo V, is NULL if value is not set */
-      
+
       int getClusterIndexUV() const; /*{
         if (m_clusterInfoUV != NULL ) { return m_clusterInfoUV->getOwnIndex(); }
         return -1;
       }*/ /**< returns index position of clusterInfo in container,  only set for PXDHits */
-      
+
       ClusterInfo* getClusterInfoUV() const;/* { return m_clusterInfoUV; }*/  /**< returns pointer to ClusterInfo UV, is NULL if value is not set */
-      
+
       int getDetectorType() const { return m_detectorType; } /**< returns detectorType IP=Const::IR,PXD=Const::PXD,SVD=Const::SVD */
-      
+
       unsigned int getSectorName() { return m_papaSector; } /**< returns name of sectors containing current hit (sectors are passDependent), in speed optimized int */
-      
+
       std::string getSectorString(); /**< returns name of sectors containing current hit (sectors are passDependent), in human readable string */
-			
+
       const VxdID getVxdID() const { return m_VxdID; } /**< returns VxdID of sensor carrying current sector */
-      
+
       float getTimeStamp() const { return m_timeStamp; } /**< set for SVDHits, for PXDHits it's 0 */
-      
+
       bool isReserved() const ; /* {
         if (m_clusterInfoU != NULL) { if (m_clusterInfoU->isReserved() == true) { return true; } }
         if (m_clusterInfoV != NULL) { if (m_clusterInfoV->isReserved() == true) { return true; } }

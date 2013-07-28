@@ -32,12 +32,12 @@ namespace Belle2 {
     */
     class ClusterInfo {
     public:
-// 			typedef std::vector<VXDTFTrackCandidate*> TcContainer; /**< contains attached track candidates */
-			typedef std::list<VXDTFTrackCandidate*> TcContainer; /**< contains attached track candidates */
+//      typedef std::vector<VXDTFTrackCandidate*> TcContainer; /**< contains attached track candidates */
+      typedef std::list<VXDTFTrackCandidate*> TcContainer; /**< contains attached track candidates */
 
       /** Empty constructor. */
       ClusterInfo():
-				m_bossTC(NULL),
+        m_bossTC(NULL),
         m_clusterIndex(-1),
         m_ownPositionInIndex(-1),
         m_isPXD(false),
@@ -58,14 +58,14 @@ namespace Belle2 {
 
       /** Destructor. */
       ~ClusterInfo() {}
-      
+
       /** removes a track candidate from container */
       void removeTrackCandidate(VXDTFTrackCandidate* aTC) {
-				TcContainer::iterator tcIt = m_attachedTCs.begin();
-				for ( ; tcIt != m_attachedTCs.end(); ++tcIt) {
-					if (isSameTC( (*tcIt), aTC ) == true) { tcIt = m_attachedTCs.erase(tcIt); return; }
-				}
-			}
+        TcContainer::iterator tcIt = m_attachedTCs.begin();
+        for (; tcIt != m_attachedTCs.end(); ++tcIt) {
+          if (isSameTC((*tcIt), aTC) == true) { tcIt = m_attachedTCs.erase(tcIt); return; }
+        }
+      }
 
       /** adds a pointer to a track candidate using this cluster */
       void addTrackCandidate(VXDTFTrackCandidate* aTC);
@@ -81,10 +81,10 @@ namespace Belle2 {
 
       /** returns pointer to the PXDCluster, is NULL if ->this is a SVDCluster */
       const PXDCluster* getPXDCluster() const { return m_pxdCluster; }
-      
+
       /** returns pointer to the SVDCluster, is NULL if ->this is a SVDCluster */
       const SVDCluster* getSVDCluster() const { return m_svdCluster; }
-      
+
       /** checks each TC whether it's alive or not. If there is more than one TC alive, it's overbooked and returned boolean is True*/
       bool isOverbooked();
 

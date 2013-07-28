@@ -99,7 +99,7 @@ namespace Belle2 {
       double m_PARAMmagneticFieldStrength; /**< strength of magnetic field in Tesla, standard is 1.5T */
       std::string m_PARAMdetectorType; /**< defines which detector type has to be exported */
       std::string m_PARAMsectorSetup; /**< lets you chose the sectorSetup (compatibility of sensors, individual cutoffs,...) */
-      
+
       std::string m_PARAMadditionalInfo; /**< this variable is reserved for extra info which shall be stored in the container, e.g. date of production or other useful info for the user(it shall be formatted before storing it), this info will be displayed by the VXDTF on Info-level */
     private:
 

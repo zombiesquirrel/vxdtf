@@ -83,12 +83,12 @@ namespace Belle2 {
       bool checkOverlappingState(); /**< returns flag whether TC is sharing hits with other TCs or not, after manual check, whether its rivals are still alive */
 
 
-			/** fast getter telling whether TC has full ownership on its Clusters or not */
+      /** fast getter telling whether TC has full ownership on its Clusters or not */
       bool isReserved() { return m_reserved; }
 
 
-			/** checks whether TC has full ownership on its Clusters or not, slower than isReserved, but more safe */
-			bool checkReserved();
+      /** checks whether TC has full ownership on its Clusters or not, slower than isReserved, but more safe */
+      bool checkReserved();
 
 
       unsigned int getTrackNumber() { return m_trackNumber; } /**< returns position of TC in vector containing all TCs of current event */
@@ -115,7 +115,7 @@ namespace Belle2 {
 
       int getPDGCode() const { return m_pdgCode; } /**< returns estimated PDGCode (its always a pion, but charge changes depending of the sign of the curvature of the track) needed for export as GFTrackCandid */
 
-      
+
       int getPassIndex() { return m_passIndex; } /**< TCs are passDependent and are merged at the end of the TF-process to be filtered there */
 
 
@@ -143,10 +143,7 @@ namespace Belle2 {
       void addSegments(VXDSegmentCell* pCell) { m_attachedCells.push_back(pCell); } /**< add segment attached to current TC */
 
 
-      void addHits(VXDTFHit* pHit) {
-//        pHit->addTrackCandidate();
-        m_attachedHits.push_back(pHit);
-      } /**< add hit attached to current TC */
+      void addHits(VXDTFHit* pHit) { m_attachedHits.push_back(pHit); } /**< add hit attached to current TC */
 
 
       bool setReserved(); /**< claims full ownership of its clusters and returns whether this was successfull (true) or not (e.g. at least one Cluster was already reserved) */
@@ -176,7 +173,7 @@ namespace Belle2 {
       void removeVirtualHit(); /**< removes virtual hit which is needed for most filtering steps */
 
 
-      void setInitialValue(TVector3 aHit, TVector3 pVector, int pdg) { m_initialHit = aHit; m_initialMomentum = pVector; m_pdgCode = pdg; m_initialValuesSet = true; } /**< set initial values for TC, needed by GFTrackCand */
+      void setInitialValue(const TVector3& aHit, const TVector3& pVector, int pdg) { m_initialHit = aHit; m_initialMomentum = pVector; m_pdgCode = pdg; m_initialValuesSet = true; } /**< set initial values for TC, needed by GFTrackCand */
 
 
       void setPassIndex(int anIndex) { m_passIndex = anIndex; } /**< sets pass index number containing current TC */

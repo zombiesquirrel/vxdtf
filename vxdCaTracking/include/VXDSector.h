@@ -81,12 +81,12 @@ namespace Belle2 {
 
       /** getter - return the cutoff. To get it, you have to know which friendSector and which CutoffType you want to have */
       Cutoff* getCutoff(int cutOffType, unsigned int aFriend) {
-				FriendMap::iterator mapIter = m_friendMap.find(aFriend);
-				if (mapIter == m_friendMap.end()) { // not found
-					return NULL;
-				}
-				return mapIter->second.getCutOff(cutOffType);
-			}
+        FriendMap::iterator mapIter = m_friendMap.find(aFriend);
+        if (mapIter == m_friendMap.end()) { // not found
+          return NULL;
+        }
+        return mapIter->second.getCutOff(cutOffType);
+      }
 
       /** resetSector allows to delete all event-wise information (e.g. hits and segmentCells), but keeps longterm information like friends and cutoffs */
       void resetSector() { m_hits.clear(); m_innerSegmentCells.clear(); m_outerSegmentCells.clear(); } // should be called at the end of each event.
