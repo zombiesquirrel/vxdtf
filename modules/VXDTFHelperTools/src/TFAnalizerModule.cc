@@ -66,7 +66,7 @@ REG_MODULE(TFAnalizer)
 TFAnalizerModule::TFAnalizerModule() : Module()
 {
   vector<string> rootFileNameVals;
-  rootFileNameVals.push_back("FilterCalculatorResults");
+  rootFileNameVals.push_back("TFAnalizerResults");
   rootFileNameVals.push_back("RECREATE");
 
   //Set module properties
@@ -106,7 +106,7 @@ void TFAnalizerModule::initialize()
   StoreArray<PXDTrueHit>::required();
   StoreArray<SVDTrueHit>::required();
   StoreArray<VXDTFInfoBoard>::optional(m_PARAMinfoBoardName); /// WARNING TODO: implement a minimal analyzing mode which can deal with TF's without using the InfoBoards...
-//  B2WARNING("TFAnalizerModule: at the moment, no curling tracks are supported! When you feed this module with curling tracks, results can be wrong and misleading")
+
   m_countReconstructedTCs = 0;
   m_countAcceptedGFTCs = 0;
   m_eventCounter = 0;
@@ -136,19 +136,43 @@ void TFAnalizerModule::initialize()
     m_treePtr->Branch("CleanCAMomValues", &m_rootCleanCAMomValues);
     m_treePtr->Branch("CompleteCAMomValues", &m_rootCompleteCAMomValues);
     m_treePtr->Branch("TotalMomValues", &m_rootTotalMomValues);
+		
+		m_treePtr->Branch("TotalCAMomResiduals", &m_rootTotalCAMomResiduals);
+    m_treePtr->Branch("CleanCAMomResiduals", &m_rootCleanCAMomResiduals);
+    m_treePtr->Branch("CompleteCAMomResiduals", &m_rootCompleteCAMomResiduals);
 
     m_treePtr->Branch("TotalMCpTValues", &m_rootTotalMCpTValues);
     m_treePtr->Branch("TotalCApTValues", &m_rootTotalCApTValues);
     m_treePtr->Branch("CleanCApTValues", &m_rootCleanCApTValues);
     m_treePtr->Branch("CompleteCApTValues", &m_rootCompleteCApTValues);
     m_treePtr->Branch("TotalpTValues", &m_rootTotalpTValues);
+		
+		m_treePtr->Branch("TotalCApTResiduals", &m_rootTotalCApTResiduals);
+    m_treePtr->Branch("CleanCApTResiduals", &m_rootCleanCApTResiduals);
+    m_treePtr->Branch("CompleteCApTResiduals", &m_rootCompleteCApTResiduals);
 
     m_treePtr->Branch("TotalMCThetaValues", &m_rootTotalMCThetaValues);
     m_treePtr->Branch("TotalCAThetaValues", &m_rootTotalCAThetaValues);
     m_treePtr->Branch("CleanCAThetaValues", &m_rootCleanCAThetaValues);
     m_treePtr->Branch("CompleteCAThetaValues", &m_rootCompleteCAThetaValues);
     m_treePtr->Branch("TotalThetaValues", &m_rootTotalThetaValues);
+		
+		m_treePtr->Branch("TotalCAThetaResiduals", &m_rootTotalCAThetaResiduals);
+    m_treePtr->Branch("CleanCAThetaResiduals", &m_rootCleanCAThetaResiduals);
+    m_treePtr->Branch("CompleteCAThetaResiduals", &m_rootCompleteCAThetaResiduals);
+		
+		m_treePtr->Branch("TotalCAMomResidualsAngles", &m_rootTotalCAMomResidualsAngles);
+    m_treePtr->Branch("CleanCAMomResidualsAngles", &m_rootCleanCAMomResidualsAngles);
+    m_treePtr->Branch("CompleteCAMomResidualsAngles", &m_rootCompleteCAMomResidualsAngles);
+		
+		m_treePtr->Branch("TotalCApTResidualsAngles", &m_rootTotalCApTResidualsAngles);
+    m_treePtr->Branch("CleanCApTResidualsAngles", &m_rootCleanCApTResidualsAngles);
+    m_treePtr->Branch("CompleteCApTResidualsAngles", &m_rootCompleteCApTResidualsAngles);
 
+		m_treePtr->Branch("TotalCASeedPositionResiduals", &m_rootTotalCASeedPositionResiduals);
+    m_treePtr->Branch("CleanCASeedPositionResiduals", &m_rootCleanCASeedPositionResiduals);
+    m_treePtr->Branch("CompleteCASeedPositionResiduals", &m_rootCompleteCASeedPositionResiduals);
+		
     m_treePtr->Branch("MCreconstructedTrackLength", &m_rootMCreconstructedTrackLength);
     m_treePtr->Branch("CAreconstructedTrackLength", &m_rootCAreconstructedTrackLength);
   } else {
@@ -237,6 +261,7 @@ void TFAnalizerModule::event()
   } // determine compatibility matrix
 
   list<foundIDentry> foundIDs; // .first: id of mcTC assigned, .second: qi of tc, the higher, the better
+  int countedDoubleEntries = 0; // counts IDs which were found more than once
 
   if (int(caTcVector.size()) != 0) {   // ! caTcVector.empty()
     B2DEBUG(1, " between loops: caTcVector.size():" << caTcVector.size() << ", caTcVector[0].indexNumber: " << caTcVector[0].indexNumber << ", finAssID: " << caTcVector[0].finalAssignedID << ", QI: " << caTcVector[0].qualityIndex)
@@ -268,7 +293,9 @@ void TFAnalizerModule::event()
 
 
     typedef pair <int, double> idEntry;
-    BOOST_FOREACH(foundIDentry iD, foundIDs) { if (iD.first == caTC.finalAssignedID && iD.second > trackQuality) { m_countedDoubleEntries++; continue; } }// no output here since it has been recovered several times, we take the best caTC
+
+    BOOST_FOREACH(foundIDentry iD, foundIDs) { if (iD.first == caTC.finalAssignedID && iD.second > trackQuality) { countedDoubleEntries++; continue; } }// no output here since it has been recovered several times, we take the best caTC
+
 
     foundIDs.push_back(make_pair(caTC.finalAssignedID, trackQuality));
     if (caTC.qualityIndex > 0.99) { // harder method: caTC.qualityIndex which means totally reconstructed
@@ -281,6 +308,7 @@ void TFAnalizerModule::event()
       printInfo(1, mcTcVector[caTC.finalAssignedID], caTC, rootVariables);
     }
   }
+  m_countedDoubleEntries += countedDoubleEntries;
 
   foundIDs.sort(isFirstValueBigger);
   foundIDs.unique(isFirstValueTheSame);
@@ -318,10 +346,13 @@ void TFAnalizerModule::event()
   BOOST_FOREACH(foundIDentry ID, foundIDs) {
     B2DEBUG(1, " - ID " << ID.first << " recovered")
   }
-  B2DEBUG(1, " the tested TrackFinder found " << numOfFoundIDs << " IDs within " << int(caTcVector.size()) << " TCs and lost " << int(mcTcVector.size() - foundIDs.size()))
   int acceptedTCs = acceptedTrackCandidates.getEntries();
   m_countAcceptedGFTCs += acceptedTCs;
   B2DEBUG(1, " of " << numOfCaTCs << " TCs produced by the tested TrackFinder, " << acceptedTCs << " were recognized safely and stored into the container of accepted TCs")
+
+  int ghosts = numOfCaTCs - numOfFoundIDs - countedDoubleEntries;
+  B2DEBUG(1, " the tested TrackFinder found total " << numOfFoundIDs << " IDs (perfect/clean/multipleFound/ghost: " << rootVariables.completeCAMomValues.size() << "/" << rootVariables.cleanCAMomValues.size() << "/" << countedDoubleEntries << "/" << ghosts << ") within " << int(caTcVector.size()) << " TCs and lost " << int(mcTcVector.size() - foundIDs.size()))
+
 
   if (m_PARAMwriteToRoot == true) {
     m_rootTotalMCMomValues = rootVariables.totalMCMomValues;
@@ -329,6 +360,10 @@ void TFAnalizerModule::event()
     m_rootCleanCAMomValues = rootVariables.cleanCAMomValues;
     m_rootCompleteCAMomValues = rootVariables.completeCAMomValues;
     m_rootTotalMomValues = rootVariables.totalMomValues;
+		
+		m_rootTotalCAMomResiduals = rootVariables.totalCAMomResiduals;
+		m_rootCleanCAMomResiduals = rootVariables.cleanCAMomResiduals;
+		m_rootCompleteCAMomResiduals = rootVariables.completeCAMomResiduals;
 
     m_rootTotalMCpTValues = rootVariables.totalMCpTValues;
     m_rootTotalCApTValues = rootVariables.totalCApTValues;
@@ -336,12 +371,32 @@ void TFAnalizerModule::event()
     m_rootCompleteCApTValues = rootVariables.completeCApTValues;
     m_rootTotalpTValues = rootVariables.totalpTValues;
 
+		m_rootTotalCApTResiduals = rootVariables.totalCApTResiduals;
+		m_rootCleanCApTResiduals = rootVariables.cleanCApTResiduals;
+		m_rootCompleteCApTResiduals = rootVariables.completeCApTResiduals;
+
     m_rootTotalMCThetaValues = rootVariables.totalMCThetaValues;
     m_rootTotalCAThetaValues = rootVariables.totalCAThetaValues;
     m_rootCleanCAThetaValues = rootVariables.cleanCAThetaValues;
     m_rootCompleteCAThetaValues = rootVariables.completeCAThetaValues;
     m_rootTotalThetaValues = rootVariables.totalThetaValues;
+		
+		m_rootTotalCAThetaResiduals = rootVariables.totalCAThetaResiduals;
+		m_rootCleanCAThetaResiduals = rootVariables.cleanCAThetaResiduals;
+		m_rootCompleteCAThetaResiduals = rootVariables.completeCAThetaResiduals;
 
+		m_rootTotalCAMomResidualsAngles = rootVariables.totalCAMomResidualAngles;
+		m_rootCleanCAMomResidualsAngles = rootVariables.cleanCAMomResidualAngles;
+		m_rootCompleteCAMomResidualsAngles = rootVariables.completeCAMomResidualAngles;
+
+		m_rootTotalCApTResidualsAngles = rootVariables.totalCApTResidualAngles;
+		m_rootCleanCApTResidualsAngles = rootVariables.cleanCApTResidualAngles;
+		m_rootCompleteCApTResidualsAngles = rootVariables.completeCApTResidualAngles;
+		
+		m_rootTotalCASeedPositionResiduals = rootVariables.totalCASeedPositionResiduals;
+		m_rootCleanCASeedPositionResiduals = rootVariables.cleanCASeedPositionResiduals;
+		m_rootCompleteCASeedPositionResiduals = rootVariables.completeCASeedPositionResiduals;
+		
     m_rootMCreconstructedTrackLength = rootVariables.mCreconstructedTrackLength;
     m_rootCAreconstructedTrackLength = rootVariables.cAreconstructedTrackLength;
 
@@ -352,11 +407,12 @@ void TFAnalizerModule::event()
 
 void TFAnalizerModule::endRun()
 {
-  B2INFO("TFAnalizerModule-explanation: \n perfect recovery means: all hits of mc-TC found again and clean TC. \n clean recovery means: no foreign hits within TC. \n ghost means: QI was below threshold or mcTC was found more than once (e.g. because of curlers) \n found more than once means: that there was more than one TC which was assigned to the same mcTC but each of them were good enough for themselves to be classified as reconstructed")
+	B2INFO("------------- >>>TFAnalizer::endRun<<< -------------")
+  B2DEBUG(1,"TFAnalizerModule-explanation: \n perfect recovery means: all hits of mc-TC found again and clean TC. \n clean recovery means: no foreign hits within TC. \n ghost means: QI was below threshold or mcTC was found more than once (e.g. because of curlers) \n found more than once means: that there was more than one TC which was assigned to the same mcTC but each of them were good enough for themselves to be classified as reconstructed")
 
   B2INFO("TFAnalizerModule: After " << m_eventCounter + 1 << " events there was a total number of " << m_mcTrackCounter << " mcTrackCandidates and " << m_totalRealHits << " realHits. Of these TCs, " << m_mcTrackVectorCounter << " mcTrackCandidates where used for analysis because of cutoffs.")
   B2INFO("TFAnalizerModule: There were " << m_caTrackCounter << " caTrackCandidates, of those " << m_countAcceptedGFTCs << " were stored in acceptedTCcontainer for further use, number of times where charge was guessed wrong: " << m_wrongChargeSignCounter << ", number of caTCs which produced a double entry: " << m_countedDoubleEntries)
-  B2INFO("the VXDTF found (total/perfect/clean/ghost)" << m_countReconstructedTCs << "/" << m_countedPerfectRecoveries << "/" << m_countedCleanRecoveries << "/" << (m_caTrackCounter - m_countReconstructedTCs) << " TCs -> efficiency(total/perfect/clean/ghost): " << double(100 * m_countReconstructedTCs) / double(m_mcTrackVectorCounter) << "%/" << double(100 * m_countedPerfectRecoveries) / double(m_mcTrackVectorCounter) << "%/" << double(100 * m_countedCleanRecoveries) / double(m_mcTrackVectorCounter) << "/%" << double(100 * (m_caTrackCounter - m_countReconstructedTCs)) / double(m_countReconstructedTCs) << "%")
+  B2INFO("the VXDTF found (total/perfect/clean/ghost)" << m_countReconstructedTCs << "/" << m_countedPerfectRecoveries << "/" << m_countedCleanRecoveries << "/" << (m_caTrackCounter - m_countReconstructedTCs) << " TCs -> efficiency(total/perfect/clean/ghost): " << double(100 * m_countReconstructedTCs) / double(m_mcTrackVectorCounter) << "%/" << double(100 * m_countedPerfectRecoveries) / double(m_mcTrackVectorCounter) << "%/" << double(100 * m_countedCleanRecoveries) / double(m_mcTrackVectorCounter) << "%/" << double(100 * (m_caTrackCounter - m_countReconstructedTCs)) / double(m_countReconstructedTCs) << "%")
 
 
 }
@@ -393,8 +449,11 @@ void TFAnalizerModule::printInfo(int recoveryState, VXDTrackCandidate& mcTC, VXD
   TVector3 zDir(0., 0., 1.); // vector parallel to z-axis
   TVector3 caDirection = caTC.direction;
   TVector3 mcDirection = mcTC.direction;
+	TVector3 caSeedHit = caTC.seedHit;
+  TVector3 mcSeedHit = mcTC.seedHit;
 
-  double theta = mcDirection.Angle(zDir) * 180.*TMath::InvPi();
+  double thetaMC = mcDirection.Angle(zDir) * 180.*TMath::InvPi();
+	double thetaCA = caDirection.Angle(zDir) * 180.*TMath::InvPi();
   double angle = caDirection.Angle(mcDirection) * 180.*TMath::InvPi(); // angle between the initial momentum vectors in grad
   caDirection.SetZ(0.);
   mcDirection.SetZ(0.);
@@ -411,14 +470,31 @@ void TFAnalizerModule::printInfo(int recoveryState, VXDTrackCandidate& mcTC, VXD
     if (m_PARAMwriteToRoot == true) {
       rootVariables.completeCAMomValues.push_back(mcTC.pValue); /// why are there values of the mcTC stored? we want to know the real data, not the guesses of the reconstructed data. Guesses of the reconstructed data will be stored in resiudals
       rootVariables.completeCApTValues.push_back(mcTC.pTValue);
-      rootVariables.completeCAThetaValues.push_back(theta);
+      rootVariables.completeCAThetaValues.push_back(thetaMC);
+			
+			rootVariables.completeCAMomResiduals.push_back(mcTC.pValue - caTC.pValue);
+			rootVariables.completeCApTResiduals.push_back(mcTC.pTValue - caTC.pTValue);
+			rootVariables.completeCAThetaResiduals.push_back(thetaMC - thetaCA);
+			rootVariables.completeCAMomResidualAngles.push_back(angle);
+			rootVariables.completeCApTResidualAngles.push_back(transverseAngle);
+			
+			rootVariables.completeCASeedPositionResiduals.push_back((mcTC.seedHit - caTC.seedHit).Mag());
+			
     }
   } else if (recoveryState == 3) {
     tcType = "CleanMCTC";
     if (m_PARAMwriteToRoot == true) {
       rootVariables.cleanCAMomValues.push_back(mcTC.pValue);
       rootVariables.cleanCApTValues.push_back(mcTC.pTValue);
-      rootVariables.cleanCAThetaValues.push_back(theta);
+      rootVariables.cleanCAThetaValues.push_back(thetaMC);
+			
+			rootVariables.cleanCAMomResiduals.push_back(mcTC.pValue - caTC.pValue);
+			rootVariables.cleanCApTResiduals.push_back(mcTC.pTValue - caTC.pTValue);
+			rootVariables.cleanCAThetaResiduals.push_back(thetaMC - thetaCA);
+			rootVariables.cleanCAMomResidualAngles.push_back(angle);
+			rootVariables.cleanCApTResidualAngles.push_back(transverseAngle);
+			
+			rootVariables.cleanCASeedPositionResiduals.push_back((mcTC.seedHit - caTC.seedHit).Mag());
     }
   } else {
     recoveryState = -1; // means still unknown
@@ -431,8 +507,16 @@ void TFAnalizerModule::printInfo(int recoveryState, VXDTrackCandidate& mcTC, VXD
 
       rootVariables.totalCAMomValues.push_back(mcTC.pValue);
       rootVariables.totalCApTValues.push_back(mcTC.pTValue);
-      rootVariables.totalCAThetaValues.push_back(theta);
+      rootVariables.totalCAThetaValues.push_back(thetaMC);
       rootVariables.cAreconstructedTrackLength.push_back(caTC.coordinates.size());
+			
+			rootVariables.totalCAMomResiduals.push_back(mcTC.pValue - caTC.pValue);
+			rootVariables.totalCApTResiduals.push_back(mcTC.pTValue - caTC.pTValue);
+			rootVariables.totalCAThetaResiduals.push_back(thetaMC - thetaCA);
+			rootVariables.totalCAMomResidualAngles.push_back(angle);
+			rootVariables.totalCApTResidualAngles.push_back(transverseAngle);
+			
+			rootVariables.totalCASeedPositionResiduals.push_back((mcTC.seedHit - caTC.seedHit).Mag());
     }
   }
 
@@ -440,13 +524,14 @@ void TFAnalizerModule::printInfo(int recoveryState, VXDTrackCandidate& mcTC, VXD
     B2INFO("PRINTINFO: At event " << m_eventCounter <<
            ": mcType §" << tcType <<
            "§ having §" << mcTC.coordinates.size() <<
-           "§ hits with theta of §" << setprecision(4) << theta <<
-           "§° got pT of §" << setprecision(4) << mcTC.pTValue <<
-           "§ GeV/c, assigned caTC got pT of §" << setprecision(4) << caTC.pTValue <<
+           "§ hits with thetaMC of (mc/ca)§" << setprecision(5) << thetaMC <<"/"<< thetaCA <<
+           "§° got pT of (mc/ca)§" << setprecision(4) << mcTC.pTValue <<"/"<< setprecision(4) << caTC.pTValue <<
+           /*"§ GeV/c, assigned caTC got pT of §" << setprecision(4) << caTC.pTValue <<*/
            "§ GeV/c, and probValue of §" << setprecision(6) << caTC.probValue <<
+           "§. Their residual of seedHit was §" << setprecision(4) << (mcTC.seedHit - caTC.seedHit).Mag() << /*difference of mctc and catc innermost hits */
            "§. Their residual of pT was §" << setprecision(4) << mcTC.pTValue - caTC.pTValue << /*difference of estimated and real transverseMomentum */
-           "§ GeV/c, their residual of angle was §" << setprecision(4) << angle <<
-           "§ in grad, their residual of transverse angle was §" << setprecision(4) << transverseAngle <<
+           "§ GeV/c, their residual of angle was §" << setprecision(6) << angle <<
+           "§ in grad, their residual of transverse angle was §" << setprecision(6) << transverseAngle <<
            "§ with PDGCode of mcTC: §" << mcTC.pdgCode <<
            "§ and PDGCode of caTC: §" << caTC.pdgCode <<
            "§") // '§' will be used to filter
@@ -471,8 +556,8 @@ void TFAnalizerModule::printInfo(int recoveryState, VXDTrackCandidate& mcTC, VXD
 
 void TFAnalizerModule::printMC(bool type, VXDTrackCandidate& mcTC, RootVariables& rootVariables)
 {
-  string info;
-  if (type == true) { info = "FOUNDINFO"; } else { info = "LOSTINFO"; }
+  string info = "FOUNDINFO";
+  if (type == false) { info = "LOSTINFO"; }
 
   TVector3 zDir(0., 0., 1.); // vector parallel to z-axis
   TVector3 mcDirection = mcTC.direction;
@@ -503,8 +588,8 @@ void TFAnalizerModule::printMC(bool type, VXDTrackCandidate& mcTC, RootVariables
 
 void TFAnalizerModule::printCA(bool type, VXDTrackCandidate& caTC)
 {
-  string info;
-  if (type == true) { info = "FOUNDCATCINFO"; } else { info = "LOSTCATCINFO"; }
+  string info = "FOUNDCATCINFO";
+  if (type == false) { info = "LOSTCATCINFO"; }
 
   TVector3 zDir(0., 0., 1.); // vector parallel to z-axis
 
@@ -590,9 +675,10 @@ void TFAnalizerModule::extractHits(GFTrackCand* aTC,
 //  TVector3 dirSeed = aTC->getDirSeed();
 //  double qOverP = aTC->getQoverPseed();
 //  double pOverQ = 1./qOverP;
-  TVector3 momentum, momentum_t, vertex; // = pOverQ*dirSeed;
+  TVector3 momentum, momentum_t, vertex, seedHit; // = pOverQ*dirSeed;
   momentum[0] = stateSeed(3); momentum[1] = stateSeed(4); momentum[2] = stateSeed(5);
   vertex[0] = stateSeed(0); vertex[1] = stateSeed(1); vertex[2] = stateSeed(2);
+	seedHit = vertex; // for CATC seedHit is innermost hit of TC, for MCTC it is the vertex or the innermost hit 
   double pValue = momentum.Mag();
   momentum_t = momentum;
   momentum_t.SetZ(0.);
@@ -608,6 +694,7 @@ void TFAnalizerModule::extractHits(GFTrackCand* aTC,
     int detID = -1; // ID of detector
     int hitID = -1; // ID of Hit in StoreArray
     TVector3 tempMomentum; // momentum of innermost hit
+    TVector3 tempSeedHit; // position of innermost hit
     aTC->getHit(0, detID, hitID); // 0 means innermost hit
     if (detID == Const::PXD) {  // means PXD
       RelationIndex<PXDCluster, PXDTrueHit>::range_from relationRange = relationPXD.getElementsFrom(pxdClusters[hitID]);
@@ -615,10 +702,12 @@ void TFAnalizerModule::extractHits(GFTrackCand* aTC,
         // since more than one trueHit can be the cause of current hit, we have to find the real TrueHit. Identified by |momentum|
         const PXDTrueHit* aTrueHit = relationRange.first->to;
         tempMomentum = aTrueHit->getMomentum();
+				tempSeedHit.SetXYZ(aTrueHit->getU(), aTrueHit->getV(), aTrueHit->getW());
 
         aVxdID = aTrueHit->getSensorID();
         VXD::SensorInfoBase aSensorInfo = geometry.getSensorInfo(aVxdID);
         tempMomentum = aSensorInfo.vectorToGlobal(tempMomentum);
+				tempSeedHit = aSensorInfo.pointToGlobal(tempSeedHit);
 
         if (pValue - tempMomentum.Mag() < pValue * 0.1) { gotNewMomentum = true; break; } // if difference in Momentum is less than 10% of initial momentum, we accept current value as the real one
 
@@ -630,10 +719,12 @@ void TFAnalizerModule::extractHits(GFTrackCand* aTC,
         // since more than one trueHit can be the cause of current hit, we have to find the real TrueHit. Identified by |momentum|
         const SVDTrueHit* aTrueHit = relationRange.first->to;
         tempMomentum = aTrueHit->getMomentum();
+				tempSeedHit.SetXYZ(aTrueHit->getU(), aTrueHit->getV(), aTrueHit->getW());
 
         aVxdID = aTrueHit->getSensorID();
         VXD::SensorInfoBase aSensorInfo = geometry.getSensorInfo(aVxdID);
         tempMomentum = aSensorInfo.vectorToGlobal(tempMomentum);
+				tempSeedHit = aSensorInfo.pointToGlobal(tempSeedHit);
 
         if (pValue - tempMomentum.Mag() < pValue * 0.1) { gotNewMomentum = true; break; } // if difference in Momentum is less than 10% of initial momentum, we accept current value as the real one
 
@@ -643,6 +734,7 @@ void TFAnalizerModule::extractHits(GFTrackCand* aTC,
 
     if (gotNewMomentum == true) {
       momentum = tempMomentum;
+			seedHit = tempSeedHit;
       pValue = momentum.Mag();
       pT = momentum.Pt();
       B2DEBUG(10, "TFAnalizer event " << m_eventCounter << ": calculated new momentum (pT = " << pT << ")");
@@ -654,6 +746,7 @@ void TFAnalizerModule::extractHits(GFTrackCand* aTC,
   newTC.svdClusterIDs = boost::get<1>(tcInfo);
   newTC.coordinates = boost::get<2>(tcInfo);
   newTC.direction = momentum;
+	newTC.seedHit = seedHit;
   newTC.svdTrueHits = boost::get<3>(tcInfo);
   newTC.isMCtrackCandidate = isMCTC;
   newTC.indexNumber = index;
@@ -688,15 +781,15 @@ void TFAnalizerModule::checkCompatibility(VXDTrackCandidate& mcTC, VXDTrackCandi
   int goodHitsInCaTC = 0; // if hit of mcTC is found in caTC too -> ++;
   int badHitsInCaTC = 0; // if hit of caTC is not found in mcTC -> ++:
   B2DEBUG(100, "--checkCompatibility has started, comparing mcTC: " << mcTC.indexNumber << " with caTC: " << caTC.indexNumber)
-  /** mehrere Ansatzpunkte: 1.
-   * 1. caTC-based: wie viele seiner Hits waren echt?
-   *  A. rechne aus, wie viele Hits er hatte.
-   *  B. concatenate hits von beiden, unique und sort them.
-   *  C. vergleiche Größe von gesamthits, vor und nach unique. Relation zwischen Differenz der beiden und der numOfCATCHits -> compatibilityValue caTC
-   *  D. Differenz der beiden von der gesamtZahl an Hits vom CATC
-   * 2. mcTC-Based:  Differenz der beiden von der gesamtZahl an Hits vom MCTC
+  /** several approaches:
+   * 1. caTC-based: how many hits of the caTC were good ones?
+   *  A. check number of total hits of caTC
+   *  B. concatenate hits of poth, caTC and mcTC, unique & sort them.
+   *  C. compare number of total hits before and after doing unique. Relation between difference of before and after and the number of caTC-hits -> compatibilityValue caTC
+   *  D. Difference between before and after unique and total number of caTC
+   * 2. mcTC-Based:  Difference between before and after and the total number of Hits of MCTC
    *
-   * beide den jeweiligen anderen Indexwert zuweisen, falls kompatibel.
+   * if both caTC and mcTC were compatible, they get indexed to each other
    */
 
   BOOST_FOREACH(int indexValueMC, mcTC.pxdClusterIDs) {    /// PXDHits

@@ -13,6 +13,7 @@
 
 #include "VXDTFHit.h"
 #include "VXDSegmentCell.h"
+#include "SharedFunctions.h"
 
 #include <list>
 #include <string>
@@ -59,6 +60,16 @@ namespace Belle2 {
 
 
       const std::vector<VXDTFHit*>& getHits() { return m_attachedHits; } /**< returns hits forming current TC */
+      
+      const std::vector<PositionInfo*>* getPositionInfos() {
+				if (m_attachedPositionInfos.size() == m_attachedHits.size()) { return &m_attachedPositionInfos; }
+				m_attachedPositionInfos.clear();
+				m_attachedPositionInfos.reserve(m_attachedHits.size());
+				for(std::vector<VXDTFHit*>::iterator it=m_attachedHits.begin(); it != m_attachedHits.end(); ++it) {
+					m_attachedPositionInfos.push_back((*it)->getPositionInfo());
+				}
+				return &m_attachedPositionInfos;
+			}
 
 
       std::vector<TVector3*> getHitCoordinates(); /**< returns hits forming current TC */
@@ -187,6 +198,7 @@ namespace Belle2 {
 
     protected:
       std::vector<VXDTFHit*> m_attachedHits; /**< contains pointer to all VXDTFHits attached to current TC */
+      std::vector<PositionInfo*> m_attachedPositionInfos; /**< contains positionInfos (coordinates, sigmaValues) for each hit */
       std::vector<VXDSegmentCell*> m_attachedCells; /**< contains pointer to all VXDSegmentCells attached to current TC */
       std::vector<VXDTFTrackCandidate*> m_bookingRivals; /**< contains all TCs sharing hits with current one */
       std::vector<int> m_svdHitIndices;  /**< to be able to export TCs */

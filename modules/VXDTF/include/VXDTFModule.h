@@ -37,7 +37,7 @@
 
 //C++ base / C++ stl:
 #include <fstream>
-#include <iostream>
+#include <iostream> // std::cout. std::fixed
 #include <string>
 #include <vector>
 #include <deque>
@@ -99,7 +99,7 @@ namespace Belle2 {
       typedef std::pair<unsigned int, VXDSector* > secMapEntry; /**< represents an entry of the MapOfSectors */
       typedef boost::unordered_map<int, Cutoff*> CutoffMap; /**< Is a map storing cutoffs  */
       typedef boost::unordered_map<int, CutoffMap*> MapOfCutoffTypes; /**< represents an entry of the CutoffMap */
-      typedef std::vector<VXDTFHit*> HitsOfEvent; /**< contains all hits of event */
+      typedef std::vector<VXDTFHit*> HitsOfEvent; /**< contains pointers to all hits of event */
       typedef std::list<VXDSegmentCell*> ActiveSegmentsOfEvent; /**< is list since random deleting processes are needed */
       typedef std::vector<VXDSegmentCell*> TotalSegmentsOfEvent; /**< is vector since no entries are deleted and random access is needed  */
       typedef std::map<int, SensorStruct> ActiveSensorsOfEvent; /**< is map where adresses to each activated sensor (key->int = uniID/vxdID) are stored and all clusters which can be found on them */
@@ -298,6 +298,7 @@ namespace Belle2 {
         * explains itself ;) ).  Therefore each hit carries the indices of its inner and outer neighbours so the neighbourfinder can easily
         * find neighbouring segments. */
         HitsOfEvent hitVector; /**< carries total number of hits of current event. atm only used for .size() and final delete of hits at end of event, can we remove it? */
+        std::vector<VXDTFHit> fullHitsVector; /**< carries hits of event (no pointers), used by baselineTF */
         TCsOfEvent tcVector; /**< carries track candidates of current pass */
       };
 
@@ -508,6 +509,7 @@ namespace Belle2 {
 
     protected:
       TCsOfEvent m_tcVector; /**< carries links to all track candidates found within event (during tcc filter, bad ones get kicked, lateron they simply get deactivated) */
+      TCsOfEvent m_allTCsOfEvent; /**< carries links to really all track candidates found within event (used for deleting TrackCandidates at end of event) TODO: check whether use of m_tcVector can not be merged this one. Seems like redundant steps*/
       TCsOfEvent m_tcVectorOverlapped; /**< links only to track candidates which share at least one cluster with others*/
 
       /// module_parameters:

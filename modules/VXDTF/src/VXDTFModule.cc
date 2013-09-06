@@ -59,6 +59,7 @@
 #include <math.h>
 #include <time.h>
 #include <fstream>
+#include <iomanip>      // std::setprecision
 
 
 //Boost-packages:
@@ -491,7 +492,7 @@ void VXDTFModule::beginRun()
     VXDTFSecMap::Class(); // essential, needed for root, DO NOT ASK WHY! -.-
     string chosenSetup = (boost::format("sectorList_%1%") % newPass->sectorSetup).str();
     string directory = "/Detector/Tracking/CATFParameters/" + chosenSetup;
-		const VXDTFSecMap* newMap;
+    const VXDTFSecMap* newMap;
     try {
       newMap = dynamic_cast<const VXDTFSecMap*>(Gearbox::getInstance().getTObject(directory.c_str()));
     } catch (exception& e) {
@@ -929,7 +930,7 @@ void VXDTFModule::beginRun()
           B2DEBUG(130, " > > importing filter: " << FilterID().getFilterString(aFilter.first) << " (named " << aFilter.first << " as an int) including Min/Max: " << aFilter.second.first << "/" << aFilter.second.second);
           // aFilter.first is filterID, .second is cutoff, where .second.first is min, .second.second is max
           unsigned int filterID = aFilter.first;
-					cutoffMinValue = 0, cutoffMaxValue = 0;
+          cutoffMinValue = 0, cutoffMaxValue = 0;
           if (filterID == FilterID::numFilters) { B2FATAL("Filter in XML-File does not exist! check FilterID-class!")}
           // now, for each filter will be checked, whether it shall be stored or not and whether the cutoffs shall be modified:
           if (filterID == FilterID::distance3D && newPass->distance3D.first == true) {   // first: activateDistance3D, second: tuneDistance3D
@@ -1036,7 +1037,7 @@ void VXDTFModule::beginRun()
 
 
     //generating virtual sector (represents the region of the primary vertex)
-    string centerSector = "00_00_0";
+//     string centerSector = "00_00_0";
     unsigned int centerSecID = FullSecID().getFullSecID(); // automatically produces secID of centerSector
     VXDSector* pCenterSector = new VXDSector(centerSecID);
     newPass->sectorMap.insert(make_pair(centerSecID, pCenterSector));
@@ -1073,7 +1074,7 @@ void VXDTFModule::beginRun()
   }
 
   /** copying first pass for the BaselineTF (just to be sure that they don't influence each other) */
-  string centerSector = "00_00_0";
+//   string centerSector = "00_00_0";
   unsigned int centerSecID = FullSecID().getFullSecID(); // automatically produces secID of centerSector
   VXDSector* pCenterSector = new VXDSector(centerSecID);
   m_baselinePass.sectorMap.insert(make_pair(centerSecID, pCenterSector));
@@ -1245,21 +1246,22 @@ void VXDTFModule::the_real_event()
         }
         finalTrackCandidates.appendNew(gfTC);
       }
-
-      cleanEvent(&m_baselinePass, centerSector);
-      stopTimer = boostClock::now();
-      if (m_PARAMwriteToRoot == true) {
-        m_rootTimeConsumption = (stopTimer - beginEvent).count();
-        m_treeEventWisePtr->Fill();
-      }
-      m_TESTERtimeConsumption.baselineTF += boost::chrono::duration_cast<boostNsec>(stopTimer - timeStamp);
-      thisInfoPackage.sectionConsumption.baselineTF += boost::chrono::duration_cast<boostNsec>(stopTimer - timeStamp);
-      thisInfoPackage.totalTime = boost::chrono::duration_cast<boostNsec>(stopTimer - beginEvent);
-      B2DEBUG(1, "event: " << m_eventCounter << ", duration : " << thisInfoPackage.totalTime.count() << "ns");
-      m_TESTERlogEvents.push_back(thisInfoPackage);
-      return;
     }
+    cleanEvent(&m_baselinePass, centerSector);
+    stopTimer = boostClock::now();
+    if (m_PARAMwriteToRoot == true) {
+      m_rootTimeConsumption = (stopTimer - beginEvent).count();
+      m_treeEventWisePtr->Fill();
+    }
+    m_TESTERtimeConsumption.baselineTF += boost::chrono::duration_cast<boostNsec>(stopTimer - timeStamp);
+    thisInfoPackage.sectionConsumption.baselineTF += boost::chrono::duration_cast<boostNsec>(stopTimer - timeStamp);
+    thisInfoPackage.totalTime = boost::chrono::duration_cast<boostNsec>(stopTimer - beginEvent);
+    B2DEBUG(1, "event: " << m_eventCounter << ", duration : " << thisInfoPackage.totalTime.count() << "ns");
+    m_TESTERlogEvents.push_back(thisInfoPackage);
+    return;
+
   }
+  cleanEvent(&m_baselinePass, centerSector);
 
 
   B2DEBUG(1, "VXDTF event " << m_eventCounter << ": size of arrays, PXDCluster: " << numOfPxdClusters << ", SVDCLuster: " << numOfSvdClusters << ", clustersOfEvent: " << clustersOfEvent.size());
@@ -1271,7 +1273,7 @@ void VXDTFModule::the_real_event()
   VxdID aVxdID;
   timeStamp = boostClock::now();
   int badSectorRangeCtr = 0, aLayerID;
-  string checkString4badHits = "-";
+//   string checkString4badHits = "-";
   for (int iPart = 0; iPart < numOfPxdClusters; ++iPart) { /// means: numOfPxdClusters > 0 if at least one pass wants PXD hits
     const PXDCluster* const aClusterPtr = aPxdClusterArray[iPart];
 
@@ -1969,7 +1971,7 @@ void VXDTFModule::endRun()
   string lineApnd = "--------------------------";
   B2INFO(lineHigh << lineApnd << lineApnd)
   B2INFO(m_PARAMnameOfInstance << " settings: number of passes: " << m_passSetupVector.size() << ", tuneCutoffs: " << m_PARAMtuneCutoffs << ", QIfilterMode: " << m_PARAMcalcQIType << ", filterOverlappingTCs: " << m_PARAMfilterOverlappingTCs << ", chosen settings: ")
-  stringstream infoStuff2, infoStuff, secInfo;
+  stringstream infoStuff2, secInfo;
 //  string lineLow = "____________________________________________________________________________________________________________________";
   B2INFO(lineHigh << lineApnd << lineApnd)
   B2INFO("detector\t| setup\t\t\t| maxLayer\t| minLayer\t| minState\t| sfTests\t| nfTests\t| TcFilterTests\t|")
@@ -2004,12 +2006,34 @@ void VXDTFModule::endRun()
   B2INFO(lineHigh << lineApnd << lineApnd)
 
   string printOccupancy;
-  for (int numOfHitsMinus1 = 0; numOfHitsMinus1 < int(m_TESTERSVDOccupancy.size()); ++ numOfHitsMinus1) {
-    if (m_TESTERSVDOccupancy.at(numOfHitsMinus1) != 0) {
-      printOccupancy = printOccupancy + " got " + boost::lexical_cast<string>(m_TESTERSVDOccupancy.at(numOfHitsMinus1)) + " times a sensor with " + boost::lexical_cast<string>(numOfHitsMinus1 + 1) + " hits\n";
-    }
+	int h1 = 0, h2t4 = 0, h5t9 = 0, h10t16 = 0, h17t25 = 0, h26t50 = 0, h51t100 = 0, h101t200 = 0, h201t300 = 0, h301t400 = 0, h401t500 = 0, h501t600 = 0, h601t700 = 0, h701t800 = 0, h800plus = 0;
+	int thisValue = 0, nTotalHits = 0;
+  for (int nHitsMinus1 = 0; nHitsMinus1 < int(m_TESTERSVDOccupancy.size()); ++ nHitsMinus1) {
+		thisValue = m_TESTERSVDOccupancy.at(nHitsMinus1);
+    if (thisValue == 0) { continue; }
+    nTotalHits += thisValue;
+    printOccupancy = printOccupancy + " got " + boost::lexical_cast<string>(thisValue) + " times a sensor with " + boost::lexical_cast<string>(nHitsMinus1 + 1) + " hits\n";
+		
+		if ( h1 < 1 ) { h1 += thisValue; }
+		else if ( nHitsMinus1 < 4 ) { h2t4 += thisValue; }
+		else if ( nHitsMinus1 < 9 ) { h5t9 += thisValue; }
+		else if ( nHitsMinus1 < 16 ) { h10t16 += thisValue; }
+		else if ( nHitsMinus1 < 25 ) { h17t25 += thisValue; }
+		else if ( nHitsMinus1 < 50 ) { h26t50 += thisValue; }
+		else if ( nHitsMinus1 < 100 ) { h51t100 += thisValue; }
+		else if ( nHitsMinus1 < 200 ) { h101t200 += thisValue; }
+		else if ( nHitsMinus1 < 300 ) { h201t300 += thisValue; }
+		else if ( nHitsMinus1 < 400 ) { h301t400 += thisValue; }
+		else if ( nHitsMinus1 < 500 ) { h401t500 += thisValue; }
+		else if ( nHitsMinus1 < 600 ) { h501t600 += thisValue; }
+		else if ( nHitsMinus1 < 700 ) { h601t700 += thisValue; }
+		else if ( nHitsMinus1 < 800 ) { h701t800 += thisValue; }
+		else { h800plus += thisValue; }
   }
-  B2INFO(printOccupancy);
+  double pFac = 100./double(nTotalHits); // percentageFactor
+  B2DEBUG(1, printOccupancy);
+	B2INFO(std::fixed << std::setprecision(2) <<" of " << nTotalHits << " svd-hit-combinations: Lists hits per sensor in percent\n 1\t|2-4\t|5-9\t|-16\t|-25\t|-50\t|-100\t|-200\t|-300\t|-400\t|-500\t|-600\t|-700\t|-800\t|>800\t|highest value occured \t|\n "<< double(h1*pFac)<<"\t| "<<double(h2t4*pFac)<<"\t| "<<double(h5t9*pFac)<<"\t| "<<double(h10t16*pFac)<<"\t| "<<double(h17t25*pFac)<<"\t| "<<double(h26t50*pFac)<<"\t| "<<double(h51t100*pFac)<<"\t| "<<double(h101t200*pFac)<<"\t| "<<double(h201t300*pFac)<<"\t| "<<double(h301t400*pFac)<<"\t| "<<double(h401t500*pFac)<<"\t| "<<double(h501t600*pFac)<<"\t| "<<double(h601t700*pFac)<<"\t| "<<double(h701t800*pFac)<<"\t| "<<double(h800plus*pFac)<<"\t| "<< m_TESTERSVDOccupancy.size()+1 <<"\t\t\t| ")
+	B2INFO(lineHigh << lineApnd << lineApnd)
 
   stringstream printTime;
   printTime << "hitSorting took " << (m_TESTERtimeConsumption.hitSorting.count() * 0.001) << " microseconds\n";
@@ -2026,8 +2050,8 @@ void VXDTFModule::endRun()
   printTime << "intermediateStuff took " << (m_TESTERtimeConsumption.intermediateStuff.count() * 0.001) << " microseconds\n";
   B2INFO(printTime.str());
 
-
-  B2INFO(" ##### " << m_PARAMnameOfInstance << " extra analysis ##### ")
+  B2INFO(lineHigh << lineApnd << lineApnd)
+	
   int numLoggedEvents = m_TESTERlogEvents.size();
   int median = numLoggedEvents / 2;
   int q1 = numLoggedEvents / 100;
@@ -2043,13 +2067,13 @@ void VXDTFModule::endRun()
       meanTimeConsumption += infoPackage.totalTime.count();
     }
     B2INFO("slowest event: " << m_TESTERlogEvents.at(0).Print());
-    B2INFO("q1 event: " << m_TESTERlogEvents.at(q1).Print());
-    B2INFO("q10 event: " << m_TESTERlogEvents.at(q10).Print());
+    B2DEBUG(1, "q1 event: " << m_TESTERlogEvents.at(q1).Print());
+    B2DEBUG(1, "q10 event: " << m_TESTERlogEvents.at(q10).Print());
     B2INFO("q25 event: " << m_TESTERlogEvents.at(q25).Print());
     B2INFO("median event: " << m_TESTERlogEvents.at(median).Print());
     B2INFO("q75 event: " << m_TESTERlogEvents.at(q75).Print());
-    B2INFO("q90 event: " << m_TESTERlogEvents.at(q90).Print());
-    B2INFO("q99 event: " << m_TESTERlogEvents.at(q99).Print());
+    B2DEBUG(1, "q90 event: " << m_TESTERlogEvents.at(q90).Print());
+    B2DEBUG(1, "q99 event: " << m_TESTERlogEvents.at(q99).Print());
     B2INFO("fastest event: " << m_TESTERlogEvents.at(numLoggedEvents - 1).Print());
     B2INFO("manually calculated mean: " << meanTimeConsumption / numLoggedEvents << ", and median: " << m_TESTERlogEvents.at(median).totalTime.count() << " of time consumption per event");
   }
@@ -2465,7 +2489,7 @@ void VXDTFModule::greedy(TCsOfEvent& tcVector)
 
   greedyRecursive(overlappingTCs, totalSurvivingQI, countSurvivors, countKills);
 
-  B2DEBUG(1, "VXDTFModule::greedy: total number of TCs: " << tcVector.size() << ", TCs alive at begin of greedy algoritm: " << countTCsAliveAtStart << ", TCs survived: " << countSurvivors << ", TCs killed: " << countKills)
+  B2DEBUG(1, "VXDTFModule::greedy: total number of TCs: " << tcVector.size() << " with totalQi " << totalQI << ", TCs alive at begin of greedy algoritm: " << countTCsAliveAtStart << ", TCs survived: " << countSurvivors << ", TCs killed: " << countKills)
 }
 
 
@@ -3196,6 +3220,7 @@ void VXDTFModule::tcCollector(CurrentPassData* currentPass)
   }
   int numTCsafterTCC = currentPass->tcVector.size(); // total number of tc's
 
+	m_allTCsOfEvent.insert(m_allTCsOfEvent.end(), currentPass->tcVector.begin(), currentPass->tcVector.end());
   B2DEBUG(10, "findTCs activated " << findTCsCounter << " times, resulting in " << numTCsafterTCC << " track candidates")
   m_TESTERcountTotalTCsAfterTCC += numTCsafterTCC;
 }
@@ -3392,85 +3417,40 @@ int VXDTFModule::tcFilter(CurrentPassData* currentPass, int passNumber)
 void VXDTFModule::calcInitialValues4TCs(CurrentPassData* currentPass) /// TODO: use vxdCaTracking-classes to reduce redundancy TODO-2: why not putting that into the VXDTFTrackCandidate-class?
 {
   TVector3 hitA, hitB, hitC;
-  TVector3 hitA_T, hitB_T, hitC_T; // those with _T are the hits of the transverlal plane
-  TVector3 intersection, radialVector, pTVector, pVector; //coords of center of projected circle of trajectory & vector pointing from center to innermost hit
-  ThreeHitFilters threeHitFilterBox = ThreeHitFilters();
-  TVector3 segAB, segBC, segAC, cpAB, cpBC, nAB, nBC;
-  int numOfCurrentHits, signCurvature, pdGCode;
-  double radiusInCm, pT, theta, pZ, preFactor; // needed for dPt calculation
+  int nHits, signCurvature, pdGCode;
+  pair<double, TVector3> helixFitValues;
+  
   BOOST_FOREACH(VXDTFTrackCandidate * aTC, currentPass->tcVector) {
 
     if (aTC->getCondition() == false) { continue; }
-    const vector<VXDTFHit*>& currentHits = aTC->getHits();
-    numOfCurrentHits = currentHits.size();
+    const vector<PositionInfo*>* currentHits = aTC->getPositionInfos();
+    nHits = currentHits->size();
 
-    if (numOfCurrentHits < 3) {
-      B2ERROR("calcInitialValues4TCs: currentTC got " << numOfCurrentHits << " hits! At this point only tcs having at least 3 hits should exist!")
+    if (nHits < 3) {
+      B2ERROR("calcInitialValues4TCs: currentTC got " << nHits << " hits! At this point only tcs having at least 3 hits should exist!")
     }
-/// method A: 3 neighbouring inner hits:
-    if (m_KFBackwardFilter == true) {
-      hitA = *(currentHits[2]->getHitCoordinates());
-      hitB = *(currentHits[1]->getHitCoordinates());
-      hitC = *(currentHits[0]->getHitCoordinates()); // outermost hit and initial value for GFTrackCandidate
-    } else {
-      hitA = *(currentHits[numOfCurrentHits - 1]->getHitCoordinates()); // innermost hit and initial value for GFTrackCandidate
-      hitB = *(currentHits[numOfCurrentHits - 2]->getHitCoordinates());
-      hitC = *(currentHits[numOfCurrentHits - 3]->getHitCoordinates());
-    }
+    hitA = (*currentHits)[2]->hitPosition;
+    hitB = (*currentHits)[1]->hitPosition;
+    hitC = (*currentHits)[0]->hitPosition; // outermost hit and initial value for GFTrackCandidate
+		
+		hitC -= hitB; // recycling TVector3s, this is segmentBC
+		hitB -= hitA; // this is segmentAB
+    hitC.SetZ(0.);
+		hitB.SetZ(0.);
+    hitC = hitC.Orthogonal();
 
-    hitA_T = hitA; hitA_T.SetZ(0.);
-    hitB_T = hitB; hitB_T.SetZ(0.);
-    hitC_T = hitC; hitC_T.SetZ(0.);
-    segAB = hitB - hitA;
-    segAC = hitC - hitA;
-    theta = segAC.Theta();
-
-
-    segAB.SetZ(0.);
-    segBC = hitC_T - hitB_T;
-    nBC = segBC.Orthogonal();
-
-    signCurvature = sign(nBC * segAB);
-
-    currentPass->threeHitFilterBox.calcCircleCenter(hitA_T, hitB_T, hitC_T, intersection);
-    if (m_KFBackwardFilter == true) {
-      radialVector = (intersection - hitC);
-    } else {
-      radialVector = (intersection - hitA);
-    }
-
-    radiusInCm = aTC->getEstRadius();
-    if (radiusInCm  < 0.1 || radiusInCm > 100000.) { // if it is not set, value stays at zero, therefore small check should be enough
-      radiusInCm = radialVector.Mag(); // = radius in [cm], sign here not needed. normally: signKappaAB/normAB1
-    }
-
-    pT = currentPass->threeHitFilterBox.calcPt(radiusInCm); // pT[GeV/c] = 0.3*B[T]*r[m] = 0.45*r[cm]/100 = 0.45*r*0.01 length of pT
-    B2DEBUG(150, "event: " << m_eventCounter << ": calculated pT: " << pT);
-    pZ = pT / tan(theta);
-    preFactor = pT / radiusInCm;
-    pTVector = preFactor * radialVector.Orthogonal() ;
-
-    if (m_KFBackwardFilter == true) {
-      if ((hitC + pTVector).Mag() < hitC.Mag()) { pTVector = pTVector * -1; }
-    } else {
-      if ((hitA + pTVector).Mag() < hitA.Mag()) { pTVector = pTVector * -1; }
-    }
-
-    pVector = pTVector;
-    pVector.SetZ(pZ);
-
-    // the sign of curvature determines the charge of the particle, negative sign for curvature means positively charged particle. The signFactor is needed since the sign of PDG-codes are not defined by their charge but by being a particle or an antiparticle
-
+    signCurvature = sign(hitC * hitB); // is > 0 if angle between vectors is < 90°, < 0 else (rule of scalar product)
     pdGCode = signCurvature * m_PARAMpdGCode * m_chargeSignFactor;
+		
+		helixFitValues = currentPass->trackletFilterBox.helixFit(currentHits, m_KFBackwardFilter);
 
     if (m_KFBackwardFilter == true) {
-      aTC->setInitialValue(hitC, pVector, pdGCode);
+      aTC->setInitialValue((*currentHits)[0]->hitPosition, helixFitValues.second, pdGCode);
     } else {
-      aTC->setInitialValue(hitA, pVector, pdGCode);
+      aTC->setInitialValue((*currentHits)[nHits-1]->hitPosition, helixFitValues.second, pdGCode);
     }
 
-    B2DEBUG(10, " TC has got momentum/pT of " << pVector.Mag() << "/" << pTVector.Mag() << "GeV and estimated pdgCode " << pdGCode);
-
+    B2DEBUG(10, " TC has got momentum/pT of " << helixFitValues.second.Mag() << "/" << helixFitValues.second.Perp() << "GeV and estimated pdgCode " << pdGCode);
   }
 }
 
@@ -3551,8 +3531,8 @@ void VXDTFModule::calcQIbyKalman(TCsOfEvent& tcVector, StoreArray<PXDCluster>& p
       try {
         kalmanFilter.processTrack(&track);
       } catch (exception& e) {
-        std::cerr << e.what();
-        B2WARNING("VXDTFModule::calcQIbyKalman event " << m_eventCounter << ":, processTrack failed! skipping current TC")
+//         std::cerr << e.what();
+        B2WARNING("VXDTFModule::calcQIbyKalman event " << m_eventCounter << ":, processTrack failed with message: " << e.what()<< "! skipping current TC")
         currentTC->setCondition(false); // do not store TCs with failed fits if param-flag is set to false
         continue;
       }
@@ -3564,8 +3544,8 @@ void VXDTFModule::calcQIbyKalman(TCsOfEvent& tcVector, StoreArray<PXDCluster>& p
       try {
         kalmanFilter.processTrack(&track);
       } catch (exception& e) {
-        std::cerr << e.what();
-        B2WARNING("VXDTFModule::calcQIbyKalman event " << m_eventCounter << ":, processTrack failed 111, skipping current TC")
+//         std::cerr << e.what();
+        B2WARNING("VXDTFModule::calcQIbyKalman event " << m_eventCounter << ":, processTrack failed with message: " << e.what()<< "!, skipping current TC")
         currentTC->setCondition(false); // do not store TCs with failed fits if param-flag is set to false
         continue;
       }
@@ -3711,12 +3691,17 @@ void VXDTFModule::cleanEvent(CurrentPassData* currentPass, unsigned int centerSe
   }
   currentPass->hitVector.clear();
 
-  BOOST_FOREACH(VXDTFTrackCandidate * aTC, currentPass->tcVector) {
+//   BOOST_FOREACH(VXDTFTrackCandidate * aTC, currentPass->tcVector) {
+//     delete  aTC;
+//   }
+  
+  BOOST_FOREACH(VXDTFTrackCandidate * aTC, m_allTCsOfEvent) {
     delete  aTC;
   }
   currentPass->tcVector.clear();
   m_tcVectorOverlapped.clear();
   m_tcVector.clear();
+	m_allTCsOfEvent.clear();
 }
 
 
@@ -3787,6 +3772,7 @@ bool VXDTFModule::baselineTF(vector<ClusterInfo>& clusters, CurrentPassData* pas
   ActiveSensorsOfEvent activatedSensors;
   vector<ClusterHit> clusterHitList;
   vector<VXDTFHit> vxdHits, singleSidedHits;
+  vxdHits.reserve(clusters.size() * 2);
 
   BOOST_FOREACH(ClusterInfo & aClusterInfo, clusters) {
     bool isPXD = aClusterInfo.isPXD();
@@ -3843,9 +3829,9 @@ bool VXDTFModule::baselineTF(vector<ClusterInfo>& clusters, CurrentPassData* pas
   typedef pair< double, VXDTFHit*> HitExtra; // we use the first variable twice using different meanings. this is pretty messy, but I can not get the tuple-version to work...
   list<HitExtra> listOfHitExtras;
 
-
+	passInfo->fullHitsVector = vxdHits;
   int maxCounts = 0; // carries the highest number of hits per layer that occured
-  BOOST_FOREACH(VXDTFHit & hit, vxdHits) {
+  BOOST_FOREACH(VXDTFHit & hit, passInfo->fullHitsVector) {
     aLayerID = hit.getVxdID().getLayerNumber();
     hitsPerLayer.at(aLayerID - 1) += 1;
     if (hitsPerLayer[aLayerID - 1] > maxCounts) { maxCounts = hitsPerLayer[aLayerID - 1]; }
@@ -3947,7 +3933,7 @@ bool VXDTFModule::baselineTF(vector<ClusterInfo>& clusters, CurrentPassData* pas
     if (nBrokenSensors != 0) { m_TESTERrejectedBrokenHitsTrack++; }
     return false;
   }
-  B2DEBUG(1, m_PARAMnameOfInstance << " - event " << m_eventCounter << " baseline TF: ziggZaggXY approved TC");
+  B2DEBUG(2, m_PARAMnameOfInstance << " - event " << m_eventCounter << " baseline TF: ziggZaggXY approved TC");
 
 
   bool survivedCF = doTheCircleFit(passInfo, newTC, nHits, 0, 0);
@@ -3958,6 +3944,7 @@ bool VXDTFModule::baselineTF(vector<ClusterInfo>& clusters, CurrentPassData* pas
     B2DEBUG(1, m_PARAMnameOfInstance << " - event " << m_eventCounter << " baseline TF: rejected by circleFit");
     return false;
   }
+  B2DEBUG(2, m_PARAMnameOfInstance << " - event " << m_eventCounter << " baseline TF: circleFit approved TC");
 
   double pT = passInfo->trackletFilterBox.calcPt();
   if (pT < 0.01) {   // smaller than 10 MeV, WARNING: hardcoded!
@@ -3966,6 +3953,7 @@ bool VXDTFModule::baselineTF(vector<ClusterInfo>& clusters, CurrentPassData* pas
     B2DEBUG(1, m_PARAMnameOfInstance << " - event " << m_eventCounter << " baseline TF: rejected by pT (too small: " << pT << "GeV/c)");
     return false;
   }
+  B2DEBUG(2, m_PARAMnameOfInstance << " - event " << m_eventCounter << " baseline TF: pT approved TC");
 
   passInfo->tcVector.push_back(newTC);
   if (nBrokenSensors != 0) { m_TESTERacceptedBrokenHitsTrack++; }
@@ -4140,7 +4128,7 @@ VXDTFModule::BrokenSensorsOfEvent VXDTFModule::find2DSVDHits(ActiveSensorsOfEven
       occupancy = numHits;
     }
     m_TESTERSVDOccupancy[numHits - 1] += 1;
-    if (m_PARAMhighOccupancyThreshold < numHits) {
+    if (m_PARAMhighOccupancyThreshold < occupancy) {
       m_highOccupancyCase = true;
       m_TESTERhighOccupancyCtr++;
     } else { m_highOccupancyCase = false; }
