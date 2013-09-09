@@ -240,6 +240,7 @@ namespace Belle2 {
         int numTotalLayers;  /**< needed e.g. for neuronal network. This value allows calculation of maximum track length (noncurling), carries implicit information about detectorType, while 'highestAllowedLayer' does not know whether its a SVD or VXD setup */
         int minLayer; /**< lowest layer considered for TCC */
         int minState; /**< lowest state considered for seeds during TCC */
+        double magneticFieldStrength; /**< the strength of the magnetic field in Tesla */
 
         /** soon to come (maybe even layer-specific): **/
         std::vector<double> secConfigU;  /**< defines subdivition of sensors U */

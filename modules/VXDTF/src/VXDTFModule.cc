@@ -475,7 +475,6 @@ void VXDTFModule::beginRun()
 
 
   // here some variables copied from the passes (will be rewritten for each pass, therefore only the settings of the last pass will survive)
-  double magneticField;
   TVector3 origin;
   string detectorType;
   /// for each setup, fill parameters, calc numTotalLayers... TODO: failsafe implementation (no protection against bad user imputs) lacks of style, longterm goal, export that procedure into a function
@@ -489,10 +488,10 @@ void VXDTFModule::beginRun()
 
     newPass->sectorSetup = m_PARAMsectorSetup.at(i);
 
-    VXDTFSecMap::Class(); // essential, needed for root, DO NOT ASK WHY! -.-
+    VXDTFSecMap::Class(); // essential, needed for root, waiting for root 6 to be removed (hopefully)
     string chosenSetup = (boost::format("sectorList_%1%") % newPass->sectorSetup).str();
     string directory = "/Detector/Tracking/CATFParameters/" + chosenSetup;
-    const VXDTFSecMap* newMap;
+    const VXDTFSecMap* newMap = NULL;
     try {
       newMap = dynamic_cast<const VXDTFSecMap*>(Gearbox::getInstance().getTObject(directory.c_str()));
     } catch (exception& e) {
@@ -500,11 +499,11 @@ void VXDTFModule::beginRun()
     }
 //     const VXDTFSecMap* newMap = dynamic_cast<const VXDTFSecMap*>(Gearbox::getInstance().getTObject(directory.c_str()));
 
-    const double mField = newMap->getMagneticFieldStrength();
-    magneticField = mField;
-    newPass->threeHitFilterBox.resetMagneticField(mField);
-    newPass->fourHitFilterBox.resetMagneticField(mField);
-    newPass->trackletFilterBox.resetMagneticField(mField);
+    const double magneticField = newMap->getMagneticFieldStrength();
+    newPass->magneticFieldStrength = magneticField;
+    newPass->threeHitFilterBox.resetMagneticField(magneticField);
+    newPass->fourHitFilterBox.resetMagneticField(magneticField);
+    newPass->trackletFilterBox.resetMagneticField(magneticField);
 
     newPass->additionalInfo = newMap->getAdditionalInfo();
 
@@ -519,7 +518,7 @@ void VXDTFModule::beginRun()
     BOOST_FOREACH(double entry, newPass->secConfigV) {
       secConV << " " << entry;
     }
-    B2INFO(" pass " << newPass->sectorSetup << "-setting: got magneticFieldStrength: " << mField << ", origin at: (" << origin[0] << "," << origin[1] << "," << origin[2] << ") and sectorConfig \n U: " << secConU.str() << endl << " V: " << secConV.str() << endl << " and additional Info: " << newPass->additionalInfo)
+    B2INFO(" pass " << newPass->sectorSetup << "-setting: got magneticFieldStrength: " << magneticField << ", origin at: (" << origin[0] << "," << origin[1] << "," << origin[2] << ") and sectorConfig \n U: " << secConU.str() << endl << " V: " << secConV.str() << endl << " and additional Info: " << newPass->additionalInfo)
 
 
     if (int (m_PARAMhighestAllowedLayer.size()) < i + 1) {
@@ -1079,9 +1078,9 @@ void VXDTFModule::beginRun()
   VXDSector* pCenterSector = new VXDSector(centerSecID);
   m_baselinePass.sectorMap.insert(make_pair(centerSecID, pCenterSector));
   B2DEBUG(100, "Baseline-Pass: adding virtual centerSector with " << m_baselinePass.sectorMap.find(centerSecID)->second->getFriends().size() << " friends.");
-  m_baselinePass.threeHitFilterBox.resetMagneticField(magneticField);
-  m_baselinePass.fourHitFilterBox.resetMagneticField(magneticField);
-  m_baselinePass.trackletFilterBox.resetMagneticField(magneticField);
+  m_baselinePass.threeHitFilterBox.resetMagneticField(m_passSetupVector.at(0)->magneticFieldStrength);
+  m_baselinePass.fourHitFilterBox.resetMagneticField(m_passSetupVector.at(0)->magneticFieldStrength);
+  m_baselinePass.trackletFilterBox.resetMagneticField(m_passSetupVector.at(0)->magneticFieldStrength);
   m_baselinePass.origin = m_passSetupVector.at(0)->origin;
   m_baselinePass.detectorType = m_passSetupVector.at(0)->detectorType;
   m_baselinePass.chosenDetectorType = m_passSetupVector.at(0)->chosenDetectorType;
@@ -1107,6 +1106,7 @@ void VXDTFModule::beginRun()
 
   m_tcVectorOverlapped.clear();
   m_tcVector.clear();
+  m_allTCsOfEvent.clear();
 
   B2INFO(m_PARAMnameOfInstance << "leaving VXD CA track finder (VXDTFModule) - beginRun...\n       -----------------------------------------------");
 }
@@ -2099,6 +2099,12 @@ void VXDTFModule::terminate()
     currentPass->sectorMap.clear();
     delete currentPass; // deleting struct itself
   }
+
+  BOOST_FOREACH(secMapEntry aSector, m_baselinePass.sectorMap) { // dealing with the baseline pass separately
+    delete aSector.second;
+  }
+  m_baselinePass.sectorMap.clear();
+
   m_passSetupVector.clear();
 }
 
@@ -3220,7 +3226,7 @@ void VXDTFModule::tcCollector(CurrentPassData* currentPass)
   }
   int numTCsafterTCC = currentPass->tcVector.size(); // total number of tc's
 
-	m_allTCsOfEvent.insert(m_allTCsOfEvent.end(), currentPass->tcVector.begin(), currentPass->tcVector.end());
+  m_allTCsOfEvent.insert(m_allTCsOfEvent.end(), currentPass->tcVector.begin(), currentPass->tcVector.end());
   B2DEBUG(10, "findTCs activated " << findTCsCounter << " times, resulting in " << numTCsafterTCC << " track candidates")
   m_TESTERcountTotalTCsAfterTCC += numTCsafterTCC;
 }
@@ -3691,17 +3697,17 @@ void VXDTFModule::cleanEvent(CurrentPassData* currentPass, unsigned int centerSe
   }
   currentPass->hitVector.clear();
 
-//   BOOST_FOREACH(VXDTFTrackCandidate * aTC, currentPass->tcVector) {
+  //   BOOST_FOREACH(VXDTFTrackCandidate * aTC, currentPass->tcVector) {
 //     delete  aTC;
 //   }
-  
+
   BOOST_FOREACH(VXDTFTrackCandidate * aTC, m_allTCsOfEvent) {
     delete  aTC;
   }
   currentPass->tcVector.clear();
   m_tcVectorOverlapped.clear();
   m_tcVector.clear();
-	m_allTCsOfEvent.clear();
+  m_allTCsOfEvent.clear();
 }
 
 

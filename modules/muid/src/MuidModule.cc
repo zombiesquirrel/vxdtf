@@ -10,9 +10,6 @@
 
 #include <tracking/modules/muid/MuidModule.h>
 #include <tracking/modules/muid/MuidPar.h>
-#include <tracking/modules/ext/ExtManager.h>
-#include <tracking/modules/ext/ExtPhysicsList.h>
-#include <tracking/modules/ext/ExtCylSurfaceTarget.h>
 #include <tracking/dataobjects/ExtHit.h>
 #include <tracking/dataobjects/Muid.h>
 #include <tracking/dataobjects/MuidHit.h>
@@ -21,6 +18,9 @@
 #include <eklm/dataobjects/EKLMHit2d.h>
 #include <simulation/kernel/DetectorConstruction.h>
 #include <simulation/kernel/MagneticField.h>
+#include <simulation/kernel/ExtManager.h>
+#include <simulation/kernel/ExtPhysicsList.h>
+#include <simulation/kernel/ExtCylSurfaceTarget.h>
 #include <ecl/geometry/ECLGeometryPar.h>
 #include <bklm/geometry/GeometryPar.h>
 
@@ -109,7 +109,7 @@ void MuidModule::initialize()
   registerVolumes();
 
   // Define the geant4e extrapolation Manager.
-  m_extMgr = ExtManager::GetManager();
+  m_extMgr = Simulation::ExtManager::GetManager();
 
   // See if muid will coexist with geant4 simulation.
   // (The particle list will have been constructed already, if so.)
@@ -121,7 +121,7 @@ void MuidModule::initialize()
     m_extMgr->SetUserInitialization(new DetectorConstruction());
     G4Region* region = (*(G4RegionStore::GetInstance()))[0];
     region->SetProductionCuts(G4ProductionCutsTable::GetProductionCutsTable()->GetDefaultProductionCuts());
-    m_extMgr->SetUserInitialization(new ExtPhysicsList);
+    m_extMgr->SetUserInitialization(new Simulation::ExtPhysicsList);
     //Create the magnetic field for the Geant4e simulation
     Simulation::MagneticField* magneticField = new Simulation::MagneticField();
     G4FieldManager* fieldManager = G4TransportationManager::GetTransportationManager()->GetFieldManager();
@@ -160,7 +160,7 @@ void MuidModule::initialize()
   double nSector = bklmContent.getNumberNodes("Sectors/Forward/Sector");
   double rMax = outerRadius / cos(M_PI / nSector);
   std::cout << "MUID initialize: eklmLength=" << eklmLength << "  bklmHalfLength=" << bklmHalfLength << "  offsetZ=" << offsetZ << "  minZ=" << minZ << "  maxZ=" << maxZ << "  outerRadius=" << outerRadius << "  nSector=" << nSector << "  rMax=" << rMax << std::endl;
-  G4ErrorPropagatorData::GetErrorPropagatorData()->SetTarget(new ExtCylSurfaceTarget(rMax, minZ, maxZ));
+  G4ErrorPropagatorData::GetErrorPropagatorData()->SetTarget(new Simulation::ExtCylSurfaceTarget(rMax, minZ, maxZ));
   m_OffsetZ = bklmContent.getLength("OffsetZ");
   m_EndcapMaxR = eklmContent.getLength("EndCap/OuterR"); // 290.0 cm --> 332.0 cm
   m_EndcapMinR = eklmContent.getLength("EndCap/InnerR"); // 125.0 cm --> 130.5 cm
@@ -430,19 +430,38 @@ void MuidModule::getVolumeID(const G4TouchableHandle& touch, ExtDetectorID& detI
   G4String name = touch->GetVolume(0)->GetName();
   if (name.find("CDC") != string::npos) {
     detID = EXT_CDC;
-    copyID = touch->GetVolume(0)->GetCopyNo();
+    copyID = touch->GetCopyNumber(0);
   }
-  // Barrel KLM: BKLM.EnvelopePhysical and BKLM.Gas_*_*_**_* and BKLM.Sci_*_*_**_*
+  // Barrel KLM: BKLM.EnvelopePhysical for envelope
+  //             BKLM.Layer**GasPhysical for RPCs
+  //             BKLM.ScintType*Physical for scintillator strips
   if (name == "BKLM.EnvelopePhysical") {
     detID = EXT_BKLM;
   }
-  if ((name.substr(0, 8) == "BKLM.Gas") || (name.substr(0, 8) == "BKLM.Sci")) {
+  if ((name.substr(0, 10) == "BKLM.Layer") && (name.substr(12, 3) == "Gas")) {
     detID = EXT_BKLM;
-    int forward = (name.substr(9, 1) == "F") ? 1 : 2;
-    int sector = boost::lexical_cast<int>(name.substr(11, 1));
-    int layer = boost::lexical_cast<int>(name.substr(13, 2));
-    int plane = (name.substr(16, 5) == "Inner") ? PLANE_INNER : PLANE_OUTER;
-    copyID = (((((forward << 8) + sector) << 8) + layer) << 8) + plane;
+    int end = touch->GetCopyNumber(7);
+    int sector = touch->GetCopyNumber(6);
+    int layer = touch->GetCopyNumber(4);
+    int plane = touch->GetCopyNumber(0);
+    copyID = ((end - 1) << 14)
+             + ((sector - 1) << 11)
+             + ((layer - 1) << 7)
+             + ((plane - 1) << 6)
+             + 1;
+  }
+  if (name.substr(0, 14) == "BKLM.ScintType") {
+    detID = EXT_BKLM;
+    int end = touch->GetCopyNumber(8);
+    int sector = touch->GetCopyNumber(7);
+    int layer = touch->GetCopyNumber(5);
+    int plane = touch->GetCopyNumber(1);
+    int scint = touch->GetCopyNumber(0);
+    copyID = ((end - 1) << 14)
+             + ((sector - 1) << 11)
+             + ((layer - 1) << 7)
+             + ((plane - 1) << 6)
+             + scint;
   }
   // Endcap KLM: Endcap_{1,2} and
   // Sensitive_Strip_StripVolume_{1..75}_Plane_{1,2}_Sector_{1..4}_Layer_{1..14}_Endcap_{1,2}
@@ -452,14 +471,16 @@ void MuidModule::getVolumeID(const G4TouchableHandle& touch, ExtDetectorID& detI
   }
   if (name.substr(0, 27) == "Sensitive_Strip_StripVolume") {
     detID = EXT_EKLM;
-    int i0 = name.size() - 63;
-    if ((i0 == 0) || (i0 == 1)) {
-      int forward = boost::lexical_cast<int>(name.substr(i0 + 62, 1));
-      int sector = boost::lexical_cast<int>(name.substr(i0 + 45, 1));
-      int layer = boost::lexical_cast<int>(name.substr(i0 + 53, 1));
-      int plane = boost::lexical_cast<int>(name.substr(i0 + 36, 1));
-      copyID = (((((forward << 8) + sector) << 8) + layer) << 8) + plane;
-    }
+    int end = touch->GetCopyNumber(6);
+    int sector = touch->GetCopyNumber(4);
+    int layer = touch->GetCopyNumber(5);
+    int plane = touch->GetCopyNumber(3);
+    int scint = touch->GetCopyNumber(2);
+    copyID = ((end - 1) << 14)
+             + ((sector - 1) << 11)
+             + ((layer - 1) << 7)
+             + ((plane - 1) << 6)
+             + scint;
   }
   // ECL
   if (name == "physicalECL") {
